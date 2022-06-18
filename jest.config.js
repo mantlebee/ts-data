@@ -1,8 +1,9 @@
 module.exports = {
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1"
+    "^@/(.*)": "<rootDir>/src/$1"
   },
-  modulePaths: ["<rootDir>/src"],
+  modulePaths: ["<rootDir>"],
+  testMatch: ["**/__tests__/**/*.test.ts"],
   transform: { "^.+\\.ts$": "ts-jest" },
   transformIgnorePatterns: ["!node_modules/"]
 };
