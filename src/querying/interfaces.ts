@@ -2,7 +2,7 @@ import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 export interface IPartialQuery<T> {
   contains(value: Any): IQuery<T>;
-  isContainedIn(value: Any): IQuery<T>;
+  isContainedIn(...values: List<Any>): IQuery<T>;
   isEqualTo(value: Any): IQuery<T>;
   isFalse(): IQuery<T>;
   isGreaterThan(value: Any): IQuery<T>;

@@ -1,11 +1,11 @@
-import { List } from "@mantlebee/ts-core";
+import { Any, List } from "@mantlebee/ts-core";
 
 import { FilterOperations, FilterOperators } from "./constants";
 
 export type Filter<TItem> = {
   field: keyof TItem;
   operation: FilterOperations;
-  value: TItem[keyof TItem];
+  value: Any;
 };
 export type FiltersExpression<TItem> = {
   operator: FilterOperators;

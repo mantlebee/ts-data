@@ -128,12 +128,12 @@ class PartialQuery<TItem> implements IPartialQuery<TItem> {
     );
     return new Query(this.dataSource);
   }
-  public isContainedIn(value: Any): IQuery<TItem> {
+  public isContainedIn(...values: List<Any>): IQuery<TItem> {
     this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.in,
-        value,
+        value: values,
       },
       this.filtersExpression
     );
@@ -155,7 +155,7 @@ class PartialQuery<TItem> implements IPartialQuery<TItem> {
       {
         field: this.key,
         operation: FilterOperations.equal,
-        value: (false as unknown) as TItem[KeyOf<TItem>],
+        value: false,
       },
       this.filtersExpression
     );
@@ -210,7 +210,7 @@ class PartialQuery<TItem> implements IPartialQuery<TItem> {
       {
         field: this.key,
         operation: FilterOperations.equal,
-        value: (true as unknown) as TItem[KeyOf<TItem>],
+        value: true,
       },
       this.filtersExpression
     );
