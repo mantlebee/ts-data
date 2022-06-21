@@ -86,14 +86,14 @@ class Query<TItem> implements IQuery<TItem> {
     this.dataSource.selectPlugin.select(keys);
     return this;
   }
+  public skip(skip: number): IQuery<TItem> {
+    this.dataSource.skipTopPlugin.setSkip(skip);
+    return this;
+  }
   public sortBy(key: KeyOf<TItem>, asc: boolean): IQuery<TItem> {
     const { sortPlugin } = this.dataSource;
     sortPlugin.clearSorts();
     sortPlugin.sortBy(key, asc);
-    return this;
-  }
-  public skip(skip: number): IQuery<TItem> {
-    this.dataSource.skipTopPlugin.setSkip(skip);
     return this;
   }
   public top(top: number): IQuery<TItem> {
@@ -205,12 +205,45 @@ class PartialQuery<TItem> implements IPartialQuery<TItem> {
     );
     return new Query(this.dataSource);
   }
+  public isNotContainedIn(...values: List<Any>): IQuery<TItem> {
+    this.dataSource.filterPlugin.addFilter(
+      {
+        field: this.key,
+        operation: FilterOperations.notIn,
+        value: values,
+      },
+      this.filtersExpression
+    );
+    return new Query(this.dataSource);
+  }
+  public isNotEqualTo(value: Any): IQuery<TItem> {
+    this.dataSource.filterPlugin.addFilter(
+      {
+        field: this.key,
+        operation: FilterOperations.notEqual,
+        value,
+      },
+      this.filtersExpression
+    );
+    return new Query(this.dataSource);
+  }
   public isTrue(): IQuery<TItem> {
     this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.equal,
         value: true,
+      },
+      this.filtersExpression
+    );
+    return new Query(this.dataSource);
+  }
+  public notContains(value: Any): IQuery<TItem> {
+    this.dataSource.filterPlugin.addFilter(
+      {
+        field: this.key,
+        operation: FilterOperations.notContains,
+        value,
       },
       this.filtersExpression
     );

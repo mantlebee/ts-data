@@ -1,11 +1,14 @@
 export enum FilterOperations {
-  equal = "eq",
   contains = "contains",
-  in = "in",
+  equal = "eq",
   greaterThan = "gt",
   greaterThanOrEqual = "gte",
+  in = "in",
   lessThan = "lt",
   lessThanOrEqual = "lte",
+  notContains = "notcontains",
+  notEqual = "neq",
+  notIn = "nin",
 }
 
 export enum FilterOperators {
