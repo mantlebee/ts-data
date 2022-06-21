@@ -6,7 +6,7 @@ import { getDataSourceFiltering, getFiltersExpression } from "./utils";
 
 describe("DataSource", () => {
   describe("plugins", () => {
-    describe("DataSourceFilteringPlugin", () => {
+    describe("DataSourceFilterPlugin", () => {
       describe("models", () => {
         describe("After initialization", () => {
           it("'filtersExpression' has no filters and default 'operator' is AND", () => {
@@ -22,7 +22,7 @@ describe("DataSource", () => {
             const filtering = getDataSourceFiltering();
             filtering.addFilter(FILTER_FIRSTNAME);
             expect(filtering.filtersExpression.filters).toEqual([
-              FILTER_FIRSTNAME
+              FILTER_FIRSTNAME,
             ]);
           });
           it("With 'filtersExpression', 'this.filtersExpression' doesn't change", async () => {
@@ -38,7 +38,7 @@ describe("DataSource", () => {
             filtering.addFilters([FILTER_FIRSTNAME, FILTER_LASTNAME]);
             expect(filtering.filtersExpression.filters).toEqual([
               FILTER_FIRSTNAME,
-              FILTER_LASTNAME
+              FILTER_LASTNAME,
             ]);
           });
           it("With 'filtersExpression', 'this.filtersExpression' doesn't change", async () => {
@@ -72,14 +72,14 @@ describe("DataSource", () => {
             filtering.addFilters([FILTER_FIRSTNAME, FILTER_LASTNAME]);
             filtering.removeFilter(FILTER_FIRSTNAME);
             expect(filtering.filtersExpression.filters).toEqual([
-              FILTER_LASTNAME
+              FILTER_LASTNAME,
             ]);
           });
           it("With 'filtersExpression', 'this.filtersExpression' doesn't change", async () => {
             const filtering = getDataSourceFiltering();
             const filtersExpression = getFiltersExpression([
               FILTER_FIRSTNAME,
-              FILTER_LASTNAME
+              FILTER_LASTNAME,
             ]);
             filtering.removeFilter(FILTER_FIRSTNAME, filtersExpression);
             expect(filtering.filtersExpression.filters).toEqual([]);

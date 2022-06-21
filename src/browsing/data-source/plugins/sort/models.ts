@@ -3,12 +3,11 @@ import { List, Nullable } from "@mantlebee/ts-core";
 import { BrowseItemsPayload, Sort } from "@/browsing";
 
 import { DataSourcePlugin } from "../../models";
-import { IDataSourceSortingPlugin } from "./interfaces";
+import { IDataSourceSortPlugin } from "./interfaces";
 import { removeSort, sortBy } from "./utils";
 
-export class DataSourceSortingPlugin<TItem>
-  extends DataSourcePlugin<TItem>
-  implements IDataSourceSortingPlugin<TItem> {
+export class DataSourceSortPlugin<TItem> extends DataSourcePlugin<TItem>
+  implements IDataSourceSortPlugin<TItem> {
   private _sorts: List<Sort<TItem>> = [];
   private _sortsNumberLimit: Nullable<number> = null;
 

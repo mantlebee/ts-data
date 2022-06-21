@@ -7,12 +7,12 @@ import { sortBy } from "../utils";
 
 describe("DataSource", () => {
   describe("plugins", () => {
-    describe("DataSourceSortingPlugin", () => {
+    describe("DataSourceSortPlugin", () => {
       describe("utils", () => {
         describe("sortBy", () => {
           it("Sort is added at last position if no sort with same 'by' is present", () => {
             let sorts: List<Sort<GenericItem>> = [
-              { by: "firstName", asc: true }
+              { by: "firstName", asc: true },
             ];
             sorts = sortBy<GenericItem>(sorts, "lastName", true);
             expect(sorts.length).toBe(2);
@@ -20,7 +20,7 @@ describe("DataSource", () => {
           });
           it("Existing sort with same 'by' is replaced", () => {
             let sorts: List<Sort<GenericItem>> = [
-              { by: "firstName", asc: true }
+              { by: "firstName", asc: true },
             ];
             sorts = sortBy<GenericItem>(sorts, "firstName", false);
             expect(sorts.length).toBe(1);

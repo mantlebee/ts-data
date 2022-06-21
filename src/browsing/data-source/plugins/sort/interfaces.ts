@@ -4,8 +4,7 @@ import { Sort } from "@/browsing";
 
 import { IDataSourcePlugin } from "../../interfaces";
 
-export interface IDataSourceSortingPlugin<TItem>
-  extends IDataSourcePlugin<TItem> {
+export interface IDataSourceSortPlugin<TItem> extends IDataSourcePlugin<TItem> {
   readonly sorts: List<Sort<TItem>>;
   readonly sortsNumberLimit: Nullable<number>;
   clearSorts(): void;

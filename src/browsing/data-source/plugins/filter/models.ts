@@ -4,26 +4,25 @@ import {
   FiltersExpression,
   FilterOperators,
   Filter,
-  BrowseItemsPayload
+  BrowseItemsPayload,
 } from "@/browsing";
 
 import { DataSourcePlugin } from "../../models";
-import { IDataSourceFilteringPlugin } from "./interfaces";
+import { IDataSourceFilterPlugin } from "./interfaces";
 import {
   addFiltersToFiltersExpression,
   addFilterToFiltersExpression,
   clearFiltersFromFiltersExpression,
   filtersExpressionHasFilters,
-  removeFilterFromFiltersExpression
+  removeFilterFromFiltersExpression,
 } from "./utils";
 
-export class DataSourceFilteringPlugin<TItem>
-  extends DataSourcePlugin<TItem>
-  implements IDataSourceFilteringPlugin<TItem> {
+export class DataSourceFilterPlugin<TItem> extends DataSourcePlugin<TItem>
+  implements IDataSourceFilterPlugin<TItem> {
   private _filtersExpression: FiltersExpression<TItem> = {
     childExpressions: [],
     filters: [],
-    operator: FilterOperators.and
+    operator: FilterOperators.and,
   };
 
   public get filtersExpression(): FiltersExpression<TItem> {

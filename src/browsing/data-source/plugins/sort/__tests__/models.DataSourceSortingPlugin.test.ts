@@ -3,7 +3,7 @@ import { getDataSourceSorting } from "./utils";
 
 describe("DataSource", () => {
   describe("plugins", () => {
-    describe("DataSourceSortingPlugin", () => {
+    describe("DataSourceSortPlugin", () => {
       describe("models", () => {
         describe("After initialization", () => {
           it("'sorts' is an empty array", () => {

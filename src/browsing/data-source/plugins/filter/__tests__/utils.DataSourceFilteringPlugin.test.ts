@@ -7,19 +7,19 @@ import {
   clearFiltersFromFiltersExpression,
   filtersExpressionHasFilters,
   removeFilterFromFiltersExpression,
-  removeFiltersByFieldFromFiltersExpression
+  removeFiltersByFieldFromFiltersExpression,
 } from "../utils";
 import {
   FILTER_EMAIL,
   FILTER_FIRSTNAME,
   FILTER_FIRSTNAME_ALT,
-  FILTER_LASTNAME
+  FILTER_LASTNAME,
 } from "./constants";
 import { getFiltersExpression } from "./utils";
 
 describe("DataSource", () => {
   describe("plugins", () => {
-    describe("DataSourceFilteringPlugin", () => {
+    describe("DataSourceFilterPlugin", () => {
       describe("utils", () => {
         describe("addFilterToFiltersExpression", () => {
           it("with OR 'operator', 'filter' is added to 'filtersExpression.filters'", () => {
@@ -30,7 +30,7 @@ describe("DataSource", () => {
             addFilterToFiltersExpression(FILTER_LASTNAME, filtersExpression);
             expect(filtersExpression.filters).toEqual([
               FILTER_FIRSTNAME,
-              FILTER_LASTNAME
+              FILTER_LASTNAME,
             ]);
           });
           it("with AND 'operator' and without filter with same 'filter.field', 'filter' is added to 'filtersExpression.filters'", () => {
@@ -38,7 +38,7 @@ describe("DataSource", () => {
             addFilterToFiltersExpression(FILTER_LASTNAME, filtersExpression);
             expect(filtersExpression.filters).toEqual([
               FILTER_FIRSTNAME,
-              FILTER_LASTNAME
+              FILTER_LASTNAME,
             ]);
           });
           it("with AND 'operator' and filter with same 'filter.field', existing 'filter' is removed and the new one appended", () => {
@@ -63,7 +63,7 @@ describe("DataSource", () => {
             expect(filtersExpression.filters).toEqual([
               FILTER_FIRSTNAME,
               FILTER_LASTNAME,
-              FILTER_EMAIL
+              FILTER_EMAIL,
             ]);
           });
           it("with AND 'operator' and without filter with same 'filter.field', 'filter' is added to 'filtersExpression.filters'", () => {
@@ -75,7 +75,7 @@ describe("DataSource", () => {
             expect(filtersExpression.filters).toEqual([
               FILTER_FIRSTNAME,
               FILTER_LASTNAME,
-              FILTER_EMAIL
+              FILTER_EMAIL,
             ]);
           });
           it("with AND 'operator' and filter with same 'filter.field', existing filter is removed and the new one appended", () => {
@@ -86,7 +86,7 @@ describe("DataSource", () => {
             );
             expect(filtersExpression.filters).toEqual([
               FILTER_FIRSTNAME_ALT,
-              FILTER_EMAIL
+              FILTER_EMAIL,
             ]);
           });
         });
@@ -99,7 +99,7 @@ describe("DataSource", () => {
           it("has filters if it has at least one child expression for which 'filtersExpressionHasFilters' returns true", () => {
             const filtersExpression = getFiltersExpression<GenericItem>([]);
             const childExpression = getFiltersExpression<GenericItem>([
-              FILTER_FIRSTNAME
+              FILTER_FIRSTNAME,
             ]);
             filtersExpression.childExpressions.push(childExpression);
             const hasFilters = filtersExpressionHasFilters(filtersExpression);
@@ -117,11 +117,11 @@ describe("DataSource", () => {
           it("all filters and child expressions are removed", () => {
             const filtersExpression = getFiltersExpression([
               FILTER_FIRSTNAME,
-              FILTER_LASTNAME
+              FILTER_LASTNAME,
             ]);
             const childExpression = getFiltersExpression([
               FILTER_EMAIL,
-              FILTER_FIRSTNAME_ALT
+              FILTER_FIRSTNAME_ALT,
             ]);
             filtersExpression.childExpressions.push(childExpression);
             clearFiltersFromFiltersExpression(filtersExpression);
@@ -151,7 +151,7 @@ describe("DataSource", () => {
           it("all filters with the same 'field' value are removed", () => {
             const filtersExpression = getFiltersExpression([
               FILTER_FIRSTNAME,
-              FILTER_FIRSTNAME_ALT
+              FILTER_FIRSTNAME_ALT,
             ]);
             removeFiltersByFieldFromFiltersExpression(
               "firstName",

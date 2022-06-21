@@ -4,7 +4,7 @@ import { Filter, FiltersExpression } from "@/browsing";
 
 import { IDataSourcePlugin } from "../../interfaces";
 
-export interface IDataSourceFilteringPlugin<TItem>
+export interface IDataSourceFilterPlugin<TItem>
   extends IDataSourcePlugin<TItem> {
   readonly filtersExpression: FiltersExpression<TItem>;
   readonly hasFilters: boolean;

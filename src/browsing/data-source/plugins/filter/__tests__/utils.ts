@@ -3,12 +3,10 @@ import { List } from "@mantlebee/ts-core";
 import { Filter, FilterOperators, FiltersExpression } from "@/browsing";
 import { GenericItem } from "@/fake";
 
-import { DataSourceFilteringPlugin } from "../models";
+import { DataSourceFilterPlugin } from "../models";
 
-export function getDataSourceFiltering(): DataSourceFilteringPlugin<
-  GenericItem
-> {
-  return new DataSourceFilteringPlugin();
+export function getDataSourceFiltering(): DataSourceFilterPlugin<GenericItem> {
+  return new DataSourceFilterPlugin();
 }
 
 export function getFiltersExpression<GenericItem>(
@@ -18,6 +16,6 @@ export function getFiltersExpression<GenericItem>(
   return {
     childExpressions: [],
     filters,
-    operator
+    operator,
   };
 }

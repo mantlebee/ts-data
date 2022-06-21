@@ -2,45 +2,45 @@ import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import {
   DataSource,
-  DataSourceFilteringPlugin,
+  DataSourceFilterPlugin,
   DataSourceReadDelegate,
   DataSourceSelectPlugin,
   DataSourceSkipTopPlugin,
-  DataSourceSortingPlugin,
+  DataSourceSortPlugin,
   FilterOperations,
   FilterOperators,
   FiltersExpression,
-  IDataSourceFilteringPlugin,
+  IDataSourceFilterPlugin,
   IDataSourcePlugin,
   IDataSourceSelectPlugin,
   IDataSourceSkipTopPlugin,
-  IDataSourceSortingPlugin,
+  IDataSourceSortPlugin,
 } from "@/browsing";
 
 import { IPartialQuery, IQuery, IQueryable } from "./interfaces";
 
 export class QueryableDataSource<TItem> extends DataSource<TItem> {
-  public readonly filteringPlugin: IDataSourceFilteringPlugin<TItem>;
+  public readonly filterPlugin: IDataSourceFilterPlugin<TItem>;
   public readonly selectPlugin: IDataSourceSelectPlugin<TItem>;
   public readonly skipTopPlugin: IDataSourceSkipTopPlugin<TItem>;
-  public readonly sortingPlugin: IDataSourceSortingPlugin<TItem>;
+  public readonly sortPlugin: IDataSourceSortPlugin<TItem>;
 
   public constructor(readDelegate: DataSourceReadDelegate<TItem>) {
-    const filteringPlugin = new DataSourceFilteringPlugin<TItem>();
+    const filterPlugin = new DataSourceFilterPlugin<TItem>();
     const selectPlugin = new DataSourceSelectPlugin<TItem>();
     const skipTopPlugin = new DataSourceSkipTopPlugin<TItem>();
-    const sortingPlugin = new DataSourceSortingPlugin<TItem>();
+    const sortPlugin = new DataSourceSortPlugin<TItem>();
     const plugins: List<IDataSourcePlugin<TItem>> = [
-      filteringPlugin,
+      filterPlugin,
       selectPlugin,
       skipTopPlugin,
-      sortingPlugin,
+      sortPlugin,
     ];
     super(readDelegate, plugins);
-    this.filteringPlugin = filteringPlugin;
+    this.filterPlugin = filterPlugin;
     this.selectPlugin = selectPlugin;
     this.skipTopPlugin = skipTopPlugin;
-    this.sortingPlugin = sortingPlugin;
+    this.sortPlugin = sortPlugin;
   }
 }
 
@@ -70,9 +70,7 @@ export class Query<TItem> implements IQuery<TItem> {
     return new PartialQuery(this.dataSource, key);
   }
   public or(key: KeyOf<TItem>): IPartialQuery<TItem> {
-    const {
-      childExpressions,
-    } = this.dataSource.filteringPlugin.filtersExpression;
+    const { childExpressions } = this.dataSource.filterPlugin.filtersExpression;
     if (!childExpressions.length)
       childExpressions.push({
         childExpressions: [],
@@ -89,9 +87,9 @@ export class Query<TItem> implements IQuery<TItem> {
     return this;
   }
   public sortBy(key: KeyOf<TItem>, asc: boolean): IQuery<TItem> {
-    const { sortingPlugin } = this.dataSource;
-    sortingPlugin.clearSorts();
-    sortingPlugin.sortBy(key, asc);
+    const { sortPlugin } = this.dataSource;
+    sortPlugin.clearSorts();
+    sortPlugin.sortBy(key, asc);
     return this;
   }
   public skip(skip: number): IQuery<TItem> {
@@ -117,11 +115,11 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     this.dataSource = dataSource;
     this.key = key;
     this.filtersExpression =
-      filtersExpression || this.dataSource.filteringPlugin.filtersExpression;
+      filtersExpression || this.dataSource.filterPlugin.filtersExpression;
   }
 
   public contains(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.contains,
@@ -132,7 +130,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isContainedIn(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.in,
@@ -143,7 +141,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isEqualTo(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.equal,
@@ -154,7 +152,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isFalse(): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.equal,
@@ -165,7 +163,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isGreaterThan(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.greaterThan,
@@ -176,7 +174,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isGreaterThanOrEqualTo(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.greaterThanOrEqual,
@@ -187,7 +185,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isLessThan(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.lessThan,
@@ -198,7 +196,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isLessThanOrEqualTo(value: Any): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.lessThanOrEqual,
@@ -209,7 +207,7 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
     return new Query(this.dataSource);
   }
   public isTrue(): IQuery<TItem> {
-    this.dataSource.filteringPlugin.addFilter(
+    this.dataSource.filterPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.equal,
