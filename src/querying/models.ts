@@ -4,6 +4,7 @@ import {
   DataSource,
   DataSourceFilteringPlugin,
   DataSourceReadDelegate,
+  DataSourceSelectPlugin,
   DataSourceSkipTopPlugin,
   DataSourceSortingPlugin,
   FilterOperations,
@@ -11,59 +12,64 @@ import {
   FiltersExpression,
   IDataSourceFilteringPlugin,
   IDataSourcePlugin,
+  IDataSourceSelectPlugin,
   IDataSourceSkipTopPlugin,
   IDataSourceSortingPlugin,
 } from "@/browsing";
 
 import { IPartialQuery, IQuery, IQueryable } from "./interfaces";
 
-export class DataSourceForQueryable<T> extends DataSource<T> {
-  public readonly filteringPlugin: IDataSourceFilteringPlugin<T>;
-  public readonly skipTopPlugin: IDataSourceSkipTopPlugin<T>;
-  public readonly sortingPlugin: IDataSourceSortingPlugin<T>;
+export class QueryableDataSource<TItem> extends DataSource<TItem> {
+  public readonly filteringPlugin: IDataSourceFilteringPlugin<TItem>;
+  public readonly selectPlugin: IDataSourceSelectPlugin<TItem>;
+  public readonly skipTopPlugin: IDataSourceSkipTopPlugin<TItem>;
+  public readonly sortingPlugin: IDataSourceSortingPlugin<TItem>;
 
-  public constructor(readDelegate: DataSourceReadDelegate<T>) {
-    const filteringPlugin = new DataSourceFilteringPlugin<T>();
-    const skipTopPlugin = new DataSourceSkipTopPlugin<T>();
-    const sortingPlugin = new DataSourceSortingPlugin<T>();
-    const plugins: List<IDataSourcePlugin<T>> = [
+  public constructor(readDelegate: DataSourceReadDelegate<TItem>) {
+    const filteringPlugin = new DataSourceFilteringPlugin<TItem>();
+    const selectPlugin = new DataSourceSelectPlugin<TItem>();
+    const skipTopPlugin = new DataSourceSkipTopPlugin<TItem>();
+    const sortingPlugin = new DataSourceSortingPlugin<TItem>();
+    const plugins: List<IDataSourcePlugin<TItem>> = [
       filteringPlugin,
+      selectPlugin,
       skipTopPlugin,
       sortingPlugin,
     ];
     super(readDelegate, plugins);
     this.filteringPlugin = filteringPlugin;
+    this.selectPlugin = selectPlugin;
     this.skipTopPlugin = skipTopPlugin;
     this.sortingPlugin = sortingPlugin;
   }
 }
 
-export class Queryable<T> implements IQueryable<T> {
-  private readonly dataSource: DataSourceForQueryable<T>;
+export class Queryable<TItem> implements IQueryable<TItem> {
+  private readonly dataSource: QueryableDataSource<TItem>;
 
-  public constructor(dataSource: DataSourceForQueryable<T>) {
+  public constructor(dataSource: QueryableDataSource<TItem>) {
     this.dataSource = dataSource;
   }
 
-  public all(): IQuery<T> {
+  public all(): IQuery<TItem> {
     return new Query(this.dataSource);
   }
-  public where(key: KeyOf<T>): IPartialQuery<T> {
+  public where(key: KeyOf<TItem>): IPartialQuery<TItem> {
     return new PartialQuery(this.dataSource, key);
   }
 }
 
-export class Query<T> implements IQuery<T> {
-  private readonly dataSource: DataSourceForQueryable<T>;
+export class Query<TItem> implements IQuery<TItem> {
+  private readonly dataSource: QueryableDataSource<TItem>;
 
-  public constructor(dataSource: DataSourceForQueryable<T>) {
+  public constructor(dataSource: QueryableDataSource<TItem>) {
     this.dataSource = dataSource;
   }
 
-  public and(key: KeyOf<T>): IPartialQuery<T> {
+  public and(key: KeyOf<TItem>): IPartialQuery<TItem> {
     return new PartialQuery(this.dataSource, key);
   }
-  public or(key: KeyOf<T>): IPartialQuery<T> {
+  public or(key: KeyOf<TItem>): IPartialQuery<TItem> {
     const {
       childExpressions,
     } = this.dataSource.filteringPlugin.filtersExpression;
@@ -75,34 +81,38 @@ export class Query<T> implements IQuery<T> {
       });
     return new PartialQuery(this.dataSource, key, childExpressions[0]);
   }
-  public read(): Promise<List<T>> {
+  public read(): Promise<List<TItem>> {
     return this.dataSource.read();
   }
-  public sortBy(key: KeyOf<T>, asc: boolean): IQuery<T> {
+  public select(...keys: List<KeyOf<TItem>>): IQuery<TItem> {
+    this.dataSource.selectPlugin.select(keys);
+    return this;
+  }
+  public sortBy(key: KeyOf<TItem>, asc: boolean): IQuery<TItem> {
     const { sortingPlugin } = this.dataSource;
     sortingPlugin.clearSorts();
     sortingPlugin.sortBy(key, asc);
     return this;
   }
-  public skip(skip: number): IQuery<T> {
+  public skip(skip: number): IQuery<TItem> {
     this.dataSource.skipTopPlugin.setSkip(skip);
     return this;
   }
-  public top(top: number): IQuery<T> {
+  public top(top: number): IQuery<TItem> {
     this.dataSource.skipTopPlugin.setTop(top);
     return this;
   }
 }
 
-export class PartialQuery<T> implements IPartialQuery<T> {
-  private readonly dataSource: DataSourceForQueryable<T>;
-  private readonly key: KeyOf<T>;
-  private readonly filtersExpression: FiltersExpression<T>;
+export class PartialQuery<TItem> implements IPartialQuery<TItem> {
+  private readonly dataSource: QueryableDataSource<TItem>;
+  private readonly key: KeyOf<TItem>;
+  private readonly filtersExpression: FiltersExpression<TItem>;
 
   public constructor(
-    dataSource: DataSourceForQueryable<T>,
-    key: KeyOf<T>,
-    filtersExpression?: FiltersExpression<T>
+    dataSource: QueryableDataSource<TItem>,
+    key: KeyOf<TItem>,
+    filtersExpression?: FiltersExpression<TItem>
   ) {
     this.dataSource = dataSource;
     this.key = key;
@@ -110,7 +120,7 @@ export class PartialQuery<T> implements IPartialQuery<T> {
       filtersExpression || this.dataSource.filteringPlugin.filtersExpression;
   }
 
-  public contains(value: Any): IQuery<T> {
+  public contains(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -121,7 +131,7 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isContainedIn(value: Any): IQuery<T> {
+  public isContainedIn(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -132,7 +142,7 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isEqualTo(value: Any): IQuery<T> {
+  public isEqualTo(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -143,18 +153,18 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isFalse(): IQuery<T> {
+  public isFalse(): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.equal,
-        value: (false as unknown) as T[KeyOf<T>],
+        value: (false as unknown) as TItem[KeyOf<TItem>],
       },
       this.filtersExpression
     );
     return new Query(this.dataSource);
   }
-  public isGreaterThan(value: Any): IQuery<T> {
+  public isGreaterThan(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -165,7 +175,7 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isGreaterThanOrEqualTo(value: Any): IQuery<T> {
+  public isGreaterThanOrEqualTo(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -176,7 +186,7 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isLessThan(value: Any): IQuery<T> {
+  public isLessThan(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -187,7 +197,7 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isLessThanOrEqualTo(value: Any): IQuery<T> {
+  public isLessThanOrEqualTo(value: Any): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
@@ -198,12 +208,12 @@ export class PartialQuery<T> implements IPartialQuery<T> {
     );
     return new Query(this.dataSource);
   }
-  public isTrue(): IQuery<T> {
+  public isTrue(): IQuery<TItem> {
     this.dataSource.filteringPlugin.addFilter(
       {
         field: this.key,
         operation: FilterOperations.equal,
-        value: (true as unknown) as T[KeyOf<T>],
+        value: (true as unknown) as TItem[KeyOf<TItem>],
       },
       this.filtersExpression
     );

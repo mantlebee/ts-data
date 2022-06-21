@@ -16,6 +16,7 @@ export interface IQuery<T> {
   and(key: KeyOf<T>): IPartialQuery<T>;
   or(key: KeyOf<T>): IPartialQuery<T>;
   read(): Promise<List<T>>;
+  select(...keys: List<KeyOf<T>>): IQuery<T>;
   sortBy(key: KeyOf<T>, asc: boolean): IQuery<T>;
   skip(skip: number): IQuery<T>;
   top(top: number): IQuery<T>;

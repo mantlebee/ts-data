@@ -9,7 +9,7 @@ export type GenericItem = {
   gender: string;
   id: number;
   lastName: string;
-  maritalStatus: string;
+  married: boolean;
   phone: string;
   username: string;
   website: string;

@@ -13,11 +13,11 @@ export const GenericItems: List<GenericItem> = [
     email: "ut.consectetur@mailinator.com",
     age: 30,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 2,
@@ -29,11 +29,11 @@ export const GenericItems: List<GenericItem> = [
     email: "viverra.congue@mailinator.com",
     age: 49,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 3,
@@ -45,11 +45,11 @@ export const GenericItems: List<GenericItem> = [
     email: "egestas.amet@mailinator.com",
     age: 52,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 4,
@@ -61,11 +61,11 @@ export const GenericItems: List<GenericItem> = [
     email: "lorem.diam@mailinator.com",
     age: 20,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 5,
@@ -77,11 +77,11 @@ export const GenericItems: List<GenericItem> = [
     email: "praesent.congue@mailinator.com",
     age: 34,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 6,
@@ -93,11 +93,11 @@ export const GenericItems: List<GenericItem> = [
     email: "vehicula.viverra@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 7,
@@ -109,11 +109,11 @@ export const GenericItems: List<GenericItem> = [
     email: "praesent.ultricies@mailinator.com",
     age: 35,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 8,
@@ -125,11 +125,11 @@ export const GenericItems: List<GenericItem> = [
     email: "diam.dolor@mailinator.com",
     age: 26,
     gender: "F",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 9,
@@ -141,11 +141,11 @@ export const GenericItems: List<GenericItem> = [
     email: "amet.lorem@mailinator.com",
     age: 47,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 10,
@@ -157,11 +157,11 @@ export const GenericItems: List<GenericItem> = [
     email: "ligula.ipsum@mailinator.com",
     age: 18,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 11,
@@ -173,11 +173,11 @@ export const GenericItems: List<GenericItem> = [
     email: "egestas.ultricies@mailinator.com",
     age: 30,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 12,
@@ -189,11 +189,11 @@ export const GenericItems: List<GenericItem> = [
     email: "vehicula.adipiscing@mailinator.com",
     age: 49,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 13,
@@ -205,11 +205,11 @@ export const GenericItems: List<GenericItem> = [
     email: "enim.eget@mailinator.com",
     age: 52,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 14,
@@ -221,11 +221,11 @@ export const GenericItems: List<GenericItem> = [
     email: "lectus.consectetur@mailinator.com",
     age: 20,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 15,
@@ -237,11 +237,11 @@ export const GenericItems: List<GenericItem> = [
     email: "ultricies.libero@mailinator.com",
     age: 34,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 16,
@@ -253,11 +253,11 @@ export const GenericItems: List<GenericItem> = [
     email: "augue.porta@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 17,
@@ -269,11 +269,11 @@ export const GenericItems: List<GenericItem> = [
     email: "consectetur.ligula@mailinator.com",
     age: 35,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 18,
@@ -285,11 +285,11 @@ export const GenericItems: List<GenericItem> = [
     email: "mattis.ipsum@mailinator.com",
     age: 29,
     gender: "F",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 19,
@@ -301,11 +301,11 @@ export const GenericItems: List<GenericItem> = [
     email: "quam.congue@mailinator.com",
     age: 52,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 20,
@@ -317,11 +317,11 @@ export const GenericItems: List<GenericItem> = [
     email: "mollis.donec@mailinator.com",
     age: 18,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 21,
@@ -333,11 +333,11 @@ export const GenericItems: List<GenericItem> = [
     email: "praesent.consectetur@mailinator.com",
     age: 30,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 22,
@@ -349,11 +349,11 @@ export const GenericItems: List<GenericItem> = [
     email: "congue.tortor@mailinator.com",
     age: 49,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 23,
@@ -365,11 +365,11 @@ export const GenericItems: List<GenericItem> = [
     email: "amet.consectetur@mailinator.com",
     age: 67,
     gender: "M",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 24,
@@ -381,11 +381,11 @@ export const GenericItems: List<GenericItem> = [
     email: "cons.mollis@mailinator.com",
     age: 20,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 25,
@@ -397,11 +397,11 @@ export const GenericItems: List<GenericItem> = [
     email: "congue.amet@mailinator.com",
     age: 34,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 26,
@@ -413,11 +413,11 @@ export const GenericItems: List<GenericItem> = [
     email: "lorem.tortor@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 27,
@@ -429,11 +429,11 @@ export const GenericItems: List<GenericItem> = [
     email: "donec.libero@mailinator.com",
     age: 35,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 28,
@@ -445,11 +445,11 @@ export const GenericItems: List<GenericItem> = [
     email: "acsit.maecenas@mailinator.com",
     age: 26,
     gender: "F",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 29,
@@ -461,11 +461,11 @@ export const GenericItems: List<GenericItem> = [
     email: "dolor.consectetur@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 30,
@@ -477,11 +477,11 @@ export const GenericItems: List<GenericItem> = [
     email: "elit.lacinia@mailinator.com",
     age: 18,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 31,
@@ -493,11 +493,11 @@ export const GenericItems: List<GenericItem> = [
     email: "donec.nam@mailinator.com",
     age: 30,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 32,
@@ -509,11 +509,11 @@ export const GenericItems: List<GenericItem> = [
     email: "consectetur.porta@mailinator.com",
     age: 49,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 33,
@@ -525,11 +525,11 @@ export const GenericItems: List<GenericItem> = [
     email: "enim.eget@mailinator.com",
     age: 52,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 34,
@@ -541,11 +541,11 @@ export const GenericItems: List<GenericItem> = [
     email: "tincidunt.enim@mailinator.com",
     age: 20,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 35,
@@ -557,11 +557,11 @@ export const GenericItems: List<GenericItem> = [
     email: "diam.lorema@mailinator.com",
     age: 34,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 36,
@@ -573,11 +573,11 @@ export const GenericItems: List<GenericItem> = [
     email: "ultricies.libero@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 37,
@@ -589,11 +589,11 @@ export const GenericItems: List<GenericItem> = [
     email: "augue.porta@mailinator.com",
     age: 35,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 38,
@@ -605,11 +605,11 @@ export const GenericItems: List<GenericItem> = [
     email: "dolor.donec@mailinator.com",
     age: 26,
     gender: "F",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 39,
@@ -621,11 +621,11 @@ export const GenericItems: List<GenericItem> = [
     email: "enim.diam@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 40,
@@ -637,11 +637,11 @@ export const GenericItems: List<GenericItem> = [
     email: "porta.egestas@mailinator.com",
     age: 18,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 41,
@@ -653,11 +653,11 @@ export const GenericItems: List<GenericItem> = [
     email: "praesent.maecenas@mailinator.com",
     age: 30,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 42,
@@ -669,11 +669,11 @@ export const GenericItems: List<GenericItem> = [
     email: "adipiscing.quam@mailinator.com",
     age: 49,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 43,
@@ -685,11 +685,11 @@ export const GenericItems: List<GenericItem> = [
     email: "consectetur.antea@mailinator.com",
     age: 52,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 44,
@@ -701,11 +701,11 @@ export const GenericItems: List<GenericItem> = [
     email: "praesentdiam@mailinator.com",
     age: 20,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 45,
@@ -717,11 +717,11 @@ export const GenericItems: List<GenericItem> = [
     email: "nam.lorem@mailinator.com",
     age: 34,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 46,
@@ -733,11 +733,11 @@ export const GenericItems: List<GenericItem> = [
     email: "elitlectus@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 47,
@@ -749,11 +749,11 @@ export const GenericItems: List<GenericItem> = [
     email: "praesentsed@mailinator.com",
     age: 35,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 48,
@@ -765,11 +765,11 @@ export const GenericItems: List<GenericItem> = [
     email: "egestaslibero@mailinator.com",
     age: 26,
     gender: "F",
-    maritalStatus: "Married",
+    married: true,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 49,
@@ -781,11 +781,11 @@ export const GenericItems: List<GenericItem> = [
     email: "lectus.porta@mailinator.com",
     age: 54,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
+    __foregroundColor__: "white",
   },
   {
     id: 50,
@@ -797,10 +797,10 @@ export const GenericItems: List<GenericItem> = [
     email: "maecenasmattis@mailinator.com",
     age: 18,
     gender: "M",
-    maritalStatus: "Single",
+    married: false,
     phone: "(+1) 000 0000 000",
     website: "example.com",
     __backgroundColor__: "lightseagreen",
-    __foregroundColor__: "white"
-  }
+    __foregroundColor__: "white",
+  },
 ];

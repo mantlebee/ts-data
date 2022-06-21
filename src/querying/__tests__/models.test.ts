@@ -5,12 +5,12 @@ import {
 } from "@/browsing";
 import { GenericItem } from "@/fake";
 
-import { DataSourceForQueryable, Queryable } from "../models";
+import { QueryableDataSource, Queryable } from "../models";
 
 describe("Queryable", () => {
   it("It works!", async () => {
     let payload: BrowseItemsPayload<GenericItem> = {};
-    const dataSource = new DataSourceForQueryable<GenericItem>((a) => {
+    const dataSource = new QueryableDataSource<GenericItem>((a) => {
       payload = a;
       return Promise.resolve([]);
     });
@@ -19,20 +19,21 @@ describe("Queryable", () => {
       .isGreaterThan(18)
       .and("gender")
       .isEqualTo(1)
-      .or("maritalStatus")
+      .or("married")
       .isFalse()
+      .select("age", "email", "firstName", "gender", "id", "lastName")
+      .sortBy("username", true)
       .skip(10)
       .top(5)
-      .sortBy("username", true)
       .read();
-    expect(payload).toEqual({
+    const resultingPayload: BrowseItemsPayload<GenericItem> = {
       filters: {
         childExpressions: [
           {
             childExpressions: [],
             filters: [
               {
-                field: "maritalStatus",
+                field: "married",
                 operation: FilterOperations.equal,
                 value: false,
               },
@@ -50,9 +51,11 @@ describe("Queryable", () => {
         ],
         operator: FilterOperators.and,
       },
+      select: ["age", "email", "firstName", "gender", "id", "lastName"],
       sorts: [{ by: "username", asc: true }],
       skip: 10,
       top: 5,
-    });
+    };
+    expect(payload).toEqual(resultingPayload);
   });
 });
