@@ -18,6 +18,7 @@ import {
 } from "@/browsing";
 
 import { IPartialQuery, IQuery, IQueryable } from "./interfaces";
+import { onAnd, onOr, onWhere } from "./utils";
 
 export class QueryableDataSource<TItem> extends DataSource<TItem> {
   public readonly filterPlugin: IDataSourceFilterPlugin<TItem>;
@@ -55,11 +56,13 @@ export class Queryable<TItem> implements IQueryable<TItem> {
     return new Query(this.dataSource);
   }
   public where(key: KeyOf<TItem>): IPartialQuery<TItem> {
-    return new PartialQuery(this.dataSource, key);
+    const { dataSource } = this;
+    const filtersExpression = onWhere(dataSource.filterPlugin);
+    return new PartialQuery(dataSource, key, filtersExpression);
   }
 }
 
-export class Query<TItem> implements IQuery<TItem> {
+class Query<TItem> implements IQuery<TItem> {
   private readonly dataSource: QueryableDataSource<TItem>;
 
   public constructor(dataSource: QueryableDataSource<TItem>) {
@@ -67,17 +70,14 @@ export class Query<TItem> implements IQuery<TItem> {
   }
 
   public and(key: KeyOf<TItem>): IPartialQuery<TItem> {
-    return new PartialQuery(this.dataSource, key);
+    const { dataSource } = this;
+    const filtersExpression = onAnd(dataSource.filterPlugin);
+    return new PartialQuery(dataSource, key, filtersExpression);
   }
   public or(key: KeyOf<TItem>): IPartialQuery<TItem> {
-    const { childExpressions } = this.dataSource.filterPlugin.filtersExpression;
-    if (!childExpressions.length)
-      childExpressions.push({
-        childExpressions: [],
-        filters: [],
-        operator: FilterOperators.or,
-      });
-    return new PartialQuery(this.dataSource, key, childExpressions[0]);
+    const { dataSource } = this;
+    const filtersExpression = onOr(dataSource.filterPlugin);
+    return new PartialQuery(dataSource, key, filtersExpression);
   }
   public read(): Promise<List<TItem>> {
     return this.dataSource.read();
@@ -102,7 +102,7 @@ export class Query<TItem> implements IQuery<TItem> {
   }
 }
 
-export class PartialQuery<TItem> implements IPartialQuery<TItem> {
+class PartialQuery<TItem> implements IPartialQuery<TItem> {
   private readonly dataSource: QueryableDataSource<TItem>;
   private readonly key: KeyOf<TItem>;
   private readonly filtersExpression: FiltersExpression<TItem>;
@@ -110,12 +110,11 @@ export class PartialQuery<TItem> implements IPartialQuery<TItem> {
   public constructor(
     dataSource: QueryableDataSource<TItem>,
     key: KeyOf<TItem>,
-    filtersExpression?: FiltersExpression<TItem>
+    filtersExpression: FiltersExpression<TItem>
   ) {
     this.dataSource = dataSource;
+    this.filtersExpression = filtersExpression;
     this.key = key;
-    this.filtersExpression =
-      filtersExpression || this.dataSource.filterPlugin.filtersExpression;
   }
 
   public contains(value: Any): IQuery<TItem> {

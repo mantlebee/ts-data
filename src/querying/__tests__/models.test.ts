@@ -16,11 +16,13 @@ describe("Queryable", () => {
     });
     await new Queryable(dataSource)
       .where("age")
-      .isGreaterThan(18)
+      .isLessThan(18)
+      .and("married")
+      .isFalse()
+      .or("married")
+      .isTrue()
       .and("gender")
       .isEqualTo(1)
-      .or("married")
-      .isFalse()
       .select("age", "email", "firstName", "gender", "id", "lastName")
       .sortBy("username", true)
       .skip(10)
@@ -33,23 +35,33 @@ describe("Queryable", () => {
             childExpressions: [],
             filters: [
               {
+                field: "age",
+                operation: FilterOperations.lessThan,
+                value: 18,
+              },
+              {
                 field: "married",
                 operation: FilterOperations.equal,
                 value: false,
               },
             ],
-            operator: FilterOperators.or,
+            operator: FilterOperators.and,
           },
-        ],
-        filters: [
           {
-            field: "age",
-            operation: FilterOperations.greaterThan,
-            value: 18,
+            childExpressions: [],
+            filters: [
+              {
+                field: "married",
+                operation: FilterOperations.equal,
+                value: true,
+              },
+              { field: "gender", operation: FilterOperations.equal, value: 1 },
+            ],
+            operator: FilterOperators.and,
           },
-          { field: "gender", operation: FilterOperations.equal, value: 1 },
         ],
-        operator: FilterOperators.and,
+        filters: [],
+        operator: FilterOperators.or,
       },
       select: ["age", "email", "firstName", "gender", "id", "lastName"],
       sorts: [{ by: "username", asc: true }],
