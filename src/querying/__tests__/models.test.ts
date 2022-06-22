@@ -23,10 +23,15 @@ describe("Queryable", () => {
       .isTrue()
       .and("gender")
       .isEqualTo(1)
-      .select("age", "email", "firstName", "gender", "id", "lastName")
-      .sortBy("username", true)
-      .skip(10)
-      .top(5)
+      .sortBy("username")
+      .asc()
+      .take(5)
+      .startingFrom(10)
+      .select("age", "email", "gender", "id")
+      .select("firstName")
+      .as("name")
+      .select("lastName")
+      .as("surname")
       .read();
     const resultingPayload: BrowseItemsPayload<GenericItem> = {
       filters: {
@@ -63,7 +68,14 @@ describe("Queryable", () => {
         filters: [],
         operator: FilterOperators.or,
       },
-      select: ["age", "email", "firstName", "gender", "id", "lastName"],
+      selects: [
+        { key: "age", alias: "age" },
+        { key: "email", alias: "email" },
+        { key: "gender", alias: "gender" },
+        { key: "id", alias: "id" },
+        { key: "firstName", alias: "name" },
+        { key: "lastName", alias: "surname" },
+      ],
       sorts: [{ by: "username", asc: true }],
       skip: 10,
       top: 5,

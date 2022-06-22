@@ -1,30 +1,42 @@
-import { KeyOf, List, Nullable } from "@mantlebee/ts-core";
+import { Any, KeyOf, List, Nullable } from "@mantlebee/ts-core";
 
-import { BrowseItemsPayload } from "@/browsing";
+import { BrowseItemsPayload, Select } from "@/browsing";
 
 import { DataSourcePlugin } from "../../models";
 import { IDataSourceSelectPlugin } from "./interfaces";
+import { addSelect } from "./utils";
 
 export class DataSourceSelectPlugin<TItem> extends DataSourcePlugin<TItem>
   implements IDataSourceSelectPlugin<TItem> {
-  private _keys: Nullable<List<KeyOf<TItem>>> = null;
+  private _selects: Nullable<List<Select<TItem>>> = null;
 
-  public get keys(): Nullable<List<KeyOf<TItem>>> {
-    return this._keys;
+  public get selects(): Nullable<List<Select<TItem>>> {
+    return this._selects;
   }
 
-  public select(keys: List<KeyOf<TItem>>): void {
-    this._keys = keys;
+  public clearSelects(): void {
+    this._selects = null;
   }
-  public unselect(): void {
-    this._keys = null;
+  public select(
+    key: KeyOf<TItem>,
+    alias: string = key,
+    defaultValue?: Any
+  ): Select<TItem> {
+    const select = { alias, defaultValue, key };
+    this._selects = addSelect(this._selects, select);
+    return select;
+  }
+  public selectCustom(alias: string, defaultValue?: Any): Select<TItem> {
+    const select = { alias, defaultValue };
+    this._selects = addSelect(this._selects, select);
+    return select;
   }
 
   public beforeRead(
     payload: BrowseItemsPayload<TItem>
   ): Promise<BrowseItemsPayload<TItem>> {
-    const { keys } = this;
-    if (keys) payload.select = keys;
+    const { selects } = this;
+    if (selects) payload.selects = selects;
     return Promise.resolve(payload);
   }
 }

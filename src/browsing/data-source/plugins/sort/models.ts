@@ -1,4 +1,4 @@
-import { List, Nullable } from "@mantlebee/ts-core";
+import { firstOrDefault, List, Nullable } from "@mantlebee/ts-core";
 
 import { BrowseItemsPayload, Sort } from "@/browsing";
 
@@ -8,7 +8,7 @@ import { removeSort, sortBy } from "./utils";
 
 export class DataSourceSortPlugin<TItem> extends DataSourcePlugin<TItem>
   implements IDataSourceSortPlugin<TItem> {
-  private _sorts: List<Sort<TItem>> = [];
+  private _sorts: Nullable<List<Sort<TItem>>> = null;
   private _sortsNumberLimit: Nullable<number> = null;
 
   public constructor(sortsNumberLimit: Nullable<number> = null) {
@@ -16,7 +16,7 @@ export class DataSourceSortPlugin<TItem> extends DataSourcePlugin<TItem>
     this._sortsNumberLimit = sortsNumberLimit;
   }
 
-  public get sorts(): List<Sort<TItem>> {
+  public get sorts(): Nullable<List<Sort<TItem>>> {
     return this._sorts;
   }
   public get sortsNumberLimit(): Nullable<number> {
@@ -27,21 +27,22 @@ export class DataSourceSortPlugin<TItem> extends DataSourcePlugin<TItem>
     this._sorts = [];
   }
   public removeSort(by: keyof TItem): void {
-    this._sorts = removeSort(this._sorts, by);
+    if (this._sorts) this._sorts = removeSort(this._sorts, by);
   }
-  public sortBy(by: keyof TItem, asc?: boolean): void {
+  public sortBy(by: keyof TItem, asc?: boolean): Nullable<Sort<TItem>> {
     if (this._sortsNumberLimit === null)
       this._sorts = sortBy(this._sorts, by, asc);
     else {
       const sorts = sortBy(this._sorts, by, asc);
       if (sorts.length <= this._sortsNumberLimit) this._sorts = sorts;
     }
+    return firstOrDefault(this._sorts || [], (a) => a.by === by);
   }
 
   public beforeRead(
     payload: BrowseItemsPayload<TItem>
   ): Promise<BrowseItemsPayload<TItem>> {
-    if (this.sorts.length) payload.sorts = this.sorts;
+    if (this.sorts && this.sorts.length) payload.sorts = this.sorts;
     return Promise.resolve(payload);
   }
 }

@@ -6,9 +6,9 @@ describe("DataSource", () => {
     describe("DataSourceSortPlugin", () => {
       describe("models", () => {
         describe("After initialization", () => {
-          it("'sorts' is an empty array", () => {
+          it("'sorts' is null", () => {
             const sorting = getDataSourceSorting();
-            expect(sorting.sorts.length).toBe(0);
+            expect(sorting.sorts).toBeNull();
           });
         });
         describe("Before read", () => {

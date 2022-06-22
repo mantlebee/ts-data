@@ -1,31 +1,66 @@
 import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
-export interface IPartialQuery<T> {
-  contains(value: Any): IQuery<T>;
-  isContainedIn(...values: List<Any>): IQuery<T>;
-  isEqualTo(value: Any): IQuery<T>;
-  isFalse(): IQuery<T>;
-  isGreaterThan(value: Any): IQuery<T>;
-  isGreaterThanOrEqualTo(value: Any): IQuery<T>;
-  isLessThan(value: Any): IQuery<T>;
-  isLessThanOrEqualTo(value: Any): IQuery<T>;
-  isNotContainedIn(...values: List<Any>): IQuery<T>;
-  isNotEqualTo(value: Any): IQuery<T>;
-  isTrue(): IQuery<T>;
-  notContains(value: Any): IQuery<T>;
-}
-
-export interface IQuery<T> {
-  and(key: KeyOf<T>): IPartialQuery<T>;
-  or(key: KeyOf<T>): IPartialQuery<T>;
+//#region Read
+export interface IReadStep<T> {
   read(): Promise<List<T>>;
-  select(...keys: List<KeyOf<T>>): IQuery<T>;
-  skip(skip: number): IQuery<T>;
-  sortBy(key: KeyOf<T>, asc: boolean): IQuery<T>;
-  top(top: number): IQuery<T>;
 }
+//#endregion
+
+//#region Select
+export interface ISelectPartialStep<T> extends IReadStep<T> {
+  add(value: Any): ISelectAliasStep<T>;
+  select(fieldName: KeyOf<T>, ...fieldNames: List<KeyOf<T>>): ISelectStep<T>;
+}
+export interface ISelectAliasStep<T> {
+  as(alias: string): ISelectPartialStep<T>;
+}
+export interface ISelectStep<T>
+  extends ISelectAliasStep<T>,
+    ISelectPartialStep<T> {}
+//#endregion
+
+//#region Sort
+export interface ISortPartialStep<T> extends ITakePartialStep<T> {
+  sortBy(fieldName: KeyOf<T>): ISortStep<T>;
+}
+export interface ISortStep<T> extends ITakePartialStep<T> {
+  asc(): ISortPartialStep<T>;
+  desc(): ISortPartialStep<T>;
+}
+//#endregion
+
+//#region Take
+export interface ITakePartialStep<T> extends ISelectPartialStep<T> {
+  takeAll(): ITakeStep<T>;
+  take(itemsCount: number): ITakeStep<T>;
+}
+export interface ITakeStep<T> extends ISelectPartialStep<T> {
+  startingFrom(skipItemsCount: number): ISelectPartialStep<T>;
+}
+//#endregion
+
+//#region Where
+export interface IWherePartialStep<T> {
+  contains(value: Any): IWhereStep<T>;
+  isContainedIn(...values: List<Any>): IWhereStep<T>;
+  isEqualTo(value: Any): IWhereStep<T>;
+  isFalse(): IWhereStep<T>;
+  isGreaterThan(value: Any): IWhereStep<T>;
+  isGreaterThanOrEqualTo(value: Any): IWhereStep<T>;
+  isLessThan(value: Any): IWhereStep<T>;
+  isLessThanOrEqualTo(value: Any): IWhereStep<T>;
+  isNotContainedIn(...values: List<Any>): IWhereStep<T>;
+  isNotEqualTo(value: Any): IWhereStep<T>;
+  isTrue(): IWhereStep<T>;
+  notContains(value: Any): IWhereStep<T>;
+}
+export interface IWhereStep<T> extends ISortPartialStep<T> {
+  and(fieldName: KeyOf<T>): IWherePartialStep<T>;
+  or(fieldName: KeyOf<T>): IWherePartialStep<T>;
+}
+//#endregion
 
 export interface IQueryable<T> {
-  all(): IQuery<T>;
-  where(key: KeyOf<T>): IPartialQuery<T>;
+  all(): ISortPartialStep<T>;
+  where(fieldName: KeyOf<T>): IWherePartialStep<T>;
 }
