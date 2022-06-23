@@ -7,12 +7,12 @@ import { TakePartialStep } from "./take";
 export class SortPartialStep<T> extends TakePartialStep<T>
   implements ISortPartialStep<T> {
   public sortBy(fieldName: KeyOf<T>): ISortStep<T> {
-    this.dataSource.sortPlugin.sortBy(fieldName);
+    this.dataSource.sortPlugin.sortBy(fieldName, true);
     return new SortStep(this.dataSource, fieldName);
   }
 }
 
-export class SortStep<T> extends TakePartialStep<T> implements ISortStep<T> {
+export class SortStep<T> extends SortPartialStep<T> implements ISortStep<T> {
   private readonly fieldName: KeyOf<T>;
 
   public constructor(dataSource: QueryableDataSource<T>, fieldName: KeyOf<T>) {

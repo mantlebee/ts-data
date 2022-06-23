@@ -20,12 +20,11 @@ describe("Queryable", () => {
       .isTrue()
       .and("gender")
       .isEqualTo(1)
-      .sortBy("marriedOn")
-      .desc()
       .sortBy("lastName")
-      .asc()
       .sortBy("firstName")
       .asc()
+      .sortBy("marriedOn")
+      .desc()
       .take(50)
       .startingFrom(10)
       .select("age", "email", "gender", "id")
@@ -81,9 +80,9 @@ describe("Queryable", () => {
         { alias: "parentId", defaultValue: 5 },
       ],
       sorts: [
-        { by: "marriedOn", asc: false },
         { by: "lastName", asc: true },
         { by: "firstName", asc: true },
+        { by: "marriedOn", asc: false },
       ],
       skip: 10,
       top: 50,
