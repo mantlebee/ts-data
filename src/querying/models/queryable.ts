@@ -4,7 +4,7 @@ import { IQueryable, ISortPartialStep, IWherePartialStep } from "../interfaces";
 import { onWhere } from "../utils";
 import { QueryableDataSource } from "./datasource";
 import { SortPartialStep } from "./sort";
-import { WherePartialQuery } from "./where";
+import { WherePartialStep } from "./where";
 
 export class Queryable<T> implements IQueryable<T> {
   private readonly dataSource: QueryableDataSource<T>;
@@ -19,6 +19,6 @@ export class Queryable<T> implements IQueryable<T> {
   public where(key: KeyOf<T>): IWherePartialStep<T> {
     const { dataSource } = this;
     const filtersExpression = onWhere(dataSource.filterPlugin);
-    return new WherePartialQuery(dataSource, key, filtersExpression);
+    return new WherePartialStep(dataSource, key, filtersExpression);
   }
 }

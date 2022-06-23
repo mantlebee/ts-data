@@ -7,7 +7,7 @@ import { onAnd, onOr } from "../utils";
 import { QueryableDataSource } from "./datasource";
 import { SortPartialStep } from "./sort";
 
-export class WherePartialQuery<T> extends SortPartialStep<T>
+export class WherePartialStep<T> extends SortPartialStep<T>
   implements IWherePartialStep<T> {
   private readonly key: KeyOf<T>;
   private readonly filtersExpression: FiltersExpression<T>;
@@ -31,7 +31,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isContainedIn(...values: List<Any>): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -42,7 +42,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isEqualTo(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -53,7 +53,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isFalse(): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -64,7 +64,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isGreaterThan(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -75,7 +75,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isGreaterThanOrEqualTo(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -86,7 +86,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isLessThan(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -97,7 +97,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isLessThanOrEqualTo(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -108,7 +108,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isNotContainedIn(...values: List<Any>): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -119,7 +119,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isNotEqualTo(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -130,7 +130,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public isTrue(): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -141,7 +141,7 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
   public notContains(value: Any): IWhereStep<T> {
     this.dataSource.filterPlugin.addFilter(
@@ -152,19 +152,19 @@ export class WherePartialQuery<T> extends SortPartialStep<T>
       },
       this.filtersExpression
     );
-    return new WhereQuery(this.dataSource);
+    return new WhereStep(this.dataSource);
   }
 }
 
-export class WhereQuery<T> extends SortPartialStep<T> implements IWhereStep<T> {
+export class WhereStep<T> extends SortPartialStep<T> implements IWhereStep<T> {
   public and(key: KeyOf<T>): IWherePartialStep<T> {
     const { dataSource } = this;
     const filtersExpression = onAnd(dataSource.filterPlugin);
-    return new WherePartialQuery(dataSource, key, filtersExpression);
+    return new WherePartialStep(dataSource, key, filtersExpression);
   }
   public or(key: KeyOf<T>): IWherePartialStep<T> {
     const { dataSource } = this;
     const filtersExpression = onOr(dataSource.filterPlugin);
-    return new WherePartialQuery(dataSource, key, filtersExpression);
+    return new WherePartialStep(dataSource, key, filtersExpression);
   }
 }
