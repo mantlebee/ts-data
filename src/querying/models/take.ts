@@ -3,11 +3,11 @@ import { SelectPartialStep } from "./select";
 
 export class TakePartialStep<T> extends SelectPartialStep<T>
   implements ITakePartialStep<T> {
-  public takeAll(): ITakeStep<T> {
-    return new TakeStep(this.dataSource);
-  }
   public take(itemsCount: number): ITakeStep<T> {
     this.dataSource.skipTopPlugin.setTop(itemsCount);
+    return new TakeStep(this.dataSource);
+  }
+  public takeAll(): ITakeStep<T> {
     return new TakeStep(this.dataSource);
   }
 }

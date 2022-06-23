@@ -26,8 +26,8 @@ export class DataSourceSkipTopPlugin<TItem> extends DataSourcePlugin<TItem>
     payload: BrowseItemsPayload<TItem>
   ): Promise<BrowseItemsPayload<TItem>> {
     const { skip, top } = this;
-    payload.skip = skip;
-    payload.top = top;
+    if (top) payload.top = top;
+    if (skip) payload.skip = skip;
     return Promise.resolve(payload);
   }
 }

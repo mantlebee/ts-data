@@ -5,15 +5,12 @@ import {
 } from "@/browsing";
 import { GenericItem } from "@/fake";
 
-import { QueryableDataSource, Queryable } from "../models";
+import { Queryable } from "../models";
+import { getDataSourceAndPayload } from "./utils";
 
 describe("Queryable", () => {
   it("It works!", async () => {
-    let payload: BrowseItemsPayload<GenericItem> = {};
-    const dataSource = new QueryableDataSource<GenericItem>((a) => {
-      payload = a;
-      return Promise.resolve([]);
-    });
+    const { dataSource, getPayload } = getDataSourceAndPayload();
     await new Queryable(dataSource)
       .where("age")
       .isLessThan(18)
@@ -91,6 +88,6 @@ describe("Queryable", () => {
       skip: 10,
       top: 50,
     };
-    expect(payload).toEqual(resultingPayload);
+    expect(getPayload()).toEqual(resultingPayload);
   });
 });

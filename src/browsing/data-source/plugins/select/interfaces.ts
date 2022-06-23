@@ -8,6 +8,6 @@ export interface IDataSourceSelectPlugin<TItem>
   extends IDataSourcePlugin<TItem> {
   readonly selects: Nullable<List<Select<TItem>>>;
   clearSelects(): void;
-  select(key: KeyOf<TItem>, alias?: string, defaultValue?: Any): Select<TItem>;
+  select(key: KeyOf<TItem>, alias?: string): Select<TItem>;
   selectCustom(alias: string, value: Any): Select<TItem>;
 }

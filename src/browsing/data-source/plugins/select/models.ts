@@ -17,12 +17,8 @@ export class DataSourceSelectPlugin<TItem> extends DataSourcePlugin<TItem>
   public clearSelects(): void {
     this._selects = null;
   }
-  public select(
-    key: KeyOf<TItem>,
-    alias: string = key,
-    defaultValue?: Any
-  ): Select<TItem> {
-    const select = { alias, defaultValue, key };
+  public select(key: KeyOf<TItem>, alias: string = key): Select<TItem> {
+    const select = { alias, key };
     this._selects = addSelect(this._selects, select);
     return select;
   }
