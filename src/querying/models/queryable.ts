@@ -2,17 +2,11 @@ import { KeyOf } from "@mantlebee/ts-core";
 
 import { IQueryable, ISortPartialStep, IWherePartialStep } from "../interfaces";
 import { onWhere } from "../utils";
-import { QueryableDataSource } from "./datasource";
+import { BaseStep } from "./base";
 import { SortPartialStep } from "./sort";
 import { WherePartialStep } from "./where";
 
-export class Queryable<T> implements IQueryable<T> {
-  private readonly dataSource: QueryableDataSource<T>;
-
-  public constructor(dataSource: QueryableDataSource<T>) {
-    this.dataSource = dataSource;
-  }
-
+export class Queryable<T> extends BaseStep<T> implements IQueryable<T> {
   public all(): ISortPartialStep<T> {
     return new SortPartialStep(this.dataSource);
   }
