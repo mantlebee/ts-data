@@ -10,6 +10,7 @@ export type GenericItem = {
   id: number;
   lastName: string;
   married: boolean;
+  marriedOn: Date;
   phone: string;
   username: string;
   website: string;

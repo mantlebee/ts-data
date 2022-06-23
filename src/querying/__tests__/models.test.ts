@@ -23,15 +23,21 @@ describe("Queryable", () => {
       .isTrue()
       .and("gender")
       .isEqualTo(1)
-      .sortBy("username")
+      .sortBy("marriedOn")
+      .desc()
+      .sortBy("lastName")
       .asc()
-      .take(5)
+      .sortBy("firstName")
+      .asc()
+      .take(50)
       .startingFrom(10)
       .select("age", "email", "gender", "id")
       .select("firstName")
       .as("name")
       .select("lastName")
       .as("surname")
+      .add(5)
+      .as("parentId")
       .read();
     const resultingPayload: BrowseItemsPayload<GenericItem> = {
       filters: {
@@ -75,10 +81,15 @@ describe("Queryable", () => {
         { key: "id", alias: "id" },
         { key: "firstName", alias: "name" },
         { key: "lastName", alias: "surname" },
+        { alias: "parentId", defaultValue: 5 },
       ],
-      sorts: [{ by: "username", asc: true }],
+      sorts: [
+        { by: "marriedOn", asc: false },
+        { by: "lastName", asc: true },
+        { by: "firstName", asc: true },
+      ],
       skip: 10,
-      top: 5,
+      top: 50,
     };
     expect(payload).toEqual(resultingPayload);
   });

@@ -25,7 +25,7 @@ export class SortStep<T> extends TakePartialStep<T> implements ISortStep<T> {
     return new SortPartialStep(this.dataSource);
   }
   public desc(): ISortPartialStep<T> {
-    this.dataSource.sortPlugin.sortBy(this.fieldName, true);
+    this.dataSource.sortPlugin.sortBy(this.fieldName, false);
     return new SortPartialStep(this.dataSource);
   }
 }
