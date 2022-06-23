@@ -12,3 +12,9 @@ export function getDataSourceAndPayload() {
   const getPayload = () => payload;
   return { dataSource, getPayload };
 }
+
+export function getExpectedPayload(
+  payload: BrowseItemsPayload<GenericItem>
+): BrowseItemsPayload<GenericItem> {
+  return payload;
+}

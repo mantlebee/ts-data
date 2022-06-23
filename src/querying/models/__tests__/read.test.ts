@@ -1,4 +1,7 @@
-import { getDataSourceAndPayload } from "@/querying/__tests__/utils";
+import {
+  getDataSourceAndPayload,
+  getExpectedPayload,
+} from "@/querying/__tests__/utils";
 
 import { ReadStep } from "../read";
 
@@ -9,7 +12,7 @@ describe("Queryable", () => {
         it("Performs datasource read", async () => {
           const { dataSource, getPayload } = getDataSourceAndPayload();
           await new ReadStep(dataSource).read();
-          expect(getPayload()).toEqual({});
+          expect(getPayload()).toEqual(getExpectedPayload({}));
         });
       });
     });
