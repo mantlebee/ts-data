@@ -2,30 +2,26 @@ import { List } from "@mantlebee/ts-core";
 
 import {
   DataSource,
-  IDataSourceFilterPlugin,
-  IDataSourceSelectPlugin,
-  IDataSourceSkipTopPlugin,
-  IDataSourceSortPlugin,
-  DataSourceReadDelegate,
   DataSourceFilterPlugin,
+  DataSourcePlugin,
+  DataSourceReadDelegate,
   DataSourceSelectPlugin,
   DataSourceSkipTopPlugin,
   DataSourceSortPlugin,
-  IDataSourcePlugin,
 } from "@/browsing";
 
 export class QueryableDataSource<T> extends DataSource<T> {
-  public readonly filterPlugin: IDataSourceFilterPlugin<T>;
-  public readonly selectPlugin: IDataSourceSelectPlugin<T>;
-  public readonly skipTopPlugin: IDataSourceSkipTopPlugin<T>;
-  public readonly sortPlugin: IDataSourceSortPlugin<T>;
+  public readonly filterPlugin: DataSourceFilterPlugin<T>;
+  public readonly selectPlugin: DataSourceSelectPlugin<T>;
+  public readonly skipTopPlugin: DataSourceSkipTopPlugin<T>;
+  public readonly sortPlugin: DataSourceSortPlugin<T>;
 
   public constructor(readDelegate: DataSourceReadDelegate<T>) {
     const filterPlugin = new DataSourceFilterPlugin<T>();
     const selectPlugin = new DataSourceSelectPlugin<T>();
     const skipTopPlugin = new DataSourceSkipTopPlugin<T>();
     const sortPlugin = new DataSourceSortPlugin<T>();
-    const plugins: List<IDataSourcePlugin<T>> = [
+    const plugins: List<DataSourcePlugin<T>> = [
       filterPlugin,
       selectPlugin,
       skipTopPlugin,
