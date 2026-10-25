@@ -20,6 +20,16 @@ import {
  * {@link FiltersList}, only when there is at least one filter.
  * Place it before the {@link PaginationExtension}, so the count receives the filters.
  * @typeParam TItem Type of the items.
+ * @example
+ * ```ts
+ * const filtering = new FilterExtension<User>();
+ * const dataSource = new DataSource<User>(readUsers, [filtering]);
+ * // Reads once the user stops typing, whatever the number of changes.
+ * filtering.on("filtersChange", () => dataSource.read());
+ * filtering.addFilter({ field: "name", operator: FilterOperators.contains, value: "ann" });
+ * filtering.addFilter({ field: "age", operator: FilterOperators.greaterThanOrEqual, value: 18 });
+ * // payload.filters: { filters: [name contains "ann", age >= 18], logic: "and" }
+ * ```
  */
 export class FilterExtension<TItem = Any>
   extends DataSourceExtension<TItem, FilterExtensionEvents<TItem>>
@@ -115,6 +125,17 @@ export class FilterExtension<TItem = Any>
  * the user has no filters, otherwise grouped with the user filters through
  * `groupsLogic` (default {@link FilterLogics.and}).
  * @typeParam TItem Type of the items.
+ * @example
+ * ```ts
+ * // Only the active users, whatever the user filters.
+ * const filtering = new FilterExtensionWithFixedFilters<User>({
+ *   filters: [{ field: "active", operator: FilterOperators.equal, value: true }],
+ *   logic: FilterLogics.and,
+ * });
+ * // payload.filters without user filters: the fixed expression itself.
+ * filtering.addFilter({ field: "age", operator: FilterOperators.greaterThanOrEqual, value: 18 });
+ * // payload.filters: { groups: [fixed, { filters: [age >= 18], logic: "and" }], logic: "and" }
+ * ```
  */
 export class FilterExtensionWithFixedFilters<TItem = Any>
   extends FilterExtension<TItem>
@@ -136,9 +157,11 @@ export class FilterExtensionWithFixedFilters<TItem = Any>
     this._groupsLogic = options?.groupsLogic ?? FilterLogics.and;
   }
 
+  /** Expression always sent in the payload. */
   public get fixedFilters(): FiltersExpression<TItem> {
     return this._fixedFilters;
   }
+  /** Logic combining the fixed expression with the user filters. */
   public get groupsLogic(): FilterLogics {
     return this._groupsLogic;
   }

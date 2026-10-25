@@ -23,7 +23,7 @@ export const DataSourceExtensionChangeDelayDefault = 100;
 
 /**
  * Base class of the extensions shipped with the package: a
- * {@link Subscribable} with a cancellable, debounced `*Change` event.
+ * `Subscribable` of ts-core with a cancellable, debounced `*Change` event.
  * Subclasses call {@link _scheduleChange} after every mutation and raise
  * their own event in {@link _triggerChange}. Custom extensions do not have to
  * extend it: implementing {@link IDataSourceExtension} is enough.

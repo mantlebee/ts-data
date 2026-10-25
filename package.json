@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "rollup --config && tsc-alias",
-    "coverage": "jest --coverage --collectCoverageFrom='./src/**'",
+    "coverage": "jest --coverage",
     "doc": "typedoc",
     "prepublishOnly": "npm run build && npm run doc",
     "test": "jest",

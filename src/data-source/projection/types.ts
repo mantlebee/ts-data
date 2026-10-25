@@ -2,12 +2,18 @@ import { Any, EventsDefinition, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Projection } from "@/query-items";
 
+/**
+ * Events of a {@link ProjectionExtension}.
+ * @typeParam TItem Type of the items.
+ */
 export type ProjectionExtensionEvents<TItem = Any> = EventsDefinition & {
-  // Getters
-  projectionsChange: [List<Projection<TItem>>, boolean]; // [debounced] actual projections, has projections
-  // Methods
-  addProjection: [Projection<TItem>, List<Projection<TItem>>]; // added projection, actual projections
+  /** [debounced] Any change of the projections: current projections, whether there is any. */
+  projectionsChange: [List<Projection<TItem>>, boolean];
+  /** Added projection, current projections. */
+  addProjection: [Projection<TItem>, List<Projection<TItem>>];
   clearProjections: [];
-  removeProjection: [KeyOf<TItem>, List<Projection<TItem>>]; // cleared field, actual projections
-  setProjections: [List<Projection<TItem>>]; // actual projections
+  /** Removed field, current projections. */
+  removeProjection: [KeyOf<TItem>, List<Projection<TItem>>];
+  /** Current projections. */
+  setProjections: [List<Projection<TItem>>];
 };

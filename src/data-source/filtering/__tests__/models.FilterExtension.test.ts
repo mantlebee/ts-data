@@ -142,6 +142,33 @@ describe("DataSource", () => {
             expect(handler).toHaveBeenCalledTimes(1);
             expect(handler).toHaveBeenCalledWith("age", [activeFilter, f1, f2]);
           });
+          test("Without new filters it just removes the filters of the field", () => {
+            const extension = new FilterExtension<Item>();
+            extension.setFilters([ageMinFilter, activeFilter, ageMaxFilter]);
+            const handler = jest.fn();
+            extension.on("replaceFiltersOf", handler);
+            extension.replaceFiltersOf("age");
+            expect(extension.filters).toEqual([activeFilter]);
+            expect(handler).toHaveBeenCalledWith("age", [activeFilter]);
+          });
+          test("Appends the new filters even when the field had none", () => {
+            const extension = new FilterExtension<Item>();
+            extension.setFilters([activeFilter]);
+            extension.replaceFiltersOf("age", ageMinFilter);
+            expect(extension.filters).toEqual([activeFilter, ageMinFilter]);
+          });
+        });
+
+        describe("dispose", () => {
+          test("Resolves and the mutation handlers are no longer invoked", async () => {
+            const extension = new FilterExtension<Item>();
+            const handler = jest.fn();
+            extension.on("addFilter", handler);
+            await extension.dispose();
+            extension.addFilter(activeFilter);
+            expect(handler).not.toHaveBeenCalled();
+            expect(extension.filters).toEqual([activeFilter]);
+          });
         });
 
         describe("setFilters", () => {

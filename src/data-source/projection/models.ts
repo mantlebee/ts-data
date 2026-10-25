@@ -11,6 +11,12 @@ import { ProjectionExtensionEvents } from "./types";
  * Keeps the list of projected fields and always sends it in the payload
  * (an empty list means "every field").
  * @typeParam TItem Type of the items.
+ * @example
+ * ```ts
+ * const projecting = new ProjectionExtension<User>();
+ * projecting.setProjections([{ field: "id" }, { field: "lastName" }]);
+ * // payload.projections: [{ field: "id" }, { field: "lastName" }]
+ * ```
  */
 export class ProjectionExtension<TItem = Any>
   extends DataSourceExtension<TItem, ProjectionExtensionEvents<TItem>>

@@ -2,12 +2,18 @@ import { Any, EventsDefinition, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Sort } from "@/query-items";
 
+/**
+ * Events of a {@link SortExtension}.
+ * @typeParam TItem Type of the items.
+ */
 export type SortExtensionEvents<TItem = Any> = EventsDefinition & {
-  // Getters
-  sortsChange: [List<Sort<TItem>>, boolean]; // [debounced] actual sorts, has sorts
-  // Methods
-  addSort: [Sort<TItem>, List<Sort<TItem>>]; // added sort, actual sorts
+  /** [debounced] Any change of the sorts: current sorts, whether there is any. */
+  sortsChange: [List<Sort<TItem>>, boolean];
+  /** Added sort, current sorts (unchanged when the limit was reached). */
+  addSort: [Sort<TItem>, List<Sort<TItem>>];
   clearSorts: [];
-  removeSort: [KeyOf<TItem>, List<Sort<TItem>>]; // cleared field, actual sorts
-  setSorts: [List<Sort<TItem>>]; // actual sorts
+  /** Removed field, current sorts. */
+  removeSort: [KeyOf<TItem>, List<Sort<TItem>>];
+  /** Current sorts. */
+  setSorts: [List<Sort<TItem>>];
 };

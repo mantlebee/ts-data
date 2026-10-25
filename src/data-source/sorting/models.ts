@@ -11,6 +11,15 @@ import { SortExtensionEvents } from "./types";
  * Keeps the list of sorts, optionally limited in number, and always sends it
  * in the payload (an empty list means "no sort").
  * @typeParam TItem Type of the items.
+ * @example
+ * ```ts
+ * const sorting = new SortExtension<User>(2); // two sorts at most
+ * sorting.addSort({ field: "lastName", asc: true });
+ * sorting.addSort({ field: "firstName", asc: true });
+ * sorting.addSort({ field: "age", asc: false }); // ignored: limit reached
+ * sorting.addSort({ field: "lastName", asc: false }); // replaces the sort on lastName, now last
+ * // payload.sorts: [firstName asc, lastName desc]
+ * ```
  */
 export class SortExtension<TItem = Any>
   extends DataSourceExtension<TItem, SortExtensionEvents<TItem>>

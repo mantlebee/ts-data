@@ -17,11 +17,26 @@ import {
  * Editable {@link Range}, meant for UI controls: two {@link FilterRangeLimit}
  * whose changes raise a single `change` event with the resulting range.
  * @typeParam TValue Type of the limits.
+ * @example
+ * ```ts
+ * const price = new FilterRange<number>();
+ * price.on("change", (range) =>
+ *   filtering.replaceFiltersOf("price", {
+ *     field: "price",
+ *     operator: FilterOperators.range,
+ *     value: range,
+ *   }),
+ * );
+ * price.min.setValue(10); // change: { min: { value: 10, exclude: false }, max: null }
+ * price.max.setValue(20); // change: both limits set, price.isClosed is now true
+ * ```
  */
 export class FilterRange<TValue = Any> extends Subscribable<
   FilterRangeEvents<TValue>
 > {
+  /** Upper limit. */
   public readonly max: FilterRangeLimit<TValue>;
+  /** Lower limit. */
   public readonly min: FilterRangeLimit<TValue>;
 
   private readonly _subscriptions: List<EventSubscription>;
@@ -144,15 +159,22 @@ export class FilterRangeLimit<TValue = Any> extends Subscribable<
   //#region Exclude
   private _exclude: boolean;
 
+  /** `true` when the limit itself is out of the range (strict comparison). */
   public get exclude(): boolean {
     return this._exclude;
   }
 
+  /**
+   * @param exclude New exclusion; nothing happens when it is the current one.
+   */
   public setExclude(exclude: boolean): void {
     if (exclude === this._exclude) return;
     this._exclude = exclude;
     this._onChange();
   }
+  /**
+   * Inverts the exclusion, always raising `change`.
+   */
   public toggleExclude(): void {
     this.setExclude(!this._exclude);
   }
@@ -161,13 +183,19 @@ export class FilterRangeLimit<TValue = Any> extends Subscribable<
   //#region Value
   private _value: Nullable<TValue>;
 
+  /** `true` when the value is set (not `null`). */
   public get hasValue(): boolean {
     return this.value !== null;
   }
 
+  /** Current value, `null` when unset. */
   public get value(): Nullable<TValue> {
     return this._value;
   }
+  /**
+   * @param value New value, `null` to unset; nothing happens when it is the
+   * current one (compared with `===`).
+   */
   public setValue(value: Nullable<TValue>): void {
     if (value === this.value) return;
     this._value = value;

@@ -3,14 +3,16 @@
  * expressions of a {@link FiltersGroup}.
  */
 export enum FilterLogics {
+  /** Every filter (or expression) must match. */
   and = "and",
+  /** At least one filter (or expression) must match. */
   or = "or",
 }
 
 /**
  * Comparison applied by a {@link Filter}. The values follow OData 4 where OData
  * defines them, otherwise the most common naming (Strapi, Prisma, PrimeVue).
- * The operator decides the shape of {@link Filter.value}: a list for
+ * The operator decides the shape of the `value` of a {@link Filter}: a list for
  * {@link FilterOperators.in} and {@link FilterOperators.notIn}, a
  * {@link Range} for {@link FilterOperators.range}, a single value otherwise.
  */

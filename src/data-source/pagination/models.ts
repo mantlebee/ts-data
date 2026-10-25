@@ -15,6 +15,14 @@ import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
  * previous extensions changes between two reads
  * ({@link PaginationExtensionOptions.resetPageOnQueryChange}).
  * @typeParam TItem Type of the items.
+ * @example
+ * ```ts
+ * const paginating = new PaginationExtension<User>(countUsers, 20, [10, 20, 50]);
+ * const dataSource = new DataSource<User>(readUsers, [filtering, paginating]);
+ * paginating.on("page", () => dataSource.read());
+ * await dataSource.read(); // countUsers(payload) then readUsers({ ..., paging: { page: 1, itemsPerPage: 20, totalItemsCount } })
+ * paginating.goToNextPage(); // page event (if there is a second page), hence a new read
+ * ```
  */
 export class PaginationExtension<TItem = Any>
   extends DataSourceExtension<TItem, PaginationExtensionEvents>
