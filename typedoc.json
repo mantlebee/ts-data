@@ -1,4 +1,10 @@
 {
   "entryPoints": ["src/index.ts"],
-  "out": "docs"
+  "out": "docs/api",
+  "projectDocuments": ["docs/release-notes/*.md"],
+  "externalSymbolLinkMappings": {
+    "@mantlebee/ts-core": {
+      "IEventBus.trigger": "https://mantlebee.github.io/ts-core/interfaces/index.IEventBus.html#trigger"
+    }
+  }
 }

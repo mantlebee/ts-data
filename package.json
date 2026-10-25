@@ -21,6 +21,7 @@
     "build": "rimraf dist && rollup --config && tsc-alias",
     "coverage": "jest --coverage",
     "doc": "typedoc",
+    "doc:publish": "npm run doc && node ./gh-pages.js",
     "prepublishOnly": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch"
@@ -31,8 +32,12 @@
   },
   "keywords": [
     "typescript",
-    "common",
-    "utilities"
+    "data",
+    "data-source",
+    "filtering",
+    "pagination",
+    "sorting",
+    "query"
   ],
   "author": "MantleBee",
   "license": "MIT",
@@ -47,6 +52,7 @@
     "@mantlebee/ts-core": "^1.2.0",
     "@rollup/plugin-typescript": "12.3.0",
     "@types/jest": "30.0.0",
+    "gh-pages": "6.3.0",
     "jest": "30.5.1",
     "jest-environment-jsdom": "30.5.1",
     "rimraf": "6.1.3",
