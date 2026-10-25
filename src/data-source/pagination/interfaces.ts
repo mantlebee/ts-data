@@ -1,4 +1,4 @@
-import { List } from "@mantlebee/ts-core";
+import { Any, List } from "@mantlebee/ts-core";
 
 import { IDataSourceExtension } from "../interfaces";
 import { PaginationExtensionEvents } from "./types";
@@ -6,8 +6,11 @@ import { PaginationExtensionEvents } from "./types";
 /**
  * Extension that adds a {@link Paging} to the payload and keeps the total
  * count up to date. Pages are 1-based and always clamped to `[1, lastPage]`.
+ * By default a change of the query built by the previous extensions (filters,
+ * sorts, ...) between two reads brings the page back to 1
+ * ({@link PaginationExtensionOptions.resetPageOnQueryChange}).
  */
-export interface IPaginationExtension<TItem>
+export interface IPaginationExtension<TItem = Any>
   extends IDataSourceExtension<TItem, PaginationExtensionEvents> {
   /** `true` when {@link page} is not the last one. */
   readonly canGoNextPage: boolean;

@@ -1,4 +1,4 @@
-import { KeyOf, List } from "@mantlebee/ts-core";
+import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { addSort, removeSort, Sort } from "@/query-items";
 
@@ -12,7 +12,7 @@ import { SortExtensionEvents } from "./types";
  * in the payload (an empty list means "no sort").
  * @typeParam TItem Type of the items.
  */
-export class SortExtension<TItem>
+export class SortExtension<TItem = Any>
   extends DataSourceExtension<TItem, SortExtensionEvents<TItem>>
   implements ISortExtension<TItem>
 {
@@ -81,7 +81,7 @@ export class SortExtension<TItem>
  * the current sort, whatever its field, raising a single `addSort` event.
  * @typeParam TItem Type of the items.
  */
-export class SingleSortExtension<TItem> extends SortExtension<TItem> {
+export class SingleSortExtension<TItem = Any> extends SortExtension<TItem> {
   /**
    * @param options Debounce of the `sortsChange` event.
    */

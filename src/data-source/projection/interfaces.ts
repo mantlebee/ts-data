@@ -1,4 +1,4 @@
-import { KeyOf, List } from "@mantlebee/ts-core";
+import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Projection } from "@/query-items";
 
@@ -8,7 +8,7 @@ import { ProjectionExtensionEvents } from "./types";
 /**
  * Extension that adds the list of {@link Projection} to the payload.
  */
-export interface IProjectionExtension<TItem>
+export interface IProjectionExtension<TItem = Any>
   extends IDataSourceExtension<TItem, ProjectionExtensionEvents<TItem>> {
   /** `true` when at least one projection is set. */
   readonly hasProjections: boolean;

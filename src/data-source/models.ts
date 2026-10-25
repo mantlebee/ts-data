@@ -1,4 +1,5 @@
 import {
+  Any,
   ConstructorOf,
   EventsDefinition,
   List,
@@ -29,8 +30,8 @@ export const DataSourceExtensionChangeDelayDefault = 100;
  * @typeParam TEvents Events of the extension.
  */
 export abstract class DataSourceExtension<
-    TItem,
-    TEvents extends EventsDefinition,
+    TItem = Any,
+    TEvents extends EventsDefinition = EventsDefinition,
   >
   extends Subscribable<TEvents>
   implements IDataSourceExtension<TItem, TEvents>
@@ -100,7 +101,7 @@ export abstract class DataSourceExtension<
  * ```
  * @typeParam TItem Type of the items.
  */
-export class DataSource<TItem>
+export class DataSource<TItem = Any>
   extends Subscribable<DataSourceEvents<TItem>>
   implements IDataSource<TItem>
 {

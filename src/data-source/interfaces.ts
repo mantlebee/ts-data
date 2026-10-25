@@ -1,4 +1,5 @@
 import {
+  Any,
   ConstructorOf,
   EventsDefinition,
   ISubscribable,
@@ -12,7 +13,7 @@ import type { DataSourceEvents, DataSourcePayload } from "./types";
  * Reads items through a reader, letting its extensions shape the query and
  * the result. See {@link IDataSourceExtension} for the read cycle.
  */
-export interface IDataSource<TItem>
+export interface IDataSource<TItem = Any>
   extends ISubscribable<DataSourceEvents<TItem>> {
   /** `true` while a read is running. */
   readonly isReading: boolean;
@@ -20,9 +21,10 @@ export interface IDataSource<TItem>
   readonly items: List<TItem>;
   /**
    * Finds an extension by class. TypeScript cannot infer the item type of a
-   * generic extension class from its constructor, so pass the type argument
-   * to get the concrete type: `getExtension<FilterExtension<Item>>(FilterExtension)`;
-   * without it the result is typed as {@link IDataSourceExtension}.
+   * generic extension class from its constructor: without a type argument
+   * the result is typed with the default item type (`FilterExtension<Any>`,
+   * methods available but fields unchecked); pass the type argument to get
+   * the complete type: `getExtension<FilterExtension<Item>>(FilterExtension)`.
    * @param constructor Class of the extension to find.
    * @returns the first extension that is an instance of `constructor`, or `null`.
    */
@@ -48,7 +50,7 @@ export interface IDataSource<TItem>
  * filters.
  */
 export interface IDataSourceExtension<
-  TItem,
+  TItem = Any,
   TEvents extends EventsDefinition = EventsDefinition,
 > extends ISubscribable<TEvents> {
   /**

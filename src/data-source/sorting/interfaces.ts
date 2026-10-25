@@ -1,4 +1,4 @@
-import { KeyOf, List } from "@mantlebee/ts-core";
+import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Sort } from "@/query-items";
 
@@ -8,7 +8,7 @@ import { SortExtensionEvents } from "./types";
 /**
  * Extension that adds the list of {@link Sort} to the payload.
  */
-export interface ISortExtension<TItem>
+export interface ISortExtension<TItem = Any>
   extends IDataSourceExtension<TItem, SortExtensionEvents<TItem>> {
   /** `true` when at least one sort is set. */
   readonly hasSorts: boolean;

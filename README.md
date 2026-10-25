@@ -13,7 +13,7 @@ npm install @mantlebee/ts-data @mantlebee/ts-core
 ## Structure
 
 - `src/query-items`: plain types that describe a query (`QueryItemsPayload`, `Filter`, `FiltersExpression`, `FilterLogics`, `FilterOperators`, `Sort`, `Paging`, `Projection`), the `FilterRange` / `FilterRangeLimit` helpers and the `addSort` / `removeSort` utils.
-- `src/data-source`: `DataSource`, which reads items through a `DataSourceReader` and builds the payload by running the extensions in array order (hooks `getItemsBefore`, `getItemsAfter`), plus the extensions `FilterExtension`, `FilterExtensionWithFixedFilters`, `PaginationExtension`, `ProjectionExtension`, `SortExtension` and `SingleSortExtension`, and the `resetPageOnFiltersChange` helper. Every extension and the data source extend ts-core's `Subscribable`, so consumers listen with `.on(eventName, handler)`.
+- `src/data-source`: `DataSource`, which reads items through a `DataSourceReader` and builds the payload by running the extensions in array order (hooks `getItemsBefore`, `getItemsAfter`), plus the extensions `FilterExtension`, `FilterExtensionWithFixedFilters`, `PaginationExtension`, `ProjectionExtension`, `SortExtension` and `SingleSortExtension`. Every extension and the data source extend ts-core's `Subscribable`, so consumers listen with `.on(eventName, handler)`.
 
 ## Quick start
 
@@ -53,6 +53,10 @@ await dataSource.read();
 ```
 
 The order of the extensions is up to you: the data source knows nothing about them, it just invokes their hooks in sequence.
+
+Write the item type on every extension (`new FilterExtension<Item>()`): TypeScript cannot infer it from the data source the extension is later passed to, and the generic defaults to `Any`, so a missing type argument compiles but loses the field suggestions and checks.
+
+`PaginationExtension` goes back to the first page whenever the query built by the previous extensions (filters, sorts, ...) differs from the one of the previous read, so a page selected under other filters is never requested again. Disable it, or limit it to some properties of the payload, with the `resetPageOnQueryChange` option: `new PaginationExtension<Item>(countReader, 10, undefined, { resetPageOnQueryChange: ["filters"] })`.
 
 ## Status
 

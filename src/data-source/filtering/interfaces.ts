@@ -1,4 +1,4 @@
-import { KeyOf, List } from "@mantlebee/ts-core";
+import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Filter, FilterLogics } from "@/query-items";
 
@@ -8,7 +8,7 @@ import { FilterExtensionEvents } from "./types";
 /**
  * Extension that adds a {@link FiltersExpression} to the payload.
  */
-export interface IFilterExtension<TItem>
+export interface IFilterExtension<TItem = Any>
   extends IDataSourceExtension<TItem, FilterExtensionEvents<TItem>> {
   readonly filters: List<Filter<TItem>>;
   /** `true` when at least one filter is set. */

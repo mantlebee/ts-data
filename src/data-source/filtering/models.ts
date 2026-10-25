@@ -1,4 +1,4 @@
-import { KeyOf, List, Nullable } from "@mantlebee/ts-core";
+import { Any, KeyOf, List, Nullable } from "@mantlebee/ts-core";
 
 import {
   Filter,
@@ -21,7 +21,7 @@ import {
  * Place it before the {@link PaginationExtension}, so the count receives the filters.
  * @typeParam TItem Type of the items.
  */
-export class FilterExtension<TItem>
+export class FilterExtension<TItem = Any>
   extends DataSourceExtension<TItem, FilterExtensionEvents<TItem>>
   implements IFilterExtension<TItem>
 {
@@ -116,7 +116,7 @@ export class FilterExtension<TItem>
  * `groupsLogic` (default {@link FilterLogics.and}).
  * @typeParam TItem Type of the items.
  */
-export class FilterExtensionWithFixedFilters<TItem>
+export class FilterExtensionWithFixedFilters<TItem = Any>
   extends FilterExtension<TItem>
   implements IFilterExtension<TItem>
 {

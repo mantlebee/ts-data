@@ -1,19 +1,22 @@
-import { List } from "@mantlebee/ts-core";
+import { Any, createHash, List, Nullable } from "@mantlebee/ts-core";
 
 import { Paging } from "@/query-items";
 
 import { DataSourceExtension } from "../models";
 import { DataSourcePayload, DataSourceReader } from "../types";
 import { IPaginationExtension } from "./interfaces";
-import { PaginationExtensionEvents } from "./types";
+import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
 
 /**
  * Reads the total count with its own reader on every read, then adds the
  * {@link Paging} to the payload. Place it after the extensions whose
  * contribution the count must consider (filters above all).
+ * By default it goes back to the first page when the query built by the
+ * previous extensions changes between two reads
+ * ({@link PaginationExtensionOptions.resetPageOnQueryChange}).
  * @typeParam TItem Type of the items.
  */
-export class PaginationExtension<TItem>
+export class PaginationExtension<TItem = Any>
   extends DataSourceExtension<TItem, PaginationExtensionEvents>
   implements IPaginationExtension<TItem>
 {
@@ -21,22 +24,30 @@ export class PaginationExtension<TItem>
   protected _itemsPerPage: number;
   protected readonly _itemsPerPageOptions?: List<number>;
   protected _page: number = 1;
+  protected readonly _resetPageOnQueryChange:
+    | boolean
+    | List<keyof DataSourcePayload<TItem>>;
   protected _totalItemsCount: number = 0;
+  /** Hash of the upstream query of the last read, `null` before the first. */
+  private _queryHash: Nullable<string> = null;
 
   /**
    * @param totalCountReader Resolves the payload into the total count.
    * @param itemsPerPage Initial page size, a positive integer.
    * @param itemsPerPageOptions Allowed page sizes; `itemsPerPage` must be one of them.
+   * @param options See {@link PaginationExtensionOptions}.
    */
   public constructor(
     totalCountReader: DataSourceReader<TItem, number>,
     itemsPerPage: number,
     itemsPerPageOptions?: List<number>,
+    options?: PaginationExtensionOptions<TItem>,
   ) {
     super();
     this._itemsPerPageOptions = itemsPerPageOptions;
     this._validateItemsPerPage(itemsPerPage);
     this._itemsPerPage = itemsPerPage;
+    this._resetPageOnQueryChange = options?.resetPageOnQueryChange ?? true;
     this._totalCountReader = totalCountReader;
   }
 
@@ -99,6 +110,7 @@ export class PaginationExtension<TItem>
   public async getItemsBefore(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
+    this._resetPageIfQueryChanged(payload);
     const totalItemsCount = await this._totalCountReader(payload);
     if (totalItemsCount !== this._totalItemsCount) {
       this._totalItemsCount = totalItemsCount;
@@ -111,6 +123,34 @@ export class PaginationExtension<TItem>
   protected _triggerChange(): void {}
   //#endregion
 
+  /**
+   * Hash of the properties of the upstream payload that reset the page, in
+   * a fixed order so the insertion order of the properties does not matter.
+   * @returns `null` when the reset is disabled.
+   */
+  private _getQueryHash(payload: DataSourcePayload<TItem>): Nullable<string> {
+    const option = this._resetPageOnQueryChange;
+    if (option === false) return null;
+    const keys: List<keyof DataSourcePayload<TItem>> =
+      option === true
+        ? (Object.keys(payload) as List<keyof DataSourcePayload<TItem>>).filter(
+            (key) => key !== "paging",
+          )
+        : option.slice();
+    keys.sort();
+    return createHash(keys.map((key) => [key, payload[key]]));
+  }
+  /**
+   * Goes back to the first page when the upstream query differs from the one
+   * of the previous read. The first read never resets.
+   */
+  private _resetPageIfQueryChanged(payload: DataSourcePayload<TItem>): void {
+    const queryHash = this._getQueryHash(payload);
+    if (queryHash === null) return;
+    if (this._queryHash !== null && queryHash !== this._queryHash)
+      this.goToFirstPage();
+    this._queryHash = queryHash;
+  }
   private _validateItemsPerPage(itemsPerPage: number): void {
     if (!Number.isInteger(itemsPerPage) || itemsPerPage < 1)
       throw new Error(`itemsPerPage must be a positive integer, got ${itemsPerPage}`);

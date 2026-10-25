@@ -1,4 +1,4 @@
-import { KeyOf, List } from "@mantlebee/ts-core";
+import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Projection } from "@/query-items";
 
@@ -12,7 +12,7 @@ import { ProjectionExtensionEvents } from "./types";
  * (an empty list means "every field").
  * @typeParam TItem Type of the items.
  */
-export class ProjectionExtension<TItem>
+export class ProjectionExtension<TItem = Any>
   extends DataSourceExtension<TItem, ProjectionExtensionEvents<TItem>>
   implements IProjectionExtension<TItem>
 {
