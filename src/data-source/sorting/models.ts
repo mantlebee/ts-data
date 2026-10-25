@@ -1,6 +1,7 @@
-import { Any, KeyOf, List } from "@mantlebee/ts-core";
+import type { Any, KeyOf, List } from "@mantlebee/ts-core";
 
-import { addSort, removeSort, Sort } from "@/query-items";
+import type { Sort } from "@/query-items/sorting/types";
+import { addSort, removeSort } from "@/query-items/sorting/utils";
 
 import { DataSourceExtension } from "../models";
 import { DataSourceExtensionOptions, DataSourcePayload } from "../types";

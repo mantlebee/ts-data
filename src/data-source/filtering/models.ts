@@ -1,11 +1,11 @@
-import { Any, KeyOf, List, Nullable } from "@mantlebee/ts-core";
+import type { Any, KeyOf, List, Nullable } from "@mantlebee/ts-core";
 
-import {
+import { FilterLogics } from "@/query-items/filtering/constants";
+import type {
   Filter,
-  FilterLogics,
   FiltersExpression,
   FiltersList,
-} from "@/query-items";
+} from "@/query-items/filtering/types";
 
 import { DataSourceExtension } from "../models";
 import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
