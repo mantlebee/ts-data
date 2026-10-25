@@ -42,8 +42,8 @@ each change without polling.
 npm install @mantlebee/ts-data @mantlebee/ts-core
 ```
 
-`@mantlebee/ts-core` (`^1.2.0`) is a **peer dependency**: install it alongside
-this package. TypeScript projects need `strict` or at least
+`@mantlebee/ts-core` (`^1.2.1`) is a **peer dependency**: install it alongside
+this package. It works in the browser and in Node alike. TypeScript projects need `strict` or at least
 `strictNullChecks` for the discriminated `Filter` type to work as intended.
 
 ## Upgrading to 1.0
