@@ -1,111 +1,250 @@
 import {
-  Any,
+  ConstructorOf,
   EventsDefinition,
   List,
   Nullable,
   Subscribable,
 } from "@mantlebee/ts-core";
 
-import { FilterExtension, IFilterExtension } from "./filtering";
 import {
   IDataSource,
   IDataSourceBase,
   IDataSourceExtension,
 } from "./interfaces";
-import { IPaginationExtension, PaginationExtension } from "./pagination";
-import { IProjectionExtension, ProjectionExtension } from "./projection";
-import { ISortExtension, SortExtension } from "./sorting";
-import { DataSourceReader, DataSourcePayload, DataSourceEvents } from "./types";
+import {
+  DataSourceEvents,
+  DataSourceExtensionOptions,
+  DataSourceOptions,
+  DataSourcePayload,
+  DataSourceReader,
+  DataSourceRetry,
+} from "./types";
 
-export class DataSourceBase<TItem = Any>
+/**
+ * Default quiet time, in milliseconds, of the debounced `*Change` events.
+ */
+export const DataSourceExtensionChangeDelayDefault = 100;
+
+/**
+ * Base class of the extensions shipped with the package: a
+ * {@link Subscribable} with a cancellable, debounced `*Change` event.
+ * Subclasses call {@link _scheduleChange} after every mutation and raise
+ * their own event in {@link _triggerChange}. Custom extensions do not have to
+ * extend it: implementing {@link IDataSourceExtension} is enough.
+ * @typeParam TItem Type of the items of the data source.
+ * @typeParam TEvents Events of the extension.
+ */
+export abstract class DataSourceExtension<
+    TItem,
+    TEvents extends EventsDefinition,
+  >
+  extends Subscribable<TEvents>
+  implements IDataSourceExtension<TItem, TEvents>
+{
+  protected readonly _changeDelay: number;
+  private _changeTimeout: Nullable<ReturnType<typeof setTimeout>> = null;
+
+  /**
+   * @param options Debounce of the `*Change` event.
+   */
+  public constructor(options?: DataSourceExtensionOptions) {
+    super();
+    this._changeDelay =
+      options?.changeDelay ?? DataSourceExtensionChangeDelayDefault;
+  }
+
+  /**
+   * Cancels the pending `*Change` event and removes every handler.
+   */
+  public async dispose(): Promise<void> {
+    this._cancelChange();
+    await super.dispose();
+  }
+
+  /**
+   * Raises the `*Change` event of the extension.
+   */
+  protected abstract _triggerChange(): void;
+
+  /**
+   * Cancels the pending `*Change` event, if any.
+   */
+  protected _cancelChange(): void {
+    if (this._changeTimeout === null) return;
+    clearTimeout(this._changeTimeout);
+    this._changeTimeout = null;
+  }
+  /**
+   * Schedules the `*Change` event after the quiet time, restarting the wait
+   * if one is already pending.
+   */
+  protected _scheduleChange(): void {
+    this._cancelChange();
+    this._changeTimeout = setTimeout(() => {
+      this._changeTimeout = null;
+      this._triggerChange();
+    }, this._changeDelay);
+  }
+}
+
+/**
+ * Data source driven only by its extensions: it knows nothing about filters,
+ * pagination and so on, it just runs the read cycle described in
+ * {@link IDataSourceExtension}.
+ * @example
+ * ```ts
+ * const dataSource = new DataSourceBase<User>(
+ *   (payload) => api.getUsers(payload),
+ *   [filtering, paginating],
+ * );
+ * dataSource.on("items", (users) => render(users));
+ * await dataSource.read();
+ * ```
+ * @typeParam TItem Type of the items.
+ */
+export class DataSourceBase<TItem>
   extends Subscribable<DataSourceEvents<TItem>>
   implements IDataSourceBase<TItem>
 {
   private _isReading = false;
   private _items: List<TItem> = [];
 
+  protected readonly _extensions: List<IDataSourceExtension<TItem>>;
   protected readonly _reader: DataSourceReader<TItem>;
-  protected readonly _extensions?: IDataSourceExtension<TItem>[];
 
+  /**
+   * @param reader Resolves the payload into the items.
+   * @param extensions Extensions, invoked in array order.
+   */
   public constructor(
     reader: DataSourceReader<TItem>,
-    extensions?: List<IDataSourceExtension<TItem>>,
+    extensions: List<IDataSourceExtension<TItem>> = [],
   ) {
     super();
-    this._reader = reader;
     this._extensions = extensions;
+    this._reader = reader;
   }
 
   public get isReading(): boolean {
     return this._isReading;
   }
-  public get items(): TItem[] {
+  public get items(): List<TItem> {
     return this._items;
   }
 
+  /**
+   * Removes every handler and disposes every extension.
+   */
   public async dispose(): Promise<void> {
     await this._eventBus.dispose();
-    if (this._extensions)
-      for (const extension of this._extensions) await extension.dispose();
+    for (const extension of this._extensions) await extension.dispose();
   }
 
-  public getExtension<
-    TExtension extends IDataSourceExtension<TItem, TEvents>,
-    TEvents extends EventsDefinition,
-  >(constructor: new (...args: any) => TExtension): Nullable<TExtension> {
-    return (this._extensions?.find((a) => a instanceof constructor) ||
-      null) as Nullable<TExtension>;
+  public getExtension<TExtension extends IDataSourceExtension<TItem>>(
+    constructor: ConstructorOf<TExtension>,
+  ): Nullable<TExtension> {
+    const extension = this._extensions.find((a) => a instanceof constructor);
+    return (extension as TExtension | undefined) ?? null;
   }
 
   public async read(): Promise<void> {
-    this._isReading = true;
-    this._eventBus.trigger("isReading", this.isReading);
+    this._setIsReading(true);
     try {
-      const payload = await this._getPayload();
-      const items = await this._reader(payload);
-      this._items = items;
-      this._eventBus.trigger("items", this.items);
+      const payload = await this._getItemsBefore({});
+      const items = await this._getItems(payload);
+      this._items = await this._getItemsAfter(items, payload);
+      this._eventBus.trigger("items", this._items);
     } catch (error) {
-      // Errore ignorato intenzionalmente
+      this._eventBus.trigger("error", error);
+      throw error;
+    } finally {
+      this._setIsReading(false);
     }
-    this._isReading = false;
-    this._eventBus.trigger("isReading", this.isReading);
   }
 
-  private async _getPayload(): Promise<DataSourcePayload<TItem>> {
-    let payload: DataSourcePayload<TItem> = {};
-    if (this._extensions)
+  private async _getItems(
+    payload: DataSourcePayload<TItem>,
+  ): Promise<List<TItem>> {
+    try {
+      return await this._reader(payload);
+    } catch (error) {
+      const retry: DataSourceRetry<TItem> = () => this._reader(payload);
       for (const extension of this._extensions)
-        if (extension.getItemsBefore)
-          payload = await extension.getItemsBefore(payload);
+        if (extension.onReadError) {
+          const items = await extension.onReadError(error, payload, retry);
+          if (items) return items;
+        }
+      throw error;
+    }
+  }
+  private async _getItemsAfter(
+    items: List<TItem>,
+    payload: DataSourcePayload<TItem>,
+  ): Promise<List<TItem>> {
+    for (const extension of this._extensions)
+      if (extension.getItemsAfter)
+        items = await extension.getItemsAfter(items, payload);
+    return items;
+  }
+  private async _getItemsBefore(
+    payload: DataSourcePayload<TItem>,
+  ): Promise<DataSourcePayload<TItem>> {
+    for (const extension of this._extensions)
+      if (extension.getItemsBefore)
+        payload = await extension.getItemsBefore(payload);
     return payload;
+  }
+  private _setIsReading(isReading: boolean): void {
+    this._isReading = isReading;
+    this._eventBus.trigger("isReading", isReading);
   }
 }
 
-export class DataSource<TItem = Any>
+/**
+ * {@link DataSourceBase} that exposes the four standard extensions by name,
+ * for convenience. The extensions run in the order described by
+ * {@link DataSourceOptions}.
+ * @example
+ * ```ts
+ * const filtering = new FilterExtension<User>();
+ * const paginating = new PaginationExtension<User>(countUsers, 20);
+ * const dataSource = new DataSource<User>(getUsers, { filtering, paginating });
+ * dataSource.filtering === filtering; // true
+ * ```
+ * @typeParam TItem Type of the items.
+ */
+export class DataSource<TItem>
   extends DataSourceBase<TItem>
   implements IDataSource<TItem>
 {
-  public readonly filtering?: IFilterExtension<TItem>;
-  public readonly paginating?: IPaginationExtension<TItem>;
-  public readonly projecting?: IProjectionExtension<TItem>;
-  public readonly sorting?: ISortExtension<TItem>;
+  public readonly filtering?: DataSourceOptions<TItem>["filtering"];
+  public readonly paginating?: DataSourceOptions<TItem>["paginating"];
+  public readonly projecting?: DataSourceOptions<TItem>["projecting"];
+  public readonly sorting?: DataSourceOptions<TItem>["sorting"];
 
+  /**
+   * @param reader Resolves the payload into the items.
+   * @param options Named extensions and further ones.
+   */
   public constructor(
     reader: DataSourceReader<TItem>,
-    extensions?: IDataSourceExtension<TItem>[],
+    options: DataSourceOptions<TItem> = {},
   ) {
-    super(reader, extensions);
-    if (extensions)
-      for (const a of extensions) {
-        if (a instanceof FilterExtension)
-          this.filtering = a as IFilterExtension<TItem>;
-        else if (a instanceof PaginationExtension)
-          this.paginating = a as IPaginationExtension<TItem>;
-        else if (a instanceof ProjectionExtension)
-          this.projecting = a as IProjectionExtension<TItem>;
-        else if (a instanceof SortExtension)
-          this.sorting = a as ISortExtension<TItem>;
-      }
+    const { extensions = [], filtering, paginating, projecting, sorting } =
+      options;
+    const named: List<IDataSourceExtension<TItem> | undefined> = [
+      filtering,
+      sorting,
+      projecting,
+      paginating,
+    ];
+    super(reader, [
+      ...named.filter((a): a is IDataSourceExtension<TItem> => !!a),
+      ...extensions,
+    ]);
+    this.filtering = filtering;
+    this.paginating = paginating;
+    this.projecting = projecting;
+    this.sorting = sorting;
   }
 }

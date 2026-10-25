@@ -1,32 +1,34 @@
-import {
-  Any,
-  DebouncedDelegate,
-  KeyOf,
-  List,
-  Nullable,
-  Subscribable,
-} from "@mantlebee/ts-core";
+import { KeyOf, List, Nullable } from "@mantlebee/ts-core";
 
 import { addSort, removeSort, Sort } from "@/query-items";
 
-import { DataSourcePayload } from "../types";
+import { DataSourceExtension } from "../models";
+import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
 import { ISortExtension } from "./interfaces";
 import { SortExtensionEvents } from "./types";
 
-export class SortExtension<TItem = Any>
-  extends Subscribable<SortExtensionEvents<TItem>>
+/**
+ * Keeps the list of sorts, optionally limited in number, and always sends it
+ * in the payload (an empty list means "no sort").
+ * @typeParam TItem Type of the items.
+ */
+export class SortExtension<TItem>
+  extends DataSourceExtension<TItem, SortExtensionEvents<TItem>>
   implements ISortExtension<TItem>
 {
-  protected readonly _onSortsChange = new DebouncedDelegate(
-    () => this._eventBus.trigger("sortsChange", this.sorts, this.hasSorts),
-    100,
-  );
-
   protected _sorts: List<Sort<TItem>> = [];
-  protected _sortsLimit?: number;
+  protected readonly _sortsLimit: Nullable<number>;
 
-  public constructor(sortsLimit?: number) {
-    super();
+  /**
+   * @param sortsLimit Maximum number of sorts; `null` means unlimited, `0`
+   * means no sort can be added.
+   * @param options Debounce of the `sortsChange` event.
+   */
+  public constructor(
+    sortsLimit: Nullable<number> = null,
+    options?: DataSourceExtensionOptions,
+  ) {
+    super(options);
     this._sortsLimit = sortsLimit;
   }
 
@@ -37,51 +39,54 @@ export class SortExtension<TItem = Any>
     return this._sorts;
   }
   public get sortsLimit(): Nullable<number> {
-    return this._sortsLimit || null;
+    return this._sortsLimit;
   }
 
   public addSort(sort: Sort<TItem>): void {
     this._sorts = addSort(sort, this._sorts, this._sortsLimit);
     this._eventBus.trigger("addSort", sort, this.sorts);
-    this._onSortsChange.call();
+    this._scheduleChange();
   }
   public clearSorts(): void {
     this._sorts = [];
     this._eventBus.trigger("clearSorts");
-    this._onSortsChange.call();
+    this._scheduleChange();
   }
   public removeSort(field: KeyOf<TItem>): void {
     this._sorts = removeSort(field, this._sorts);
     this._eventBus.trigger("removeSort", field, this.sorts);
-    this._onSortsChange.call();
+    this._scheduleChange();
   }
   public setSorts(sorts: List<Sort<TItem>>): void {
     this._sorts = sorts;
     this._eventBus.trigger("setSorts", this.sorts);
-    this._onSortsChange.call();
+    this._scheduleChange();
   }
 
   //#region Extension Methods
-  public getCountBefore?(
+  public async getItemsBefore(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
     payload.sorts = this.sorts;
-    return Promise.resolve(payload);
+    return payload;
   }
-  public getItemsBefore?(
-    payload: DataSourcePayload<TItem>,
-  ): Promise<DataSourcePayload<TItem>> {
-    payload.sorts = this.sorts;
-    return Promise.resolve(payload);
+  protected _triggerChange(): void {
+    this._eventBus.trigger("sortsChange", this.sorts, this.hasSorts);
   }
   //#endregion
 }
 
-export class MultiSortExtension<TItem = Any> extends SortExtension<TItem> {}
-
-export class SingleSortExtension<TItem = Any> extends SortExtension<TItem> {
-  public constructor() {
-    super(1);
+/**
+ * {@link SortExtension} holding one sort at most: {@link addSort} replaces
+ * the current sort, whatever its field, raising a single `addSort` event.
+ * @typeParam TItem Type of the items.
+ */
+export class SingleSortExtension<TItem> extends SortExtension<TItem> {
+  /**
+   * @param options Debounce of the `sortsChange` event.
+   */
+  public constructor(options?: DataSourceExtensionOptions) {
+    super(1, options);
   }
 
   public addSort(sort: Sort<TItem>): void {
