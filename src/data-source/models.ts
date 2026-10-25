@@ -1,6 +1,7 @@
 import {
   Any,
   ConstructorOf,
+  DebouncedDelegate,
   EventsDefinition,
   List,
   Nullable,
@@ -37,7 +38,7 @@ export abstract class DataSourceExtension<
   implements IDataSourceExtension<TItem, TEvents>
 {
   protected readonly _changeDelay: number;
-  private _changeTimeout: Nullable<ReturnType<typeof setTimeout>> = null;
+  private readonly _changeDelegate: DebouncedDelegate;
 
   /**
    * @param options Debounce of the `*Change` event.
@@ -46,13 +47,17 @@ export abstract class DataSourceExtension<
     super();
     this._changeDelay =
       options?.changeDelay ?? DataSourceExtensionChangeDelayDefault;
+    this._changeDelegate = new DebouncedDelegate(
+      () => this._triggerChange(),
+      this._changeDelay,
+    );
   }
 
   /**
    * Cancels the pending `*Change` event and removes every handler.
    */
   public async dispose(): Promise<void> {
-    this._cancelChange();
+    this._changeDelegate.abort();
     await super.dispose();
   }
 
@@ -62,23 +67,11 @@ export abstract class DataSourceExtension<
   protected abstract _triggerChange(): void;
 
   /**
-   * Cancels the pending `*Change` event, if any.
-   */
-  protected _cancelChange(): void {
-    if (this._changeTimeout === null) return;
-    clearTimeout(this._changeTimeout);
-    this._changeTimeout = null;
-  }
-  /**
    * Schedules the `*Change` event after the quiet time, restarting the wait
    * if one is already pending.
    */
   protected _scheduleChange(): void {
-    this._cancelChange();
-    this._changeTimeout = setTimeout(() => {
-      this._changeTimeout = null;
-      this._triggerChange();
-    }, this._changeDelay);
+    this._changeDelegate.call();
   }
 }
 

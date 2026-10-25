@@ -8,7 +8,7 @@
 npm install @mantlebee/ts-data @mantlebee/ts-core
 ```
 
-`@mantlebee/ts-core` (`^1.1.0`) is a peer dependency: it must be installed alongside this package.
+`@mantlebee/ts-core` (`^1.2.0`) is a peer dependency: it must be installed alongside this package.
 
 ## Structure
 
