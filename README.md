@@ -13,7 +13,7 @@ npm install @mantlebee/ts-data @mantlebee/ts-core
 ## Structure
 
 - `src/query-items`: plain types that describe a query (`QueryItemsPayload`, `Filter`, `FiltersExpression`, `FilterLogics`, `FilterOperators`, `Sort`, `Paging`, `Projection`), the `FilterRange` / `FilterRangeLimit` helpers and the `addSort` / `removeSort` utils.
-- `src/data-source`: `DataSourceBase` / `DataSource`, which read items through a `DataSourceReader` and build the payload by running the extensions in order (hooks `getItemsBefore`, `getItemsAfter`, `onReadError`), plus the extensions `FilterExtension`, `FilterExtensionWithFixedFilters`, `PaginationExtension`, `ProjectionExtension`, `SortExtension` and `SingleSortExtension`, and the `resetPageOnFiltersChange` helper. Every extension and the data source extend ts-core's `Subscribable`, so consumers listen with `.on(eventName, handler)`.
+- `src/data-source`: `DataSource`, which reads items through a `DataSourceReader` and builds the payload by running the extensions in array order (hooks `getItemsBefore`, `getItemsAfter`), plus the extensions `FilterExtension`, `FilterExtensionWithFixedFilters`, `PaginationExtension`, `ProjectionExtension`, `SortExtension` and `SingleSortExtension`, and the `resetPageOnFiltersChange` helper. Every extension and the data source extend ts-core's `Subscribable`, so consumers listen with `.on(eventName, handler)`.
 
 ## Quick start
 
@@ -42,9 +42,9 @@ const filtering = new FilterExtension<Item>();
 const paginating = new PaginationExtension<Item>(countReader, 10);
 const sorting = new SortExtension<Item>();
 
-// Named extensions run in a fixed order (filtering, sorting, projecting,
-// paginating) to build the payload passed to the reader.
-const dataSource = new DataSource<Item>(reader, { filtering, paginating, sorting });
+// The extensions run in array order to build the payload passed to the reader:
+// put the filtering before the pagination, so the count reader receives the filters.
+const dataSource = new DataSource<Item>(reader, [filtering, sorting, paginating]);
 
 dataSource.on("items", (items) => console.log(items));
 
@@ -52,7 +52,7 @@ filtering.addFilter({ field: "name", operator: FilterOperators.contains, value: 
 await dataSource.read();
 ```
 
-`DataSource` runs the filtering before the pagination, so the count reader receives the filters. Use `DataSourceBase(reader, extensions[])` when you need a custom order or only custom extensions.
+The order of the extensions is up to you: the data source knows nothing about them, it just invokes their hooks in sequence.
 
 ## Status
 

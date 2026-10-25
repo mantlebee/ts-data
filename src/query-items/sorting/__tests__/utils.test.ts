@@ -32,21 +32,17 @@ describe("DataSource", () => {
             const sorts = addSort(byNameAsc, [byActiveAsc, byNameDesc], 2);
             expect(sorts).toEqual([byActiveAsc, byNameAsc]);
           });
-          test("Sorts limit null is unlimited", () => {
-            const sorts = addSort(byNameAsc, [byActiveAsc], null);
+          test("Sorts limit 0 is unlimited", () => {
+            const sorts = addSort(byNameAsc, [byActiveAsc], 0);
             expect(sorts).toEqual([byActiveAsc, byNameAsc]);
           });
           test("Sorts limit undefined is unlimited", () => {
             const sorts = addSort(byNameAsc, [byActiveAsc], undefined);
             expect(sorts).toEqual([byActiveAsc, byNameAsc]);
           });
-          test("Nothing is added if sorts limit is 0", () => {
-            const sorts = addSort(byNameAsc, [], 0);
-            expect(sorts).toEqual([]);
-          });
-          test("Sort on an existing field is removed, not replaced, if sorts limit is 0", () => {
+          test("Sort on an existing field is replaced if sorts limit is 0", () => {
             const sorts = addSort(byNameAsc, [byNameDesc], 0);
-            expect(sorts).toEqual([]);
+            expect(sorts).toEqual([byNameAsc]);
           });
           test("Sort is added if sorts limit is not reached", () => {
             const sorts = addSort(byNameAsc, [byActiveAsc], 2);

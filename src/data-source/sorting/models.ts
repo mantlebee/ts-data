@@ -1,4 +1,4 @@
-import { KeyOf, List, Nullable } from "@mantlebee/ts-core";
+import { KeyOf, List } from "@mantlebee/ts-core";
 
 import { addSort, removeSort, Sort } from "@/query-items";
 
@@ -17,15 +17,15 @@ export class SortExtension<TItem>
   implements ISortExtension<TItem>
 {
   protected _sorts: List<Sort<TItem>> = [];
-  protected readonly _sortsLimit: Nullable<number>;
+  protected readonly _sortsLimit: number;
 
   /**
-   * @param sortsLimit Maximum number of sorts; `null` means unlimited, `0`
-   * means no sort can be added.
+   * @param sortsLimit Maximum number of sorts; `0` (the default) means
+   * unlimited.
    * @param options Debounce of the `sortsChange` event.
    */
   public constructor(
-    sortsLimit: Nullable<number> = null,
+    sortsLimit = 0,
     options?: DataSourceExtensionOptions,
   ) {
     super(options);
@@ -38,7 +38,7 @@ export class SortExtension<TItem>
   public get sorts(): List<Sort<TItem>> {
     return this._sorts;
   }
-  public get sortsLimit(): Nullable<number> {
+  public get sortsLimit(): number {
     return this._sortsLimit;
   }
 

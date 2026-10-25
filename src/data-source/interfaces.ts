@@ -6,31 +6,13 @@ import {
   Nullable,
 } from "@mantlebee/ts-core";
 
-import type { IFilterExtension } from "./filtering/interfaces";
-import type { IPaginationExtension } from "./pagination/interfaces";
-import type { IProjectionExtension } from "./projection/interfaces";
-import type { ISortExtension } from "./sorting/interfaces";
-import type {
-  DataSourceEvents,
-  DataSourcePayload,
-  DataSourceRetry,
-} from "./types";
-
-/**
- * {@link IDataSourceBase} exposing the four standard extensions by name.
- */
-export interface IDataSource<TItem> extends IDataSourceBase<TItem> {
-  readonly filtering?: IFilterExtension<TItem>;
-  readonly paginating?: IPaginationExtension<TItem>;
-  readonly projecting?: IProjectionExtension<TItem>;
-  readonly sorting?: ISortExtension<TItem>;
-}
+import type { DataSourceEvents, DataSourcePayload } from "./types";
 
 /**
  * Reads items through a reader, letting its extensions shape the query and
  * the result. See {@link IDataSourceExtension} for the read cycle.
  */
-export interface IDataSourceBase<TItem>
+export interface IDataSource<TItem>
   extends ISubscribable<DataSourceEvents<TItem>> {
   /** `true` while a read is running. */
   readonly isReading: boolean;
@@ -55,14 +37,15 @@ export interface IDataSourceBase<TItem>
 }
 
 /**
- * Hooks of the read cycle of an {@link IDataSourceBase}. Every hook is
- * optional and the extensions are invoked in array order:
+ * Hooks of the read cycle of an {@link IDataSource}. Every hook is optional
+ * and the extensions are invoked in array order:
  * 1. `getItemsBefore` of each extension builds the payload;
- * 2. the reader resolves the payload into the items; if it rejects,
- *    `onReadError` of each extension may recover by returning items
- *    (e.g. after a `retry`), otherwise the error propagates;
+ * 2. the reader resolves the payload into the items;
  * 3. `getItemsAfter` of each extension may transform the items.
- * An error thrown by a hook propagates as a read error.
+ * An error thrown by the reader or by a hook propagates as a read error.
+ * The order of the array is up to the consumer: e.g. a `FilterExtension`
+ * must precede a `PaginationExtension` for the count reader to receive the
+ * filters.
  */
 export interface IDataSourceExtension<
   TItem,
@@ -86,17 +69,4 @@ export interface IDataSourceExtension<
     items: List<TItem>,
     payload: DataSourcePayload<TItem>,
   ): Promise<List<TItem>>;
-  /**
-   * Called when the reader rejects.
-   * @param error Error thrown by the reader, or by a previous `retry`.
-   * @param payload Payload the reader was called with.
-   * @param retry Runs the reader again with the same payload.
-   * @returns items to recover the read with; `undefined` to let the next
-   * extension handle the error, or the error propagate.
-   */
-  onReadError?(
-    error: unknown,
-    payload: DataSourcePayload<TItem>,
-    retry: DataSourceRetry<TItem>,
-  ): Promise<List<TItem> | void>;
 }

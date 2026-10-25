@@ -22,9 +22,9 @@ describe("DataSource", () => {
 
       describe("SortExtension", () => {
         describe("sortsLimit", () => {
-          test("Is null by default", () => {
+          test("Is 0 (unlimited) by default", () => {
             const extension = new SortExtension<Item>();
-            expect(extension.sortsLimit).toBeNull();
+            expect(extension.sortsLimit).toBe(0);
           });
           test("Stays 0 when 0 is passed", () => {
             const extension = new SortExtension<Item>(0);
@@ -33,10 +33,6 @@ describe("DataSource", () => {
           test("Stays 2 when 2 is passed", () => {
             const extension = new SortExtension<Item>(2);
             expect(extension.sortsLimit).toBe(2);
-          });
-          test("Stays null when null is passed", () => {
-            const extension = new SortExtension<Item>(null);
-            expect(extension.sortsLimit).toBeNull();
           });
         });
 
@@ -95,16 +91,16 @@ describe("DataSource", () => {
             extension.addSort(byNameAsc);
             expect(extension.sorts).toEqual([byNameAsc]);
           });
-          test("Never adds anything with sortsLimit 0", () => {
+          test("Adds without limit with sortsLimit 0", () => {
             const extension = new SortExtension<Item>(0);
             const handler = jest.fn();
             extension.on("addSort", handler);
             extension.addSort(byNameAsc);
             extension.addSort(byAgeDesc);
-            expect(extension.sorts).toEqual([]);
-            expect(extension.hasSorts).toBe(false);
-            expect(handler).toHaveBeenCalledTimes(2);
-            expect(handler).toHaveBeenLastCalledWith(byAgeDesc, []);
+            extension.addSort(byActiveAsc);
+            expect(extension.sorts).toEqual([byNameAsc, byAgeDesc, byActiveAsc]);
+            expect(extension.hasSorts).toBe(true);
+            expect(handler).toHaveBeenCalledTimes(3);
           });
         });
 
@@ -178,7 +174,7 @@ describe("DataSource", () => {
             expect(handler).toHaveBeenCalledWith([], false);
           });
           test("Respects the changeDelay option", () => {
-            const extension = new SortExtension<Item>(null, {
+            const extension = new SortExtension<Item>(0, {
               changeDelay: 300,
             });
             const handler = jest.fn();

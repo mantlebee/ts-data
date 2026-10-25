@@ -6,18 +6,12 @@ import {
   Subscribable,
 } from "@mantlebee/ts-core";
 
-import {
-  IDataSource,
-  IDataSourceBase,
-  IDataSourceExtension,
-} from "./interfaces";
+import { IDataSource, IDataSourceExtension } from "./interfaces";
 import {
   DataSourceEvents,
   DataSourceExtensionOptions,
-  DataSourceOptions,
   DataSourcePayload,
   DataSourceReader,
-  DataSourceRetry,
 } from "./types";
 
 /**
@@ -90,10 +84,14 @@ export abstract class DataSourceExtension<
 /**
  * Data source driven only by its extensions: it knows nothing about filters,
  * pagination and so on, it just runs the read cycle described in
- * {@link IDataSourceExtension}.
+ * {@link IDataSourceExtension}, invoking the extensions in array order.
+ * Choose the order on purpose: e.g. the `FilterExtension` must precede the
+ * `PaginationExtension` for the count reader to receive the filters.
  * @example
  * ```ts
- * const dataSource = new DataSourceBase<User>(
+ * const filtering = new FilterExtension<User>();
+ * const paginating = new PaginationExtension<User>(countUsers, 20);
+ * const dataSource = new DataSource<User>(
  *   (payload) => api.getUsers(payload),
  *   [filtering, paginating],
  * );
@@ -102,9 +100,9 @@ export abstract class DataSourceExtension<
  * ```
  * @typeParam TItem Type of the items.
  */
-export class DataSourceBase<TItem>
+export class DataSource<TItem>
   extends Subscribable<DataSourceEvents<TItem>>
-  implements IDataSourceBase<TItem>
+  implements IDataSource<TItem>
 {
   private _isReading = false;
   private _items: List<TItem> = [];
@@ -151,7 +149,7 @@ export class DataSourceBase<TItem>
     this._setIsReading(true);
     try {
       const payload = await this._getItemsBefore({});
-      const items = await this._getItems(payload);
+      const items = await this._reader(payload);
       this._items = await this._getItemsAfter(items, payload);
       this._eventBus.trigger("items", this._items);
     } catch (error) {
@@ -162,21 +160,6 @@ export class DataSourceBase<TItem>
     }
   }
 
-  private async _getItems(
-    payload: DataSourcePayload<TItem>,
-  ): Promise<List<TItem>> {
-    try {
-      return await this._reader(payload);
-    } catch (error) {
-      const retry: DataSourceRetry<TItem> = () => this._reader(payload);
-      for (const extension of this._extensions)
-        if (extension.onReadError) {
-          const items = await extension.onReadError(error, payload, retry);
-          if (items) return items;
-        }
-      throw error;
-    }
-  }
   private async _getItemsAfter(
     items: List<TItem>,
     payload: DataSourcePayload<TItem>,
@@ -200,51 +183,3 @@ export class DataSourceBase<TItem>
   }
 }
 
-/**
- * {@link DataSourceBase} that exposes the four standard extensions by name,
- * for convenience. The extensions run in the order described by
- * {@link DataSourceOptions}.
- * @example
- * ```ts
- * const filtering = new FilterExtension<User>();
- * const paginating = new PaginationExtension<User>(countUsers, 20);
- * const dataSource = new DataSource<User>(getUsers, { filtering, paginating });
- * dataSource.filtering === filtering; // true
- * ```
- * @typeParam TItem Type of the items.
- */
-export class DataSource<TItem>
-  extends DataSourceBase<TItem>
-  implements IDataSource<TItem>
-{
-  public readonly filtering?: DataSourceOptions<TItem>["filtering"];
-  public readonly paginating?: DataSourceOptions<TItem>["paginating"];
-  public readonly projecting?: DataSourceOptions<TItem>["projecting"];
-  public readonly sorting?: DataSourceOptions<TItem>["sorting"];
-
-  /**
-   * @param reader Resolves the payload into the items.
-   * @param options Named extensions and further ones.
-   */
-  public constructor(
-    reader: DataSourceReader<TItem>,
-    options: DataSourceOptions<TItem> = {},
-  ) {
-    const { extensions = [], filtering, paginating, projecting, sorting } =
-      options;
-    const named: List<IDataSourceExtension<TItem> | undefined> = [
-      filtering,
-      sorting,
-      projecting,
-      paginating,
-    ];
-    super(reader, [
-      ...named.filter((a): a is IDataSourceExtension<TItem> => !!a),
-      ...extensions,
-    ]);
-    this.filtering = filtering;
-    this.paginating = paginating;
-    this.projecting = projecting;
-    this.sorting = sorting;
-  }
-}

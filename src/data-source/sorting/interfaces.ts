@@ -1,4 +1,4 @@
-import { KeyOf, List, Nullable } from "@mantlebee/ts-core";
+import { KeyOf, List } from "@mantlebee/ts-core";
 
 import { Sort } from "@/query-items";
 
@@ -13,8 +13,8 @@ export interface ISortExtension<TItem>
   /** `true` when at least one sort is set. */
   readonly hasSorts: boolean;
   readonly sorts: List<Sort<TItem>>;
-  /** Maximum number of sorts, `null` when unlimited. See {@link addSort}. */
-  readonly sortsLimit: Nullable<number>;
+  /** Maximum number of sorts, `0` when unlimited. See {@link addSort}. */
+  readonly sortsLimit: number;
   /**
    * @param sort Sort to add; replaces the sort on the same field, if any.
    * When the limit is reached and no sort is replaced, nothing changes but

@@ -27,7 +27,7 @@ async function setup() {
   const reader = jest.fn(async (_payload: DataSourcePayload<Item>) => [] as Item[]);
   const filtering = new FilterExtension<Item>();
   const paginating = new PaginationExtension<Item>(async () => 50, 10);
-  const dataSource = new DataSource<Item>(reader, { filtering, paginating });
+  const dataSource = new DataSource<Item>(reader, [filtering, paginating]);
   await dataSource.read();
   paginating.goToPage(3);
   expect(paginating.page).toBe(3);

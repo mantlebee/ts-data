@@ -1,4 +1,4 @@
-import { Any, KeyOf, List, Nullable } from "@mantlebee/ts-core";
+import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Sort } from "./types";
 
@@ -6,18 +6,18 @@ import { Sort } from "./types";
  * Adds a sort to a list, replacing any existing sort on the same field.
  * @param sort Sort to add.
  * @param existingSorts Current sorts, left untouched.
- * @param sortsLimit Maximum number of sorts; `null` or `undefined` means
- * unlimited, `0` means no sort can be added. When the limit is reached the
- * sort is not added, unless it replaces one on the same field.
+ * @param sortsLimit Maximum number of sorts; `0` (the default) means
+ * unlimited. When the limit is reached the sort is not added, unless it
+ * replaces one on the same field.
  * @returns the new list of sorts.
  */
 export function addSort<TItem = Any>(
   sort: Sort<TItem>,
   existingSorts: List<Sort<TItem>>,
-  sortsLimit?: Nullable<number>,
+  sortsLimit = 0,
 ): List<Sort<TItem>> {
   const sorts = removeSort(sort.field, existingSorts);
-  if (sortsLimit == null || sorts.length < sortsLimit) return sorts.concat(sort);
+  if (sortsLimit <= 0 || sorts.length < sortsLimit) return sorts.concat(sort);
   return sorts;
 }
 
