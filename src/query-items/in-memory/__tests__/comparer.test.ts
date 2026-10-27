@@ -1,6 +1,9 @@
 import { Acme, Money } from "@test/fixtures";
 
-import { createComparer, toComparableValue } from "../comparer";
+import {
+  createInMemoryQueryItemsComparer,
+  toComparableValue,
+} from "../comparer";
 
 describe("query-items", () => {
   describe("in-memory", () => {
@@ -34,19 +37,24 @@ describe("query-items", () => {
       });
     });
 
-    describe("createComparer", () => {
+    describe("createInMemoryQueryItemsComparer", () => {
       test("Without options it is toComparableValue, ignoring the case", () => {
-        const compare = createComparer();
+        const compare = createInMemoryQueryItemsComparer();
         expect(compare("AbC", "name")).toBe("abc");
         expect(compare(undefined, "name")).toBeNull();
       });
       test("caseSensitive keeps the case", () => {
-        const compare = createComparer({ caseSensitive: true });
+        const compare = createInMemoryQueryItemsComparer({
+          caseSensitive: true,
+        });
         expect(compare("AbC", "name")).toBe("AbC");
       });
       test("toComparable replaces the rule", () => {
         const toComparable = jest.fn((value: unknown) => String(value).length);
-        const compare = createComparer<{ name: string }>({ caseSensitive: true, toComparable });
+        const compare = createInMemoryQueryItemsComparer<{ name: string }>({
+          caseSensitive: true,
+          toComparable,
+        });
         expect(compare("AbC", "name")).toBe(3);
         expect(toComparable).toHaveBeenCalledWith("AbC", "name");
       });

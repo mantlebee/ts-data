@@ -1,7 +1,10 @@
 import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
-import { createComparer } from "../../in-memory/comparer";
-import type { Comparer, InMemoryQueryOptions } from "../../in-memory/types";
+import { createInMemoryQueryItemsComparer } from "../../in-memory/comparer";
+import type {
+  InMemoryQueryItemsComparer,
+  InMemoryQueryItemsReaderOptions,
+} from "../../in-memory/types";
 import { FilterLogics, FilterOperators } from "../constants";
 import type { Filter, FiltersExpression } from "../types";
 import { isFiltersGroup } from "../utils";
@@ -11,12 +14,12 @@ import { isFiltersGroup } from "../utils";
  * every {@link FilterOperators} member, `FiltersExpression` trees at any
  * depth; an empty list or group matches every item; a `null` value matches
  * an unset field with `equal` / `in`, never with the ordered operators
- * (`gt`, `range`, ...) nor with the string ones. See {@link matchesFilter}
+ * (`gt`, `range`, ...) nor with the string ones. See {@link itemMatchesFilter}
  * for the operators.
  * The list and its items are never mutated; the result is always a new array.
  * @param items Items to filter.
  * @param filters Expression to match; none for every item.
- * @param options Comparison options, see {@link InMemoryQueryOptions}.
+ * @param options Comparison options, see {@link InMemoryQueryItemsReaderOptions}.
  * @returns the matching items, in their order; a copy of the list without
  * an expression.
  * @example
@@ -30,10 +33,10 @@ import { isFiltersGroup } from "../utils";
 export function filterItems<TItem = Any>(
   items: List<TItem>,
   filters?: FiltersExpression<TItem>,
-  options?: InMemoryQueryOptions<TItem>,
+  options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): List<TItem> {
   if (!filters) return items.slice();
-  const compare = createComparer(options);
+  const compare = createInMemoryQueryItemsComparer(options);
   return items.filter((item) => matches(item, filters, compare));
 }
 
@@ -42,15 +45,15 @@ export function filterItems<TItem = Any>(
  * combined with their logic, recursively; an empty list or group matches.
  * @param item Item to check.
  * @param expression Expression to match.
- * @param options Comparison options, see {@link InMemoryQueryOptions}.
+ * @param options Comparison options, see {@link InMemoryQueryItemsReaderOptions}.
  * @returns `true` if the item satisfies the expression.
  */
-export function matchesExpression<TItem = Any>(
+export function itemMatchesFilterExpression<TItem = Any>(
   item: TItem,
   expression: FiltersExpression<TItem>,
-  options?: InMemoryQueryOptions<TItem>,
+  options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): boolean {
-  return matches(item, expression, createComparer(options));
+  return matches(item, expression, createInMemoryQueryItemsComparer(options));
 }
 
 /**
@@ -67,16 +70,16 @@ export function matchesExpression<TItem = Any>(
  * - `startsWith`, `endsWith`: on the text of the values.
  * @param item Item to check.
  * @param filter Filter to match.
- * @param options Comparison options, see {@link InMemoryQueryOptions}.
+ * @param options Comparison options, see {@link InMemoryQueryItemsReaderOptions}.
  * @returns `true` if the field of the item satisfies the filter.
  * @throws an `Error` when the operator is not a {@link FilterOperators} member.
  */
-export function matchesFilter<TItem = Any>(
+export function itemMatchesFilter<TItem = Any>(
   item: TItem,
   filter: Filter<TItem>,
-  options?: InMemoryQueryOptions<TItem>,
+  options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): boolean {
-  return matchesOne(item, filter, createComparer(options));
+  return matchesOne(item, filter, createInMemoryQueryItemsComparer(options));
 }
 
 //#region Internals
@@ -90,7 +93,7 @@ function contains<TItem>(
   actual: Any,
   expected: Any,
   field: KeyOf<TItem>,
-  compare: Comparer<TItem>,
+  compare: InMemoryQueryItemsComparer<TItem>,
 ): boolean {
   if (actual === null || expected === null) return false;
   if (Array.isArray(actual))
@@ -106,7 +109,7 @@ function getFieldValue<TItem>(item: TItem, field: KeyOf<TItem>): unknown {
 function matchesOne<TItem>(
   item: TItem,
   filter: Filter<TItem>,
-  compare: Comparer<TItem>,
+  compare: InMemoryQueryItemsComparer<TItem>,
 ): boolean {
   const field = filter.field;
   const actual = compare(getFieldValue(item, field), field);
@@ -186,7 +189,7 @@ function combine<TNode>(
 function matches<TItem>(
   item: TItem,
   expression: FiltersExpression<TItem>,
-  compare: Comparer<TItem>,
+  compare: InMemoryQueryItemsComparer<TItem>,
 ): boolean {
   if (isFiltersGroup(expression))
     return combine(expression.groups, expression.logic, (group) =>

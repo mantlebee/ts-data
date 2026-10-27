@@ -1,6 +1,9 @@
 import { Any } from "@mantlebee/ts-core";
 
-import type { Comparer, InMemoryQueryOptions } from "./types";
+import type {
+  InMemoryQueryItemsComparer,
+  InMemoryQueryItemsReaderOptions,
+} from "./types";
 
 /**
  * Converts a value of an item, or of a filter, into the primitive the
@@ -13,7 +16,7 @@ import type { Comparer, InMemoryQueryOptions } from "./types";
  *   (so the value objects of the consumer plug in without being a dependency
  *   of the package), converted with the same rules; otherwise it stays as it
  *   is and is compared by reference.
- * Override it per field with {@link InMemoryQueryOptions.toComparable}.
+ * Override it per field with {@link InMemoryQueryItemsReaderOptions.toComparable}.
  * @param value Value to convert.
  * @param caseSensitive `true` to leave the strings as they are.
  * @returns the comparable value, `null` when unset.
@@ -38,15 +41,15 @@ export function toComparableValue(
 }
 
 /**
- * Resolves the options into the {@link Comparer} the in-memory delegates
+ * Resolves the options into the {@link InMemoryQueryItemsComparer} the in-memory delegates
  * use: `options.toComparable` when given, otherwise
  * {@link toComparableValue} with `options.caseSensitive`.
  * @param options Comparison options; none for the defaults.
  * @returns the comparer.
  */
-export function createComparer<TItem = Any>(
-  options?: InMemoryQueryOptions<TItem>,
-): Comparer<TItem> {
+export function createInMemoryQueryItemsComparer<TItem = Any>(
+  options?: InMemoryQueryItemsReaderOptions<TItem>,
+): InMemoryQueryItemsComparer<TItem> {
   if (options?.toComparable) return options.toComparable;
   const caseSensitive = options?.caseSensitive ?? false;
   return (value) => toComparableValue(value, caseSensitive);
@@ -55,8 +58,7 @@ export function createComparer<TItem = Any>(
 //#region Internals
 function isPrimitive(value: unknown): boolean {
   return (
-    value === null ||
-    (typeof value !== "object" && typeof value !== "function")
+    value === null || (typeof value !== "object" && typeof value !== "function")
   );
 }
 //#endregion

@@ -28,8 +28,8 @@ and the `in-memory` folder composes them into the one reader of the package.
     expression.
   - **`in-memory/`** — `filterItems(items, filters?, options?)`: the items
     matching an expression (every operator, trees at any depth, an empty node
-    matches every item); `matchesExpression(item, expression, options?)` and
-    `matchesFilter(item, filter, options?)` for a single item.
+    matches every item); `itemMatchesFilterExpression(item, expression, options?)` and
+    `itemMatchesFilter(item, filter, options?)` for a single item.
   - **`range/`** — `Range<TValue>` / `RangeLimit<TValue>` (the value of a
     `range` filter: `min`/`max`, each with `value` and `exclude`), and the
     editable `FilterRange` / `FilterRangeLimit`, `Subscribable`s meant for UI
@@ -41,15 +41,15 @@ and the `in-memory` folder composes them into the one reader of the package.
   (`filterItems`, then `sortItems`, then `projectItems` and `distinctItems`,
   then `pageItems`), `countItems(items, payload, options?)` (the matching
   items, distinct ones when the payload says so, for the pagination) and
-  `createInMemoryReader(items | () => items, options?)` returning
-  `{ reader, countReader }` for a `DataSource`, resolving on the next
-  microtask or after `options.delay`. `comparer.ts` holds what the delegates
+  `createInMemoryQueryItemsReader(getItems, options?)` returning
+  `{ reader, countReader }` for a `DataSource`, calling the getter on every
+  read and resolving on the next microtask. `comparer.ts` holds what the delegates
   share: `toComparableValue`, the default conversion of the compared values
   (strings lower-cased unless `options.caseSensitive`, `Date` by time, value
   objects by `valueOf()`), overridable per field with `options.toComparable`,
-  and `createComparer(options?)` resolving the options into the `Comparer`.
-  Types: `Comparer`, `InMemoryItems`, `InMemoryQueryOptions`,
-  `InMemoryReaderOptions`, `InMemoryReader`.
+  and `createInMemoryQueryItemsComparer(options?)` resolving the options into the
+  `InMemoryQueryItemsComparer`. Types: `InMemoryQueryItemsComparer`,
+  `InMemoryQueryItemsReaderOptions`, `InMemoryQueryItemsReader`.
 - **`pagination/`** — `Paging`: `page` (1-based), `itemsPerPage`,
   `totalItemsCount`.
   - **`in-memory/`** — `pageItems(items, paging?)`: the items of the page,

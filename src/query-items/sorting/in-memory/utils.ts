@@ -1,7 +1,7 @@
 import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
-import { createComparer } from "../../in-memory/comparer";
-import type { InMemoryQueryOptions } from "../../in-memory/types";
+import { createInMemoryQueryItemsComparer } from "../../in-memory/comparer";
+import type { InMemoryQueryItemsReaderOptions } from "../../in-memory/types";
 import type { Sort } from "../types";
 
 /**
@@ -15,7 +15,7 @@ import type { Sort } from "../types";
  * The list and its items are never mutated; the result is always a new array.
  * @param items Items to order.
  * @param sorts Sorts to apply; none, or an empty list, keeps the order.
- * @param options Comparison options, see {@link InMemoryQueryOptions}.
+ * @param options Comparison options, see {@link InMemoryQueryItemsReaderOptions}.
  * @returns the ordered items; a copy of the list without sorts.
  * @example
  * ```ts
@@ -28,10 +28,10 @@ import type { Sort } from "../types";
 export function sortItems<TItem = Any>(
   items: List<TItem>,
   sorts?: List<Sort<TItem>>,
-  options?: InMemoryQueryOptions<TItem>,
+  options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): List<TItem> {
   if (!sorts || sorts.length === 0) return items.slice();
-  const compare = createComparer(options);
+  const compare = createInMemoryQueryItemsComparer(options);
   const keyed = items.map((item, index) => ({
     index,
     item,

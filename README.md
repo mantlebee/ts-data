@@ -35,7 +35,7 @@ each change without polling.
 - 🔔 **Typed events**: every mutation raises its own event, plus a debounced `*Change` event per extension, on top of `Subscribable` of [`@mantlebee/ts-core`](https://github.com/mantlebee/ts-core)
 - 📑 **Complete pagination**: 1-based pages, clamped navigation, total count kept up to date, automatic return to page 1 when the query changes
 - 🎚️ **Range helpers**: `FilterRange` / `FilterRangeLimit` to bind an interval UI control to a filter
-- 🧠 **In-memory reader**: `createInMemoryReader` resolves filters, sorts and paging over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories
+- 🧠 **In-memory reader**: `createInMemoryQueryItemsReader` resolves filters, sorts and paging over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories
 - 🌳 **Tree-shakable**: ES modules next to the CommonJS bundle, no side effects, no runtime dependency besides the peer
 
 ## Installation
@@ -93,8 +93,16 @@ filtering.on("filtersChange", () => users.read());
 sorting.on("sortsChange", () => users.read());
 paginating.on("page", () => users.read());
 
-filtering.addFilter({ field: "name", operator: FilterOperators.contains, value: "ann" });
-filtering.addFilter({ field: "age", operator: FilterOperators.greaterThanOrEqual, value: 18 });
+filtering.addFilter({
+  field: "name",
+  operator: FilterOperators.contains,
+  value: "ann",
+});
+filtering.addFilter({
+  field: "age",
+  operator: FilterOperators.greaterThanOrEqual,
+  value: 18,
+});
 sorting.addSort({ field: "name", asc: true });
 await users.read();
 // countUsers({ filters, sorts }) → readUsers({ filters, sorts, paging: { page: 1, itemsPerPage: 20, totalItemsCount } })
@@ -111,11 +119,11 @@ one set only by who needs it:
 
 ```typescript
 type QueryItemsPayload<TItem> = {
-  distinct?: boolean;                   // drop duplicated items
-  filters?: FiltersExpression<TItem>;   // conditions
-  paging?: Paging;                      // { page, itemsPerPage, totalItemsCount }, 1-based
+  distinct?: boolean; // drop duplicated items
+  filters?: FiltersExpression<TItem>; // conditions
+  paging?: Paging; // { page, itemsPerPage, totalItemsCount }, 1-based
   projections?: List<Projection<TItem>>; // fields to return, empty = every field
-  sorts?: List<Sort<TItem>>;            // by priority, the first wins
+  sorts?: List<Sort<TItem>>; // by priority, the first wins
 };
 ```
 
@@ -139,14 +147,14 @@ extensions is yours to choose and it matters. `FilterExtension` must precede
 payload it receives. A failure anywhere (reader or hook) raises the `error`
 event, resets `isReading` and rejects `read()`.
 
-| Extension                         | Adds to the payload                                | Highlights                                                                                             |
-| --------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `FilterExtension`                 | `filters` (a `FiltersList`), only when not empty   | flat list with one logic (`and`/`or`); several filters per field allowed; `replaceFiltersOf(field, …)` |
-| `FilterExtensionWithFixedFilters` | `filters`: the fixed expression, grouped with the user filters when there are any | e.g. "only active users" whatever the user chooses                                  |
-| `PaginationExtension`             | `paging`, after reading the total count            | `goTo*Page()` clamped to `[1, lastPage]`, `itemsPerPageOptions`, `resetPageOnQueryChange`              |
-| `SortExtension`                   | `sorts` (always, `[]` = no sort)                   | optional `sortsLimit` (`0` = unlimited); `addSort` replaces the sort on the same field                 |
-| `SingleSortExtension`             | `sorts` with one sort at most                      | `addSort` replaces the current sort, whatever its field                                                |
-| `ProjectionExtension`             | `projections` (always, `[]` = every field)         | `addProjection` ignores a duplicated field                                                             |
+| Extension                         | Adds to the payload                                                               | Highlights                                                                                             |
+| --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `FilterExtension`                 | `filters` (a `FiltersList`), only when not empty                                  | flat list with one logic (`and`/`or`); several filters per field allowed; `replaceFiltersOf(field, …)` |
+| `FilterExtensionWithFixedFilters` | `filters`: the fixed expression, grouped with the user filters when there are any | e.g. "only active users" whatever the user chooses                                                     |
+| `PaginationExtension`             | `paging`, after reading the total count                                           | `goTo*Page()` clamped to `[1, lastPage]`, `itemsPerPageOptions`, `resetPageOnQueryChange`              |
+| `SortExtension`                   | `sorts` (always, `[]` = no sort)                                                  | optional `sortsLimit` (`0` = unlimited); `addSort` replaces the sort on the same field                 |
+| `SingleSortExtension`             | `sorts` with one sort at most                                                     | `addSort` replaces the current sort, whatever its field                                                |
+| `ProjectionExtension`             | `projections` (always, `[]` = every field)                                        | `addProjection` ignores a duplicated field                                                             |
 
 Keep your own references to the extensions, or look one up with
 `getExtension`:
@@ -176,7 +184,9 @@ right place to trigger a new read. `PaginationExtension` raises `page`,
 `itemsPerPage` and `totalItemsCount` only when the value actually changes.
 
 ```typescript
-const subscription = filtering.on("addFilter", (filter, filters) => console.log(filter, filters));
+const subscription = filtering.on("addFilter", (filter, filters) =>
+  console.log(filter, filters),
+);
 await subscription.dispose(); // stop listening
 await users.dispose(); // removes every handler of the data source and of its extensions
 ```
@@ -189,12 +199,23 @@ defines them: `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `contains`, `in`, …). The
 type of `value` follows the operator:
 
 ```typescript
-const adult: Filter<User> = { field: "age", operator: FilterOperators.greaterThanOrEqual, value: 18 };
-const roles: Filter<User> = { field: "role", operator: FilterOperators.in, value: ["admin", "editor"] };
+const adult: Filter<User> = {
+  field: "age",
+  operator: FilterOperators.greaterThanOrEqual,
+  value: 18,
+};
+const roles: Filter<User> = {
+  field: "role",
+  operator: FilterOperators.in,
+  value: ["admin", "editor"],
+};
 const price: Filter<Item> = {
   field: "price",
   operator: FilterOperators.range,
-  value: { min: { value: 10, exclude: false }, max: { value: 20, exclude: true } }, // 10 <= price < 20
+  value: {
+    min: { value: 10, exclude: false },
+    max: { value: 20, exclude: true },
+  }, // 10 <= price < 20
 };
 ```
 
@@ -205,7 +226,9 @@ A `FiltersExpression` is a tree whose node is either a `FiltersList`
 ```typescript
 function toQuery<TItem>(expression: FiltersExpression<TItem>): string {
   if (isFiltersGroup(expression))
-    return "(" + expression.groups.map(toQuery).join(` ${expression.logic} `) + ")";
+    return (
+      "(" + expression.groups.map(toQuery).join(` ${expression.logic} `) + ")"
+    );
   return expression.filters.map(toCondition).join(` ${expression.logic} `);
 }
 ```
@@ -222,7 +245,9 @@ property but `paging`), `false`, or a list of payload properties such as
 `["filters"]`:
 
 ```typescript
-new PaginationExtension<User>(countUsers, 20, undefined, { resetPageOnQueryChange: ["filters"] });
+new PaginationExtension<User>(countUsers, 20, undefined, {
+  resetPageOnQueryChange: ["filters"],
+});
 ```
 
 ### Range filters from the UI
@@ -236,12 +261,20 @@ const price = new FilterRange<number>();
 
 price.on("change", (range) =>
   price.isValid
-    ? filtering.replaceFiltersOf("price", { field: "price", operator: FilterOperators.range, value: range })
+    ? filtering.replaceFiltersOf("price", {
+        field: "price",
+        operator: FilterOperators.range,
+        value: range,
+      })
     : filtering.removeFiltersOf("price"),
 );
 
-minInput.addEventListener("input", () => price.min.setValue(minInput.valueAsNumber || null));
-maxInput.addEventListener("input", () => price.max.setValue(maxInput.valueAsNumber || null));
+minInput.addEventListener("input", () =>
+  price.min.setValue(minInput.valueAsNumber || null),
+);
+maxInput.addEventListener("input", () =>
+  price.max.setValue(maxInput.valueAsNumber || null),
+);
 strictCheckbox.addEventListener("change", () => price.max.toggleExclude());
 ```
 
@@ -250,29 +283,46 @@ collapses to an "equal", `clear()` unsets both.
 
 ### In-memory data
 
-`createInMemoryReader(items, options?)` returns the two readers of a data
+`createInMemoryQueryItemsReader(getItems, options?)` returns the two readers of a data
 source over a plain array, so the extensions work on local data (fixtures,
 stories, small lists) without a second "client mode":
 
 ```typescript
-import { createInMemoryReader, DataSource, FilterExtension, FilterOperators, PaginationExtension, SortExtension } from "@mantlebee/ts-data";
+import {
+  createInMemoryQueryItemsReader,
+  DataSource,
+  FilterExtension,
+  FilterOperators,
+  PaginationExtension,
+  SortExtension,
+} from "@mantlebee/ts-data";
 
-const users: User[] = [{ id: 1, name: "Ann", age: 31 }, { id: 2, name: "Bob", age: 17 }, /* ... */];
-const { countReader, reader } = createInMemoryReader(users);
+const users: User[] = [
+  { id: 1, name: "Ann", age: 31 },
+  { id: 2, name: "Bob", age: 17 } /* ... */,
+];
+const { countReader, reader } = createInMemoryQueryItemsReader(() => users);
 const filtering = new FilterExtension<User>();
 const sorting = new SortExtension<User>();
 const paginating = new PaginationExtension<User>(countReader, 20);
-const dataSource = new DataSource<User>(reader, [filtering, sorting, paginating]);
-filtering.addFilter({ field: "age", operator: FilterOperators.greaterThanOrEqual, value: 18 });
+const dataSource = new DataSource<User>(reader, [
+  filtering,
+  sorting,
+  paginating,
+]);
+filtering.addFilter({
+  field: "age",
+  operator: FilterOperators.greaterThanOrEqual,
+  value: 18,
+});
 sorting.addSort({ field: "name", asc: true });
 await dataSource.read(); // dataSource.items: the adults, by name, first page of 20
 ```
 
 `reader` applies the filters, then the sorts, then the projections (and
 `distinct`), then the page; `countReader` counts the items matching the
-filters. Both resolve on the next microtask
-(so `isReading` is observable) or after `options.delay` milliseconds, and
-both read the list on every call: pass a getter (`() => users`) to swap the
+filters. Both resolve on the next microtask, so `isReading` is observable,
+and both call the getter on every read: return another list to swap the
 data between two reads. The list and its items are never mutated. The same
 logic is available synchronously as `queryItems(items, payload, options?)`
 and `countItems(items, payload, options?)`, and every step on its own:
@@ -302,9 +352,13 @@ import { EventsDefinition, Subscribable } from "@mantlebee/ts-core";
 import { DataSourcePayload, IDataSourceExtension } from "@mantlebee/ts-data";
 
 /** Asks for distinct items and drops the duplicates the storage let through. */
-class DistinctExtension<TItem> extends Subscribable<EventsDefinition>
-  implements IDataSourceExtension<TItem> {
-  public async getItemsBefore(payload: DataSourcePayload<TItem>): Promise<DataSourcePayload<TItem>> {
+class DistinctExtension<TItem>
+  extends Subscribable<EventsDefinition>
+  implements IDataSourceExtension<TItem>
+{
+  public async getItemsBefore(
+    payload: DataSourcePayload<TItem>,
+  ): Promise<DataSourcePayload<TItem>> {
     payload.distinct = true;
     return payload;
   }
@@ -313,7 +367,11 @@ class DistinctExtension<TItem> extends Subscribable<EventsDefinition>
   }
 }
 
-const users = new DataSource<User>(readUsers, [filtering, new DistinctExtension<User>(), paginating]);
+const users = new DataSource<User>(readUsers, [
+  filtering,
+  new DistinctExtension<User>(),
+  paginating,
+]);
 ```
 
 Anything placed before `PaginationExtension` is part of the query it counts
