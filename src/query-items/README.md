@@ -3,7 +3,8 @@
 **The query model**: plain types describing what to read, agnostic of the
 storage that runs the query. A reader (yours) translates a
 `QueryItemsPayload` into the actual request; the extensions of
-[`data-source`](../data-source) build it.
+[`data-source`](../data-source) build it. The `in-memory` folder ships the
+one reader of the package, over a plain array.
 
 ## What's in here
 
@@ -28,6 +29,18 @@ storage that runs the query. A reader (yours) translates a
     controls: `setValue`, `setExclude`, `toggleExclude`, one `change` event
     raised only on an actual change, `toRange()` / `toRangeLimit()` to get the
     plain value.
+- **`in-memory/`** — the reference implementation of a reader, over a plain
+  array: `queryItems(items, payload, options?)` (filters, then sorts, then the
+  page; every operator, expression trees at any depth, stable sorts with unset
+  values first ascending), `countItems(items, payload, options?)` (the matching
+  items, for the pagination) and `createInMemoryReader(items | () => items,
+  options?)` returning `{ reader, countReader }` for a `DataSource`, resolving
+  on the next microtask or after `options.delay`. `toComparableValue` is the
+  default conversion of the compared values (strings lower-cased unless
+  `options.caseSensitive`, `Date` by time, value objects by `valueOf()`),
+  overridable per field with `options.toComparable`. Types:
+  `InMemoryItems`, `InMemoryQueryOptions`, `InMemoryReaderOptions`,
+  `InMemoryReader`.
 - **`pagination/`** — `Paging`: `page` (1-based), `itemsPerPage`,
   `totalItemsCount`.
 - **`projection/`** — `Projection<TItem>`: the `field` to return.
