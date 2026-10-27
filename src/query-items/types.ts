@@ -36,3 +36,22 @@ export type QueryItemsPayload<TItem = Any> = {
   /** Order of the items, by priority: the first sort wins. */
   sorts?: List<Sort<TItem>>;
 };
+
+/**
+ * Function that resolves a {@link QueryItemsPayload} into a result: the
+ * items matching it, or anything else derived from it (e.g. the total count
+ * a pagination needs). A `DataSource` reads through one; the `in-memory`
+ * folder ships readers over a plain array.
+ * @typeParam TItem Type of the items.
+ * @typeParam TResult Type of the result, the list of items by default.
+ * @example
+ * ```ts
+ * const reader: QueryItemsReader<User> = (payload) =>
+ *   fetch("/users", { body: JSON.stringify(payload), method: "POST" }).then((a) => a.json());
+ * const countReader: QueryItemsReader<User, number> = (payload) =>
+ *   fetch("/users/count", { body: JSON.stringify(payload.filters), method: "POST" }).then((a) => a.json());
+ * ```
+ */
+export type QueryItemsReader<TItem = Any, TResult = List<TItem>> = (
+  payload: QueryItemsPayload<TItem>,
+) => Promise<TResult>;

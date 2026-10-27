@@ -268,13 +268,16 @@ sorting.addSort({ field: "name", asc: true });
 await dataSource.read(); // dataSource.items: the adults, by name, first page of 20
 ```
 
-`reader` applies the filters, then the sorts, then the page; `countReader`
-counts the items matching the filters. Both resolve on the next microtask
+`reader` applies the filters, then the sorts, then the projections (and
+`distinct`), then the page; `countReader` counts the items matching the
+filters. Both resolve on the next microtask
 (so `isReading` is observable) or after `options.delay` milliseconds, and
 both read the list on every call: pass a getter (`() => users`) to swap the
 data between two reads. The list and its items are never mutated. The same
 logic is available synchronously as `queryItems(items, payload, options?)`
-and `countItems(items, payload, options?)`.
+and `countItems(items, payload, options?)`, and every step on its own:
+`filterItems`, `sortItems`, `projectItems`, `distinctItems`, `pageItems`,
+each exported by the `in-memory` folder of its feature.
 
 Values are compared through `toComparableValue`: numbers and booleans as they
 are, strings lower-cased (`options.caseSensitive: true` to keep the case;

@@ -1,6 +1,18 @@
 import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
-import type { DataSourceReader } from "@/data-source/types";
+import type { QueryItemsReader } from "../types";
+
+/**
+ * Converts the value of a field of an item, or of a filter on that field,
+ * into the primitive the in-memory delegates compare with `===`, `<` and
+ * `>`. Typed `Any` on purpose: the relational operators are applied to
+ * whatever the conversion returns. See {@link createComparer}.
+ * @typeParam TItem Type of the items.
+ */
+export type Comparer<TItem = Any> = (
+  value: unknown,
+  field: KeyOf<TItem>,
+) => Any;
 
 /**
  * Items served by an in-memory reader: a list, or a getter returning the
@@ -10,8 +22,9 @@ import type { DataSourceReader } from "@/data-source/types";
 export type InMemoryItems<TItem = Any> = List<TItem> | (() => List<TItem>);
 
 /**
- * Options of {@link queryItems} and {@link countItems}: how the values of the
- * items and of the filters are compared.
+ * Options of the in-memory delegates ({@link filterItems},
+ * {@link sortItems}) and of {@link queryItems} / {@link countItems}: how
+ * the values of the items and of the filters are compared.
  * @typeParam TItem Type of the items.
  */
 export type InMemoryQueryOptions<TItem = Any> = {
@@ -38,7 +51,7 @@ export type InMemoryQueryOptions<TItem = Any> = {
    * };
    * ```
    */
-  toComparable?: (value: unknown, field: KeyOf<TItem>) => unknown;
+  toComparable?: Comparer<TItem>;
 };
 
 /**
@@ -62,8 +75,8 @@ export type InMemoryReaderOptions<TItem = Any> = InMemoryQueryOptions<TItem> & {
  * @typeParam TItem Type of the items.
  */
 export type InMemoryReader<TItem = Any> = {
-  /** Resolves the number of items matching the filters of the payload, for the `PaginationExtension`. */
-  countReader: DataSourceReader<TItem, number>;
-  /** Resolves the items matching the payload: filtered, sorted, then paged. */
-  reader: DataSourceReader<TItem>;
+  /** Resolves the number of items matching the payload, for the `PaginationExtension`. */
+  countReader: QueryItemsReader<TItem, number>;
+  /** Resolves the items matching the payload: filtered, sorted, projected, then paged. */
+  reader: QueryItemsReader<TItem>;
 };

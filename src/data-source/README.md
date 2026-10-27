@@ -22,7 +22,8 @@ the count receives the filters).
   (`options.changeDelay`, default `DataSourceExtensionChangeDelayDefault` = 100 ms)
   cancelled by `dispose()`. Custom extensions only need `IDataSourceExtension`.
 - **`types.ts`** — `DataSourceEvents`, `DataSourceExtensionOptions`,
-  `DataSourcePayload` (= `QueryItemsPayload`), `DataSourceReader<TItem, TResult>`.
+  `DataSourcePayload` (= `QueryItemsPayload`), `DataSourceReader<TItem, TResult>`
+  (= `QueryItemsReader`).
 - **`filtering/`** — `FilterExtension`: flat list of filters with one logic,
   sent as a `FiltersList` only when not empty; several filters per field
   allowed (`addFilter`, `removeFilter`, `removeFiltersOf`, `replaceFiltersOf`,

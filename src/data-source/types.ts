@@ -1,6 +1,6 @@
 import { Any, EventsDefinition, List } from "@mantlebee/ts-core";
 
-import { QueryItemsPayload } from "@/query-items";
+import { QueryItemsPayload, QueryItemsReader } from "@/query-items";
 
 /**
  * Events of a {@link DataSource}.
@@ -32,8 +32,10 @@ export type DataSourcePayload<TItem = Any> = QueryItemsPayload<TItem>;
 
 /**
  * Function that resolves a payload into a result: the items of the data
- * source, or anything else an extension needs (e.g. the total count).
+ * source, or anything else an extension needs (e.g. the total count). The
+ * same as `QueryItemsReader`, named from the data source's point of view.
  */
-export type DataSourceReader<TItem = Any, TResult = List<TItem>> = (
-  payload: DataSourcePayload<TItem>,
-) => Promise<TResult>;
+export type DataSourceReader<
+  TItem = Any,
+  TResult = List<TItem>,
+> = QueryItemsReader<TItem, TResult>;
