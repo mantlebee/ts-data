@@ -42,16 +42,26 @@ export type QueryItemsPayload<TItem = Any> = {
  * items matching it, or anything else derived from it (e.g. the total count
  * a pagination needs). A `DataSource` reads through one; the `in-memory`
  * folder ships readers over a plain array.
+ *
+ * The optional `signal` is aborted when the read the reader serves is
+ * superseded by a newer one (or the data source is disposed): hand it to
+ * `fetch` to cancel the request, or ignore it, the data source discards the
+ * result of a superseded read anyway. Every reader written for the first
+ * parameter only keeps working.
  * @typeParam TItem Type of the items.
  * @typeParam TResult Type of the result, the list of items by default.
+ * @param payload Query to resolve.
+ * @param signal Aborted when the result is no longer needed; `undefined`
+ * when the caller has nothing to abort.
  * @example
  * ```ts
- * const reader: QueryItemsReader<User> = (payload) =>
- *   fetch("/users", { body: JSON.stringify(payload), method: "POST" }).then((a) => a.json());
- * const countReader: QueryItemsReader<User, number> = (payload) =>
- *   fetch("/users/count", { body: JSON.stringify(payload.filters), method: "POST" }).then((a) => a.json());
+ * const reader: QueryItemsReader<User> = (payload, signal) =>
+ *   fetch("/users", { body: JSON.stringify(payload), method: "POST", signal }).then((a) => a.json());
+ * const countReader: QueryItemsReader<User, number> = (payload, signal) =>
+ *   fetch("/users/count", { body: JSON.stringify(payload.filters), method: "POST", signal }).then((a) => a.json());
  * ```
  */
 export type QueryItemsReader<TItem = Any, TResult = List<TItem>> = (
   payload: QueryItemsPayload<TItem>,
+  signal?: AbortSignal,
 ) => Promise<TResult>;

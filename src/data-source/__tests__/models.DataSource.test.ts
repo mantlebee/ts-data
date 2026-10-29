@@ -82,7 +82,7 @@ describe("DataSource", () => {
       );
       const dataSource = new DataSource<Item>(reader);
       await dataSource.read();
-      expect(reader).toHaveBeenCalledWith({});
+      expect(reader).toHaveBeenCalledWith({}, expect.any(AbortSignal));
     });
 
     describe("when the reader rejects", () => {
@@ -198,7 +198,7 @@ describe("DataSource", () => {
       ]);
       expect(payloadReceivedByB).toBe(payloadOfA);
       expect(reader).toHaveBeenCalledTimes(1);
-      expect(reader).toHaveBeenCalledWith(payloadOfB);
+      expect(reader).toHaveBeenCalledWith(payloadOfB, expect.any(AbortSignal));
     });
     test("getItemsAfter receives the items of the previous extension and the payload used to read", async () => {
       const payload: DataSourcePayload<Item> = {
@@ -215,7 +215,11 @@ describe("DataSource", () => {
         extensionB,
       ]);
       await dataSource.read();
-      expect(afterB).toHaveBeenCalledWith([item3], payload);
+      expect(afterB).toHaveBeenCalledWith(
+        [item3],
+        payload,
+        expect.any(AbortSignal),
+      );
       expect(dataSource.items).toEqual([item3]);
     });
     test("Extensions without hooks are skipped", async () => {

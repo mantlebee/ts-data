@@ -86,7 +86,7 @@ describe("PaginationExtension", () => {
       const payload: DataSourcePayload<Item> = {};
       await extension.getItemsBefore(payload);
       expect(reader).toHaveBeenCalledTimes(1);
-      expect(reader).toHaveBeenCalledWith(payload);
+      expect(reader).toHaveBeenCalledWith(payload, undefined);
     });
     test("Stores the total items count", async () => {
       const { extension } = await createReadExtension(25, 10);

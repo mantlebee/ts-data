@@ -10,13 +10,15 @@ import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
 /**
  * Reads the total count with its own reader on every read, then adds the
  * {@link Paging} to the payload. Place it after the extensions whose
- * contribution the count must consider (filters above all).
+ * contribution the count must consider (filters above all). The count reader
+ * receives the signal of the read, so it can hand it to `fetch`.
  * By default it goes back to the first page when the query built by the
  * previous extensions changes between two reads
  * ({@link PaginationExtensionOptions.resetPageOnQueryChange}).
  * @typeParam TItem Type of the items.
  * @example
  * ```ts
+ * const countUsers = (payload, signal) => api.countUsers(payload, { signal });
  * const paginating = new PaginationExtension<User>(countUsers, 20, [10, 20, 50]);
  * const dataSource = new DataSource<User>(readUsers, [filtering, paginating]);
  * paginating.on("page", () => dataSource.read());
@@ -115,11 +117,18 @@ export class PaginationExtension<TItem = Any>
       totalItemsCount: this.totalItemsCount,
     };
   }
+  /**
+   * Reads the total count, forwarding the signal of the read to the count
+   * reader, then adds the paging. Nothing is updated when the read was
+   * superseded while the count was pending.
+   */
   public async getItemsBefore(
     payload: DataSourcePayload<TItem>,
+    signal?: AbortSignal,
   ): Promise<DataSourcePayload<TItem>> {
     this._resetPageIfQueryChanged(payload);
-    const totalItemsCount = await this._totalCountReader(payload);
+    const totalItemsCount = await this._totalCountReader(payload, signal);
+    if (signal?.aborted) return payload;
     if (totalItemsCount !== this._totalItemsCount) {
       this._totalItemsCount = totalItemsCount;
       this._eventBus.trigger("totalItemsCount", totalItemsCount);

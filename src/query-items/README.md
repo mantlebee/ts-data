@@ -12,8 +12,9 @@ and the `in-memory` folder composes them into the one reader of the package.
 - **`types.ts`** — `QueryItemsPayload<TItem>`: `distinct?`, `filters?`,
   `paging?`, `projections?`, `sorts?`, every property optional and set only by
   who needs it. `QueryItemsReader<TItem, TResult = List<TItem>>`: the function
-  resolving a payload into a result (`DataSourceReader` of `data-source` is
-  the same type).
+  `(payload, signal?) => Promise<TResult>` resolving a payload into a result
+  (`DataSourceReader` of `data-source` is the same type); the optional
+  `AbortSignal` is aborted when the read is superseded by a newer one.
 - **`filtering/`**:
   - **`constants.ts`** — `FilterLogics` (`and`, `or`) and `FilterOperators`
     (`eq`, `ne`, `gt`, `ge`, `lt`, `le`, `contains`, `notContains`, `in`,

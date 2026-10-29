@@ -14,6 +14,7 @@ each change without polling.
 - [Features](#features)
 - [Installation](#installation)
 - [Upgrading to 1.0](#upgrading-to-10)
+- [Upgrading to 1.2](#upgrading-to-12)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
   - [The payload](#the-payload)
@@ -31,6 +32,7 @@ each change without polling.
 ## Features
 
 - 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you compose in the order you need, and you can write your own
+- 🏁 **The latest read wins**: a `read()` requested while another is running supersedes it, `items` always come from the latest read, `isReading` follows it, and the readers receive an `AbortSignal` to hand to `fetch`
 - 📄 **Storage-agnostic query model**: `QueryItemsPayload` with typed `Filter`s (OData-like operators), `Sort`s, `Paging` and `Projection`s, translated by your reader
 - 🔔 **Typed events**: every mutation raises its own event, plus a debounced `*Change` event per extension, on top of `Subscribable` of [`@mantlebee/ts-core`](https://github.com/mantlebee/ts-core)
 - 📑 **Complete pagination**: 1-based pages, clamped navigation, total count kept up to date, automatic return to page 1 when the query changes
@@ -44,8 +46,8 @@ each change without polling.
 npm install @mantlebee/ts-data @mantlebee/ts-core
 ```
 
-`@mantlebee/ts-core` (`^1.2.1`) is a **peer dependency**: install it alongside
-this package. It works in the browser and in Node alike. TypeScript projects need `strict` or at least
+`@mantlebee/ts-core` (`^1.3.0`, the version that ships `AbortableDelegate`) is a
+**peer dependency**: install it alongside this package. It works in the browser and in Node alike. TypeScript projects need `strict` or at least
 `strictNullChecks` for the discriminated `Filter` type to work as intended.
 
 ## Upgrading to 1.0
@@ -54,6 +56,15 @@ Version 1.0.0 replaces the whole 0.1.0 API (`browsing`, `querying`) and
 supersedes the copy of this code living in `bl-core`. See the
 [1.0.0 release notes](https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/1.0.0.md)
 for the two migration guides and the checklist.
+
+## Upgrading to 1.2
+
+Version 1.2.0 makes the latest read win: a `read()` requested while another
+is running supersedes it, and the superseded `read()` **rejects with
+`AbortedException`** of ts-core. A consumer awaiting `read()` ignores that
+rejection with `isAbortedException`; one that only listens to `items` and
+`error` has nothing to change. It needs `@mantlebee/ts-core` 1.3.0. See the
+[1.2.0 release notes](https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/1.2.0.md).
 
 ## Quick Start
 
@@ -70,10 +81,18 @@ import {
 type User = { id: number; name: string; age: number };
 
 // Your readers: translate the payload into a request and return the result.
-const readUsers = (payload: QueryItemsPayload<User>): Promise<User[]> =>
-  api.get("/users", { params: toQueryString(payload) });
-const countUsers = (payload: QueryItemsPayload<User>): Promise<number> =>
-  api.get("/users/count", { params: toQueryString(payload) });
+// The signal is aborted when a newer read supersedes this one: hand it to
+// your HTTP client to cancel the request, or ignore it.
+const readUsers = (
+  payload: QueryItemsPayload<User>,
+  signal?: AbortSignal,
+): Promise<User[]> =>
+  api.get("/users", { params: toQueryString(payload), signal });
+const countUsers = (
+  payload: QueryItemsPayload<User>,
+  signal?: AbortSignal,
+): Promise<number> =>
+  api.get("/users/count", { params: toQueryString(payload), signal });
 
 // Write the item type on every extension: it cannot be inferred later.
 const filtering = new FilterExtension<User>();
@@ -130,22 +149,49 @@ type QueryItemsPayload<TItem> = {
 The package never runs a query: your **reader** does, by translating the
 payload into whatever your storage understands. The reader of the items
 returns `Promise<TItem[]>`, the count reader of the pagination returns
-`Promise<number>`; both receive the same payload.
+`Promise<number>`; both receive the same payload and, as optional second
+argument, the `AbortSignal` of the read.
 
 ### The data source and its extensions
 
-`DataSource<TItem>` holds the items of the last read and the `isReading` flag,
-and runs the **read cycle** on `read()`:
+`DataSource<TItem>` holds the items of the latest read and the `isReading`
+flag, and runs the **read cycle** on `read()`:
 
-1. `getItemsBefore(payload)` of each extension, in array order, builds the payload;
-2. the reader resolves the payload into the items;
-3. `getItemsAfter(items, payload)` of each extension, in array order, may transform the items.
+1. `getItemsBefore(payload, signal)` of each extension, in array order, builds the payload;
+2. the reader resolves the payload into the items, `reader(payload, signal)`;
+3. `getItemsAfter(items, payload, signal)` of each extension, in array order, may transform the items.
 
 The data source knows nothing about filters or pages: the order of the
 extensions is yours to choose and it matters. `FilterExtension` must precede
 `PaginationExtension`, because the pagination reads the total count with the
 payload it receives. A failure anywhere (reader or hook) raises the `error`
-event, resets `isReading` and rejects `read()`.
+event, rejects `read()` with the same error and, when no newer read is
+running, resets `isReading`.
+
+**The latest read wins.** A `read()` requested while another is running
+supersedes it (the cycle runs in the `AbortableDelegate` of ts-core): the
+superseded `read()` rejects with `AbortedException` at once, its `signal` is
+aborted, and its cycle stops at the next `await` without touching `items`
+nor raising `items` or `error`, whatever its reader returns later. `items`
+and the `items` event therefore always come from the latest read, and
+`isReading` is `true` from the first `read()` of a burst until the latest one
+settles (the `isReading` event is raised only on these two transitions).
+`dispose()` aborts the running read the same way. A consumer awaiting
+`read()` ignores the supersession with `isAbortedException`:
+
+```typescript
+import { isAbortedException } from "@mantlebee/ts-core";
+
+try {
+  await users.read();
+} catch (error) {
+  if (!isAbortedException(error)) throw error; // a newer read superseded this one
+}
+```
+
+The `signal` given to the reader and to the hooks is aborted exactly when the
+read is superseded (or the source disposed): hand it to `fetch` to cancel the
+request, or ignore it, the result of a superseded read is discarded anyway.
 
 | Extension                         | Adds to the payload                                                               | Highlights                                                                                             |
 | --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -346,6 +392,9 @@ a page beyond the last one is empty.
 An extension is any `ISubscribable` implementing the optional hooks of
 `IDataSourceExtension`. `DataSourceExtension` is the base class used by the
 package (debounced `*Change` event); your own extension does not need it.
+Both hooks receive the `AbortSignal` of the read as optional last parameter:
+declare it only if the extension reads something and can hand it over, as
+`PaginationExtension` does with its count reader.
 
 ```typescript
 import { EventsDefinition, Subscribable } from "@mantlebee/ts-core";

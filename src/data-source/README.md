@@ -11,13 +11,19 @@ the count receives the filters).
 
 - **`interfaces.ts`** — `IDataSource<TItem>` (`items`, `isReading`, `read()`,
   `getExtension(constructor)`) and `IDataSourceExtension<TItem, TEvents>`, the
-  hooks of the read cycle, both optional:
-  1. `getItemsBefore(payload)` of each extension builds the payload;
-  2. the reader resolves it into the items;
-  3. `getItemsAfter(items, payload)` of each extension may transform them.
-- **`models.ts`** — `DataSource`: runs the cycle, keeps `items`, raises
-  `isReading`, `items` and `error` (then rethrows); `dispose()` disposes the
-  extensions too. `DataSourceExtension`: optional base class of the package
+  hooks of the read cycle, both optional and both given the `AbortSignal` of
+  the read as optional last parameter:
+  1. `getItemsBefore(payload, signal?)` of each extension builds the payload;
+  2. the reader resolves it into the items, `reader(payload, signal)`;
+  3. `getItemsAfter(items, payload, signal?)` of each extension may transform them.
+- **`models.ts`** — `DataSource`: runs the cycle in one `AbortableDelegate` of
+  ts-core so that **the latest read wins**: a `read()` requested while another
+  is running supersedes it (the superseded `read()` rejects with
+  `AbortedException` at once, its signal is aborted, its cycle never touches
+  the state); keeps `items` of the latest read, raises `isReading` on the
+  transitions of the burst, `items` and `error` (then rethrows) for the latest
+  read only; `dispose()` aborts the running read and disposes the extensions
+  too. `DataSourceExtension`: optional base class of the package
   extensions, a `Subscribable` with a debounced `*Change` event
   (`options.changeDelay`, default `DataSourceExtensionChangeDelayDefault` = 100 ms)
   cancelled by `dispose()`. Custom extensions only need `IDataSourceExtension`.
@@ -31,8 +37,8 @@ the count receives the filters).
   debounced `filtersChange`. `FilterExtensionWithFixedFilters`: always sends a
   fixed expression, grouped with the user filters through `groupsLogic`.
 - **`pagination/`** — `PaginationExtension(countReader, itemsPerPage,
-  itemsPerPageOptions?, options?)`: reads the total count on every read, then
-  adds `paging`. 1-based pages clamped to `[1, lastPage]` (`goToPage`,
+  itemsPerPageOptions?, options?)`: reads the total count on every read,
+  forwarding the signal of the read to `countReader`, then adds `paging`. 1-based pages clamped to `[1, lastPage]` (`goToPage`,
   `goToFirstPage`, `goToLastPage`, `goToNextPage`, `goToPreviousPage`,
   `canGoNextPage`, `canGoPreviousPage`), `setItemsPerPage` validated against
   the options, events (`page`, `itemsPerPage`, `totalItemsCount`) only on an
