@@ -4,7 +4,7 @@ import { IDataSourceExtension } from "../interfaces";
 import { PaginationExtensionEvents } from "./types";
 
 /**
- * Extension that adds a {@link Paging} to the payload and keeps the total
+ * Extension that adds a {@link Pagination} to the payload and keeps the total
  * count up to date. Pages are 1-based and always clamped to `[1, lastPage]`.
  * By default a change of the query built by the previous extensions (filters,
  * sorts, ...) between two reads brings the page back to 1

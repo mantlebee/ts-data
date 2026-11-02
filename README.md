@@ -3,7 +3,7 @@
 > Models and utilities to query and navigate data (filtering, sorting, pagination, projection) through an extensible, event-driven data source.
 
 A small library that separates **what** a query asks for from **how** it is
-run: the `QueryItemsPayload` describes filters, sorts, paging and projections
+run: the `QueryItemsPayload` describes filters, sorts, pagination and projections
 in a storage-agnostic way, and a `DataSource` builds it through a chain of
 **extensions** before handing it to your reader (an HTTP call, a SQL query, an
 in-memory filter, …). Every piece raises typed events, so a UI can react to
@@ -22,7 +22,7 @@ each change without polling.
   - [The data source and its extensions](#the-data-source-and-its-extensions)
   - [Capabilities](#capabilities)
   - [Events](#events)
-  - [Filters, sorts, paging and projections](#filters-sorts-paging-and-projections)
+  - [Filters, sorts, pagination and projections](#filters-sorts-pagination-and-projections)
   - [Range filters from the UI](#range-filters-from-the-ui)
   - [In-memory data](#in-memory-data)
   - [Writing an extension](#writing-an-extension)
@@ -36,11 +36,11 @@ each change without polling.
 - 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own
 - 🧾 **Extensions in the type**: `createDataSource(reader, { filtering, pagination, distinct })` returns an `IDataSource` whose type carries every extension by key, custom ones included, so a consumer declares what it needs in a signature (`source: IDataSource<User, "filtering" | "pagination">`) and the compiler checks it, no `instanceof` probing
 - 🏁 **The latest read wins**: a `read()` requested while another is running supersedes it, `items` always come from the latest read, `isReading` follows it, and the readers receive an `AbortSignal` to hand to `fetch`
-- 📄 **Storage-agnostic query model**: `QueryItemsPayload` with typed `Filter`s (OData-like operators), `Sort`s, `Paging` and `Projection`s, translated by your reader
+- 📄 **Storage-agnostic query model**: `QueryItemsPayload` with typed `Filter`s (OData-like operators), `Sort`s, `Pagination` and `Projection`s, translated by your reader
 - 🔔 **Typed events**: every mutation raises its own event, plus a debounced `*Change` event per extension, on top of `Subscribable` of [`@mantlebee/ts-core`](https://github.com/mantlebee/ts-core)
 - 📑 **Complete pagination**: 1-based pages, clamped navigation, total count kept up to date, automatic return to page 1 when the query changes
 - 🎚️ **Range helpers**: `FilterRange` / `FilterRangeLimit` to bind an interval UI control to a filter
-- 🧠 **In-memory reader**: `createInMemoryQueryItemsReader` resolves filters, sorts and paging over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories
+- 🧠 **In-memory reader**: `createInMemoryQueryItemsReader` resolves filters, sorts and pagination over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories
 - 🌳 **Tree-shakable**: ES modules next to the CommonJS bundle, no side effects, no runtime dependency besides the peer
 
 ## Installation
@@ -140,7 +140,7 @@ users.filtering.addFilter({
 });
 users.sorting.addSort({ field: "name", asc: true });
 await users.read();
-// countUsers({ filters, sorts }) → readUsers({ filters, sorts, paging: { page: 1, itemsPerPage: 20, totalItemsCount } })
+// countUsers({ filters, sorts }) → readUsers({ filters, sorts, pagination: { page: 1, itemsPerPage: 20, totalItemsCount } })
 
 users.pagination.goToNextPage(); // `page` event → read()
 ```
@@ -156,7 +156,7 @@ one set only by who needs it:
 type QueryItemsPayload<TItem> = {
   distinct?: boolean; // drop duplicated items
   filters?: FiltersExpression<TItem>; // conditions
-  paging?: Paging; // { page, itemsPerPage, totalItemsCount }, 1-based
+  pagination?: Pagination; // { page, itemsPerPage, totalItemsCount }, 1-based
   projections?: List<Projection<TItem>>; // fields to return, empty = every field
   sorts?: List<Sort<TItem>>; // by priority, the first wins
 };
@@ -215,7 +215,7 @@ request, or ignore it, the result of a superseded read is discarded anyway.
 | --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `FilterExtension`                 | `filters` (a `FiltersList`), only when not empty                                  | flat list with one logic (`and`/`or`); several filters per field allowed; `replaceFiltersOf(field, …)` |
 | `FilterExtensionWithFixedFilters` | `filters`: the fixed expression, grouped with the user filters when there are any | e.g. "only active users" whatever the user chooses                                                     |
-| `PaginationExtension`             | `paging`, after reading the total count                                           | `goTo*Page()` clamped to `[1, lastPage]`, `itemsPerPageOptions`, `resetPageOnQueryChange`              |
+| `PaginationExtension`             | `pagination`, after reading the total count                                           | `goTo*Page()` clamped to `[1, lastPage]`, `itemsPerPageOptions`, `resetPageOnQueryChange`              |
 | `SortExtension`                   | `sorts` (always, `[]` = no sort)                                                  | optional `sortsLimit` (`0` = unlimited); `addSort` replaces the sort on the same field                 |
 | `SingleSortExtension`             | `sorts` with one sort at most                                                     | `addSort` replaces the current sort, whatever its field                                                |
 | `ProjectionExtension`             | `projections` (always, `[]` = every field)                                        | `addProjection` ignores a duplicated field                                                             |
@@ -341,7 +341,7 @@ await subscription.dispose(); // stop listening
 await users.dispose(); // removes every handler of the data source and of its extensions
 ```
 
-### Filters, sorts, paging and projections
+### Filters, sorts, pagination and projections
 
 A `Filter` is `{ field, operator, value }`, where `field` is a key of the item
 and `operator` is a member of `FilterOperators` (values follow OData 4 where it
@@ -383,7 +383,7 @@ function toQuery<TItem>(expression: FiltersExpression<TItem>): string {
 }
 ```
 
-`Sort` is `{ field, asc }`, `Projection` is `{ field }`, `Paging` is
+`Sort` is `{ field, asc }`, `Projection` is `{ field }`, `Pagination` is
 `{ page, itemsPerPage, totalItemsCount }` with 1-based pages: the items to
 skip are `(page - 1) * itemsPerPage`.
 
@@ -391,7 +391,7 @@ skip are `(page - 1) * itemsPerPage`.
 previous extensions differs from the one of the previous read (compared by
 hash, so the first read never resets and a filter removed and re-added is not
 a change). Tune it with `resetPageOnQueryChange`: `true` (default, every
-property but `paging`), `false`, or a list of payload properties such as
+property but `pagination`), `false`, or a list of payload properties such as
 `["filters"]`:
 
 ```typescript
@@ -536,7 +536,7 @@ The generated API documentation, release notes included, is published at
 
 ## Project Structure
 
-- [`src/query-items`](src/query-items/README.md): the query model (`QueryItemsPayload`, filters, sorts, paging, projections), the `FilterRange` helpers and the in-memory reader.
+- [`src/query-items`](src/query-items/README.md): the query model (`QueryItemsPayload`, filters, sorts, pagination, projections), the `FilterRange` helpers and the in-memory reader.
 - [`src/data-source`](src/data-source/README.md): `DataSource`, `createDataSource`, the extension contract and the extensions shipped with the package.
 - `docs/release-notes`: one file per release with the migration guide; `docs/api` is generated by `npm run doc`.
 - `test/fixtures`: deterministic items and readers used by the tests.

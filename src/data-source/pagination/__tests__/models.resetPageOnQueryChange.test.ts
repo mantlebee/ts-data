@@ -71,14 +71,14 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       const { dataSource, paginating, reader } = await setup();
       await dataSource.read();
       expect(paginating.page).toBe(3);
-      expect(reader.mock.calls[0][0].paging?.page).toBe(3);
+      expect(reader.mock.calls[0][0].pagination?.page).toBe(3);
     });
     test("A filter added before the read brings the page back to 1 in the payload", async () => {
       const { dataSource, filtering, paginating, reader } = await setup();
       filtering.addFilter(filterId);
       await dataSource.read();
       expect(paginating.page).toBe(1);
-      expect(reader.mock.calls[0][0].paging?.page).toBe(1);
+      expect(reader.mock.calls[0][0].pagination?.page).toBe(1);
     });
     test("The page is reset before the count reader is called", async () => {
       const pages: number[] = [];
@@ -143,12 +143,12 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       await dataSource.read();
       expect(paginating.page).toBe(1);
     });
-    test("Only the paging of the previous read is ignored", async () => {
+    test("Only the pagination of the previous read is ignored", async () => {
       const paginating = new PaginationExtension<Item>(async () => 50, 10);
       await paginating.getItemsBefore({});
       paginating.goToPage(3);
       await paginating.getItemsBefore({
-        paging: { itemsPerPage: 1, page: 1, totalItemsCount: 1 },
+        pagination: { itemsPerPage: 1, page: 1, totalItemsCount: 1 },
       });
       expect(paginating.page).toBe(3);
     });
@@ -174,7 +174,7 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       filtering.addFilter(filterId);
       await dataSource.read();
       expect(paginating.page).toBe(3);
-      expect(reader.mock.calls[0][0].paging?.page).toBe(3);
+      expect(reader.mock.calls[0][0].pagination?.page).toBe(3);
     });
   });
 

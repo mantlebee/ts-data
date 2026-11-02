@@ -10,7 +10,7 @@ and the `in-memory` folder composes them into the one reader of the package.
 ## What's in here
 
 - **`types.ts`** — `QueryItemsPayload<TItem>`: `distinct?`, `filters?`,
-  `paging?`, `projections?`, `sorts?`, every property optional and set only by
+  `pagination?`, `projections?`, `sorts?`, every property optional and set only by
   who needs it. `QueryItemsReader<TItem, TResult = List<TItem>>`: the function
   `(payload, signal?) => Promise<TResult>` resolving a payload into a result
   (`DataSourceReader` of `data-source` is the same type); the optional
@@ -51,9 +51,9 @@ and the `in-memory` folder composes them into the one reader of the package.
   and `createInMemoryQueryItemsComparer(options?)` resolving the options into the
   `InMemoryQueryItemsComparer`. Types: `InMemoryQueryItemsComparer`,
   `InMemoryQueryItemsReaderOptions`, `InMemoryQueryItemsReader`.
-- **`pagination/`** — `Paging`: `page` (1-based), `itemsPerPage`,
+- **`pagination/`** — `Pagination`: `page` (1-based), `itemsPerPage`,
   `totalItemsCount`.
-  - **`in-memory/`** — `pageItems(items, paging?)`: the items of the page,
+  - **`in-memory/`** — `pageItems(items, pagination?)`: the items of the page,
     1-based, empty beyond the last one.
 - **`projection/`** — `Projection<TItem>`: the `field` to return.
   - **`in-memory/`** — `projectItems(items, projections?)`: new objects with

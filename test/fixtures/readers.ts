@@ -35,7 +35,7 @@ export function createCountReader<TItem>(
 }
 
 /**
- * Items reader that serves `items` applying only the `paging` of the payload
+ * Items reader that serves `items` applying only the `pagination` of the payload
  * (filters, sorts and projections are recorded, not applied) and records the
  * payloads.
  * @param items Items to serve, in order.
@@ -48,10 +48,10 @@ export function createItemsReader<TItem>(
     payloads,
     reader: async (payload) => {
       payloads.push({ ...payload });
-      const paging = payload.paging;
-      if (!paging) return items;
-      const start = (paging.page - 1) * paging.itemsPerPage;
-      return items.slice(start, start + paging.itemsPerPage);
+      const pagination = payload.pagination;
+      if (!pagination) return items;
+      const start = (pagination.page - 1) * pagination.itemsPerPage;
+      return items.slice(start, start + pagination.itemsPerPage);
     },
   };
 }

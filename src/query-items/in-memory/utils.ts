@@ -15,18 +15,18 @@ import type {
  * step to the in-memory utils of the feature: {@link filterItems} with
  * `payload.filters`, {@link sortItems} with `payload.sorts`,
  * {@link projectItems} with `payload.projections`, {@link distinctItems}
- * when `payload.distinct`, then {@link pageItems} with `payload.paging`.
+ * when `payload.distinct`, then {@link pageItems} with `payload.pagination`.
  * The list and its items are never mutated; the result is always a new array.
  * @param items Items to query.
  * @param payload Query to resolve; every property is optional.
  * @param options Comparison options, see {@link InMemoryQueryItemsReaderOptions}.
  * @returns the items of the requested page, every matching item when the
- * payload has no paging, a copy of the list when it has no property.
+ * payload has no pagination, a copy of the list when it has no property.
  * @example
  * ```ts
  * const page = queryItems(users, {
  *   filters: { filters: [{ field: "age", operator: FilterOperators.greaterThanOrEqual, value: 18 }], logic: FilterLogics.and },
- *   paging: { itemsPerPage: 20, page: 2, totalItemsCount: 0 },
+ *   pagination: { itemsPerPage: 20, page: 2, totalItemsCount: 0 },
  *   sorts: [{ asc: true, field: "lastName" }],
  * });
  * ```
@@ -39,12 +39,12 @@ export function queryItems<TItem = Any>(
   const filtered = filterItems(items, payload.filters, options);
   const sorted = sortItems(filtered, payload.sorts, options);
   const projected = project(sorted, payload);
-  return pageItems(projected, payload.paging);
+  return pageItems(projected, payload.pagination);
 }
 
 /**
  * Counts the items of a list matching a payload, ignoring its sorts and
- * paging: the total count reader of the `PaginationExtension`, so the count
+ * pagination: the total count reader of the `PaginationExtension`, so the count
  * agrees with the pages of {@link queryItems}. With `payload.distinct` the
  * duplicates, found on `payload.projections` when given, are not counted.
  * @param items Items to count.

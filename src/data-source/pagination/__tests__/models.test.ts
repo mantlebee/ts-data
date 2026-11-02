@@ -100,11 +100,11 @@ describe("PaginationExtension", () => {
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith(25);
     });
-    test("Sets the paging of the payload", async () => {
+    test("Sets the pagination of the payload", async () => {
       const { extension } = createExtension(25, 10);
       const payload: DataSourcePayload<Item> = {};
       await extension.getItemsBefore(payload);
-      expect(payload.paging).toEqual({
+      expect(payload.pagination).toEqual({
         itemsPerPage: 10,
         page: 1,
         totalItemsCount: 25,
@@ -353,7 +353,7 @@ describe("PaginationExtension", () => {
       extension.goToLastPage();
       state.total = 5;
       const payload = await extension.getItemsBefore({});
-      expect(payload.paging).toEqual({
+      expect(payload.pagination).toEqual({
         itemsPerPage: 10,
         page: 1,
         totalItemsCount: 5,
@@ -397,7 +397,7 @@ describe("PaginationExtension", () => {
       await expect(dataSource.read()).rejects.toBe(error);
       expect(itemsReader).not.toHaveBeenCalled();
     });
-    test("DataSource.read passes the paging to the items reader", async () => {
+    test("DataSource.read passes the pagination to the items reader", async () => {
       const { extension } = createExtension(25, 10);
       const itemsReader = jest.fn(async (_payload: DataSourcePayload<Item>) => [
         { id: 1 },
@@ -407,7 +407,7 @@ describe("PaginationExtension", () => {
       });
       await dataSource.read();
       expect(itemsReader).toHaveBeenCalledTimes(1);
-      expect(itemsReader.mock.calls[0][0].paging).toEqual({
+      expect(itemsReader.mock.calls[0][0].pagination).toEqual({
         itemsPerPage: 10,
         page: 1,
         totalItemsCount: 25,

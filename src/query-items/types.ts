@@ -1,7 +1,7 @@
 import { Any, List } from "@mantlebee/ts-core";
 
 import type { FiltersExpression } from "./filtering";
-import type { Paging } from "./pagination";
+import type { Pagination } from "./pagination";
 import type { Projection } from "./projection";
 import type { Sort } from "./sorting";
 
@@ -19,7 +19,7 @@ import type { Sort } from "./sorting";
  *     filters: [{ field: "age", operator: FilterOperators.greaterThan, value: 18 }],
  *     logic: FilterLogics.and,
  *   },
- *   paging: { itemsPerPage: 20, page: 1, totalItemsCount: 0 },
+ *   pagination: { itemsPerPage: 20, page: 1, totalItemsCount: 0 },
  *   sorts: [{ asc: true, field: "lastName" }],
  * };
  * ```
@@ -30,7 +30,7 @@ export type QueryItemsPayload<TItem = Any> = {
   /** Conditions the items must satisfy. */
   filters?: FiltersExpression<TItem>;
   /** Page requested. */
-  paging?: Paging;
+  pagination?: Pagination;
   /** Fields to return; absent or empty means every field. */
   projections?: List<Projection<TItem>>;
   /** Order of the items, by priority: the first sort wins. */

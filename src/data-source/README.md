@@ -59,7 +59,7 @@ pipeline order is canonical: `filtering`, `sorting`, `pagination`,
   go under the `filtering` key.
 - **`pagination/`** — `PaginationExtension(countReader, itemsPerPage,
 itemsPerPageOptions?, options?)`: reads the total count on every read,
-  forwarding the signal of the read to `countReader`, then adds `paging`. 1-based pages clamped to `[1, lastPage]` (`goToPage`,
+  forwarding the signal of the read to `countReader`, then adds `pagination`. 1-based pages clamped to `[1, lastPage]` (`goToPage`,
   `goToFirstPage`, `goToLastPage`, `goToNextPage`, `goToPreviousPage`,
   `canGoNextPage`, `canGoPreviousPage`), `setItemsPerPage` validated against
   the options, events (`page`, `itemsPerPage`, `totalItemsCount`) only on an

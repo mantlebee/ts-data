@@ -104,7 +104,7 @@ function createDataSource(options: { singleSort?: boolean } = {}) {
 describe("DataSource", () => {
   describe("payload", () => {
     describe("with every extension", () => {
-      test("The first read sends the whole query, paging included, to the items reader", async () => {
+      test("The first read sends the whole query, pagination included, to the items reader", async () => {
         const { dataSource, filtering, items, projecting, sorting } =
           createDataSource();
         filtering.addFilter(adult);
@@ -146,7 +146,7 @@ describe("DataSource", () => {
             ],
             logic: FilterLogics.or,
           },
-          paging: {
+          pagination: {
             itemsPerPage: ITEMS_PER_PAGE,
             page: 1,
             totalItemsCount: GenericItems.length,
@@ -166,7 +166,7 @@ describe("DataSource", () => {
         expect(items.payloads[0]).toEqual(expected);
         expect(items.payloads[0]).not.toHaveProperty("distinct");
       });
-      test("The count reader receives filters and sorts, but neither the projections nor the paging", async () => {
+      test("The count reader receives filters and sorts, but neither the projections nor the pagination", async () => {
         const { count, dataSource, filtering, items, projecting, sorting } =
           createDataSource();
         filtering.addFilter(adult);
@@ -178,14 +178,14 @@ describe("DataSource", () => {
           filters: { filters: [adult], logic: FilterLogics.and },
           sorts: [byLastName],
         });
-        expect(count.payloads[0]).not.toHaveProperty("paging");
+        expect(count.payloads[0]).not.toHaveProperty("pagination");
         expect(count.payloads[0]).not.toHaveProperty("projections");
         // The items reader then receives the same query, completed with the
-        // paging and the projections (the projection runs after the pagination).
+        // pagination and the projections (the projection runs after the pagination).
         expect(items.payloads[0]).toEqual({
           ...count.payloads[0],
           projections: [projections[0]],
-          paging: {
+          pagination: {
             itemsPerPage: ITEMS_PER_PAGE,
             page: 1,
             totalItemsCount: GenericItems.length,
@@ -196,7 +196,7 @@ describe("DataSource", () => {
         const { dataSource, items } = createDataSource();
         await dataSource.read();
         expect(items.payloads[0]).toEqual({
-          paging: {
+          pagination: {
             itemsPerPage: ITEMS_PER_PAGE,
             page: 1,
             totalItemsCount: GenericItems.length,
@@ -230,7 +230,7 @@ describe("DataSource", () => {
         paginating.goToNextPage();
         await dataSource.read();
         expect(items.payloads).toHaveLength(2);
-        expect(items.payloads[1].paging?.page).toBe(2);
+        expect(items.payloads[1].pagination?.page).toBe(2);
         expect(items.payloads[1].filters).toEqual(items.payloads[0].filters);
       });
       test("A filter changed between two reads brings the page back to 1", async () => {
@@ -239,12 +239,12 @@ describe("DataSource", () => {
         await dataSource.read();
         paginating.goToPage(3);
         await dataSource.read();
-        expect(items.payloads[1].paging?.page).toBe(3);
+        expect(items.payloads[1].pagination?.page).toBe(3);
         const pageHandler = jest.fn();
         paginating.on("page", pageHandler);
         filtering.addFilter(single);
         await dataSource.read();
-        expect(items.payloads[2].paging?.page).toBe(1);
+        expect(items.payloads[2].pagination?.page).toBe(1);
         expect(pageHandler).toHaveBeenCalledTimes(1);
         expect(pageHandler).toHaveBeenCalledWith(1);
       });
@@ -407,7 +407,7 @@ describe("DataSource", () => {
         paginating.goToPage(2);
         filtering.addFilter(adult);
         await dataSource.read();
-        expect(items.payloads[1].paging?.page).toBe(1);
+        expect(items.payloads[1].pagination?.page).toBe(1);
       });
     });
 

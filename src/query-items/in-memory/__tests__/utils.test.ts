@@ -11,7 +11,7 @@ import { GenericItem, GenericItems } from "@test/fixtures";
 
 import { FilterLogics, FilterOperators } from "../../filtering/constants";
 import { Filter } from "../../filtering/types";
-import { Paging } from "../../pagination/types";
+import { Pagination } from "../../pagination/types";
 import { QueryItemsPayload } from "../../types";
 import {
   countItems,
@@ -29,7 +29,7 @@ function where(
 ): QueryItemsPayload<GenericItem> {
   return { filters: { filters, logic: FilterLogics.and } };
 }
-function paging(page: number, itemsPerPage: number): Paging {
+function pagination(page: number, itemsPerPage: number): Pagination {
   return { itemsPerPage, page, totalItemsCount: 0 };
 }
 
@@ -68,14 +68,14 @@ describe("query-items", () => {
           ),
         ).toEqual(["C", "a", "b"]);
       });
-      test("Paging applies after filtering and sorting", () => {
+      test("Pagination applies after filtering and sorting", () => {
         const result = queryItems(GenericItems, {
           ...where({
             field: "gender",
             operator: FilterOperators.equal,
             value: "F",
           }),
-          paging: paging(2, 5),
+          pagination: pagination(2, 5),
           sorts: [{ asc: false, field: "age" }],
         });
         expect(ids(result)).toEqual([13, 7, 9, 15, 4]);
@@ -87,16 +87,16 @@ describe("query-items", () => {
             operator: FilterOperators.equal,
             value: "F",
           }),
-          paging: paging(1, 3),
+          pagination: pagination(1, 3),
           projections: [{ field: "id" }],
           sorts: [{ asc: false, field: "age" }],
         });
         expect(result).toEqual([{ id: 11 }, { id: 23 }, { id: 17 }]);
       });
-      test("Distinct drops the duplicates of the projection before paging", () => {
+      test("Distinct drops the duplicates of the projection before pagination", () => {
         const result = queryItems(GenericItems, {
           distinct: true,
-          paging: paging(1, 10),
+          pagination: pagination(1, 10),
           projections: [{ field: "gender" }],
           sorts: [{ asc: true, field: "gender" }],
         });
@@ -118,7 +118,7 @@ describe("query-items", () => {
             operator: FilterOperators.greaterThan,
             value: 30,
           }),
-          paging: paging(1, 3),
+          pagination: pagination(1, 3),
           projections: [{ field: "id" }, { field: "age" }],
           sorts: [{ asc: false, field: "age" }],
         });
@@ -135,14 +135,14 @@ describe("query-items", () => {
       test("Counts the whole list without filters", () => {
         expect(countItems(GenericItems, {})).toBe(GenericItems.length);
       });
-      test("Counts the items matching the filters, ignoring sorts and paging", () => {
+      test("Counts the items matching the filters, ignoring sorts and pagination", () => {
         const count = countItems(GenericItems, {
           ...where({
             field: "gender",
             operator: FilterOperators.equal,
             value: "F",
           }),
-          paging: paging(1, 5),
+          pagination: pagination(1, 5),
           sorts: [{ asc: true, field: "age" }],
         });
         expect(count).toBe(WOMEN_IDS.length);
@@ -195,7 +195,7 @@ describe("query-items", () => {
             operator: FilterOperators.equal,
             value: "F",
           }),
-          paging: paging(1, 5),
+          pagination: pagination(1, 5),
           sorts: [{ asc: false, field: "age" }],
         };
         expect(ids(await reader(payload))).toEqual([11, 23, 17, 19, 5]);

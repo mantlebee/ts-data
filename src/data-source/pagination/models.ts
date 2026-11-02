@@ -1,6 +1,6 @@
 import { Any, createHash, List, Nullable } from "@mantlebee/ts-core";
 
-import { Paging } from "@/query-items";
+import { Pagination } from "@/query-items";
 
 import { DataSourceExtension } from "../models";
 import { DataSourcePayload, DataSourceReader } from "../types";
@@ -9,7 +9,7 @@ import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
 
 /**
  * Reads the total count with its own reader on every read, then adds the
- * {@link Paging} to the payload. Place it after the extensions whose
+ * {@link Pagination} to the payload. Place it after the extensions whose
  * contribution the count must consider (filters above all). The count reader
  * receives the signal of the read, so it can hand it to `fetch`.
  * By default it goes back to the first page when the query built by the
@@ -22,7 +22,7 @@ import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
  * const pagination = new PaginationExtension<User>(countUsers, 20, [10, 20, 50]);
  * const dataSource = createDataSource(readUsers, { filtering, pagination });
  * pagination.on("page", () => dataSource.read());
- * await dataSource.read(); // countUsers(payload) then readUsers({ ..., paging: { page: 1, itemsPerPage: 20, totalItemsCount } })
+ * await dataSource.read(); // countUsers(payload) then readUsers({ ..., pagination: { page: 1, itemsPerPage: 20, totalItemsCount } })
  * pagination.goToNextPage(); // page event (if there is a second page), hence a new read
  * ```
  */
@@ -109,7 +109,7 @@ export class PaginationExtension<TItem = Any>
   }
 
   //#region Extension Methods
-  protected get _paging(): Paging {
+  protected get _pagination(): Pagination {
     return {
       itemsPerPage: this.itemsPerPage,
       page: this.page,
@@ -118,7 +118,7 @@ export class PaginationExtension<TItem = Any>
   }
   /**
    * Reads the total count, forwarding the signal of the read to the count
-   * reader, then adds the paging. Nothing is updated when the read was
+   * reader, then adds the pagination. Nothing is updated when the read was
    * superseded while the count was pending.
    */
   public async getItemsBefore(
@@ -133,7 +133,7 @@ export class PaginationExtension<TItem = Any>
       this._eventBus.trigger("totalItemsCount", totalItemsCount);
       this.goToPage(this._page);
     }
-    payload.paging = this._paging;
+    payload.pagination = this._pagination;
     return payload;
   }
   protected _triggerChange(): void {}
@@ -150,7 +150,7 @@ export class PaginationExtension<TItem = Any>
     const keys: List<keyof DataSourcePayload<TItem>> =
       option === true
         ? (Object.keys(payload) as List<keyof DataSourcePayload<TItem>>).filter(
-            (key) => key !== "paging",
+            (key) => key !== "pagination",
           )
         : option.slice();
     keys.sort();

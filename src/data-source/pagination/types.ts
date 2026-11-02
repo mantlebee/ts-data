@@ -26,7 +26,7 @@ export type PaginationExtensionOptions<TItem = Any> = {
    * pointing at the items the user is browsing: a different set of filters
    * (or a different sort) makes "page 3" meaningless. Compared by hash, so a
    * filter removed and added back is not a change.
-   * - `true` (default): every property of the payload except `paging`.
+   * - `true` (default): every property of the payload except `pagination`.
    * - `false`: never.
    * - a list of payload properties: only those, e.g. `["filters"]`.
    */
