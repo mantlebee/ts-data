@@ -2,7 +2,6 @@ import { EventsDefinition, List, Subscribable } from "@mantlebee/ts-core";
 
 import {
   createDataSource,
-  DataSource,
   DataSourceExtensionsDefinition,
   DataSourcePayload,
   DataSourceReader,
@@ -10,15 +9,17 @@ import {
   FilterExtensionWithFixedFilters,
   IDataSource,
   IDataSourceExtension,
+  IDataSourceWith,
   IFilterExtension,
   IPaginationExtension,
-  ISortExtension,
   PaginationExtension,
   ProjectionExtension,
   SingleSortExtension,
   SortExtension,
 } from "@/data-source";
 import { FilterLogics, FilterOperators } from "@/query-items";
+
+import { DataSource } from "../models";
 
 type Item = { id: number; name: string };
 
@@ -48,7 +49,7 @@ class DistinctExtension<TItem>
   }
 }
 
-/** A second custom extension, to check the insertion order of the keys. */
+/** A second custom extension, to check the order of the keys. */
 class AuditExtension<TItem>
   extends Subscribable<EventsDefinition>
   implements IDataSourceExtension<TItem>
@@ -98,6 +99,11 @@ function createKnown() {
   return { filtering, pagination, projection, sorting };
 }
 
+/** The keyed properties of a source, read without the help of its type. */
+function propertiesOf(source: object): Record<string, unknown> {
+  return source as unknown as Record<string, unknown>;
+}
+
 /** `true` when `A` and `B` are the same type, checked at compile time. */
 type IsExact<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
@@ -126,7 +132,7 @@ describe("DataSource extensions by key", () => {
       expect(source.sorting).toBe(sorting);
       expect(source.distinct).toBe(distinct);
     });
-    test("The hooks of the package run in the canonical order whatever the key order of the record", async () => {
+    test("The hooks run in the order of the keys of the record, whatever the extension", async () => {
       const { filtering, pagination, projection, sorting } = createKnown();
       const source = createDataSource(reader, {
         projection,
@@ -136,13 +142,13 @@ describe("DataSource extensions by key", () => {
       });
       await source.read();
       expect(calls).toEqual([
-        "filtering",
-        "sorting",
-        "pagination",
         "projection",
+        "pagination",
+        "sorting",
+        "filtering",
       ]);
     });
-    test("The custom keys run after the keys of the package, in insertion order", async () => {
+    test("The keys of the package and the custom ones share the same order, the one of the record", async () => {
       const { filtering, pagination } = createKnown();
       const source = createDataSource(reader, {
         distinct: new DistinctExtension<Item>(),
@@ -151,10 +157,10 @@ describe("DataSource extensions by key", () => {
         filtering,
       });
       await source.read();
-      expect(calls).toEqual(["filtering", "pagination", "distinct", "audit"]);
+      expect(calls).toEqual(["distinct", "pagination", "audit", "filtering"]);
       expect(source.items).toEqual([item1, item2]);
     });
-    test("Swapping two custom keys in the record swaps their order", async () => {
+    test("Swapping two keys in the record swaps their order", async () => {
       const { filtering } = createKnown();
       const source = createDataSource(reader, {
         audit: new AuditExtension<Item>(),
@@ -162,7 +168,7 @@ describe("DataSource extensions by key", () => {
         distinct: new DistinctExtension<Item>(),
       });
       await source.read();
-      expect(calls).toEqual(["filtering", "audit", "distinct"]);
+      expect(calls).toEqual(["audit", "filtering", "distinct"]);
     });
     test("A key set to undefined is absent: no property, nothing in the pipeline", async () => {
       const { filtering } = createKnown();
@@ -197,7 +203,16 @@ describe("DataSource extensions by key", () => {
       expect("filtering" in source).toBe(false);
       await source.read();
       expect(payloads).toEqual([{}]);
-      expect(new DataSource<Item>(reader).filtering).toBeUndefined();
+      expect("filtering" in new DataSource<Item>(reader)).toBe(false);
+    });
+    test("A key that is a member of the data source is refused", () => {
+      const extension = createStub("items");
+      expect(() => new DataSource<Item>(reader, { items: extension })).toThrow(
+        '"items" is a member of the data source',
+      );
+      expect(() => createDataSource(reader, { read: extension })).toThrow(
+        '"read" is a member of the data source',
+      );
     });
     test("The subclasses of the package fit their key", () => {
       const filtering = new FilterExtensionWithFixedFilters<Item>({
@@ -205,7 +220,8 @@ describe("DataSource extensions by key", () => {
         logic: FilterLogics.and,
       });
       const sorting = new SingleSortExtension<Item>();
-      const source = createDataSource(reader, { filtering, sorting });
+      const source: IDataSourceWith<Item, "filtering" | "sorting"> =
+        createDataSource(reader, { filtering, sorting });
       expect(source.filtering).toBe(filtering);
       expect(source.sorting).toBe(sorting);
     });
@@ -214,7 +230,8 @@ describe("DataSource extensions by key", () => {
         "custom filtering",
       ) as unknown as IFilterExtension<Item>;
       const { pagination } = createKnown();
-      const source = createDataSource(reader, { pagination, filtering });
+      const source: IDataSourceWith<Item, "filtering" | "pagination"> =
+        createDataSource(reader, { filtering, pagination });
       await source.read();
       expect(source.filtering).toBe(filtering);
       expect(calls).toEqual(["custom filtering", "pagination"]);
@@ -231,7 +248,7 @@ describe("DataSource extensions by key", () => {
       expect(disposeDistinct).toHaveBeenCalledTimes(1);
       expect(stub.dispose).toHaveBeenCalledTimes(1);
     });
-    test("The class runs the same pipeline and sets the custom keys too, untyped", async () => {
+    test("The class behind the factory runs the same pipeline and sets every key, untyped", async () => {
       const { filtering, pagination } = createKnown();
       const extensions: DataSourceExtensionsDefinition<Item> = {
         pagination,
@@ -240,10 +257,10 @@ describe("DataSource extensions by key", () => {
       };
       const source = new DataSource<Item>(reader, extensions);
       await source.read();
-      expect(source.filtering).toBe(filtering);
-      expect(source.pagination).toBe(pagination);
+      expect(propertiesOf(source).filtering).toBe(filtering);
+      expect(propertiesOf(source).pagination).toBe(pagination);
       expect("audit" in source).toBe(true);
-      expect(calls).toEqual(["filtering", "pagination", "audit"]);
+      expect(calls).toEqual(["pagination", "filtering", "audit"]);
     });
     test("The payload flows through the extensions of a source built by the factory", async () => {
       const payloads: DataSourcePayload<Item>[] = [];
@@ -297,7 +314,7 @@ describe("DataSource extensions by key", () => {
         typeof source.distinct,
         DistinctExtension<Item>
       > = true;
-      const byKeys: IDataSource<Item, "filtering" | "pagination"> = source;
+      const byKeys: IDataSourceWith<Item, "filtering" | "pagination"> = source;
       const byRecord: IDataSource<
         Item,
         { filtering: IFilterExtension<Item>; distinct: DistinctExtension<Item> }
@@ -306,9 +323,9 @@ describe("DataSource extensions by key", () => {
       expect(byRecord).toBe(source);
       expect(exactFiltering && exactDistinct).toBe(true);
     });
-    test("A union of keys of the package is a shorthand for the record of their interfaces", () => {
+    test("IDataSourceWith is the shortcut for the record of the interfaces of the package", () => {
       const exact: IsExact<
-        IDataSource<Item, "filtering" | "pagination">,
+        IDataSourceWith<Item, "filtering" | "pagination">,
         IDataSource<
           Item,
           {
@@ -319,8 +336,8 @@ describe("DataSource extensions by key", () => {
       > = true;
       expect(exact).toBe(true);
     });
-    test("The keys given are required, the keys of the package not given are optional and narrow", () => {
-      const source: IDataSource<Item, "filtering" | "pagination"> =
+    test("The keys given are required, the keys not given are not properties, of the package or not", () => {
+      const source: IDataSourceWith<Item, "filtering" | "pagination"> =
         createDataSource(reader, { filtering, pagination });
       // Required: no narrowing needed.
       source.filtering.setLogic(FilterLogics.or);
@@ -329,21 +346,11 @@ describe("DataSource extensions by key", () => {
         typeof source.filtering,
         IFilterExtension<Item>
       > = true;
-      // Optional: `undefined` until narrowed.
-      const optional: IsExact<
-        typeof source.sorting,
-        ISortExtension<Item> | undefined
-      > = true;
-      const unnarrowed = (): void => {
-        // @ts-expect-error `sorting` is possibly undefined
-        source.sorting.addSort({ field: "id", asc: true });
-      };
-      if (source.sorting) source.sorting.addSort({ field: "id", asc: true });
-      if ("projection" in source && source.projection)
-        source.projection.addProjection({ field: "id" });
-      expect(unnarrowed).toThrow(TypeError);
-      expect(required && optional).toBe(true);
+      // @ts-expect-error `sorting` is not a property of this source
       expect(source.sorting).toBeUndefined();
+      // @ts-expect-error neither is a custom key
+      expect(source.distinct).toBeUndefined();
+      expect(required).toBe(true);
     });
     test("A custom key not in the record is not a property at all", () => {
       const source = createDataSource(reader, { filtering });
@@ -354,7 +361,7 @@ describe("DataSource extensions by key", () => {
         source;
       expect(asked).toBe(source);
     });
-    test("A custom key declared optional in a signature accepts sources with and without it", () => {
+    test("A key declared optional in a signature accepts sources with and without it", () => {
       type MaybeDistinct = IDataSource<
         Item,
         {
@@ -371,24 +378,47 @@ describe("DataSource extensions by key", () => {
         MaybeDistinct["distinct"],
         DistinctExtension<Item> | undefined
       > = true;
+      const unnarrowed = (): void => {
+        // @ts-expect-error `distinct` is possibly undefined
+        without.distinct.getItemsBefore({});
+      };
+      if (without.distinct) without.distinct.getItemsBefore({});
+      expect(unnarrowed).toThrow(TypeError);
       expect(withDistinct.distinct).toBe(distinct);
       expect(without.distinct).toBeUndefined();
       expect(optional).toBe(true);
     });
     test("A source with more extensions is assignable to a parameter asking for fewer, not the opposite", () => {
-      const both: IDataSource<Item, "filtering" | "pagination"> =
+      const both: IDataSourceWith<Item, "filtering" | "pagination"> =
         createDataSource(reader, { filtering, pagination });
-      const one: IDataSource<Item, "filtering"> = both;
+      const one: IDataSourceWith<Item, "filtering"> = both;
       const none: IDataSource<Item> = one;
       // @ts-expect-error a source guaranteeing nothing does not guarantee `filtering`
-      const backToOne: IDataSource<Item, "filtering"> = none;
+      const backToOne: IDataSourceWith<Item, "filtering"> = none;
       // @ts-expect-error a source guaranteeing `filtering` does not guarantee `pagination`
-      const backToBoth: IDataSource<Item, "filtering" | "pagination"> = one;
+      const backToBoth: IDataSourceWith<Item, "filtering" | "pagination"> = one;
       // @ts-expect-error `sorting` is not among the guaranteed ones
-      const other: IDataSource<Item, "sorting"> = both;
+      const other: IDataSourceWith<Item, "sorting"> = both;
       expect([one, none, backToOne, backToBoth, other]).toEqual(
         Array(5).fill(both),
       );
+    });
+    test("IDataSourceWith and a record compose by intersection", () => {
+      type Source = IDataSourceWith<Item, "filtering"> &
+        IDataSource<Item, { distinct: DistinctExtension<Item> }>;
+      const source: Source = createDataSource(reader, { filtering, distinct });
+      const exactFiltering: IsExact<
+        Source["filtering"],
+        IFilterExtension<Item>
+      > = true;
+      const exactDistinct: IsExact<
+        Source["distinct"],
+        DistinctExtension<Item>
+      > = true;
+      // @ts-expect-error no `distinct`
+      const missing: Source = createDataSource(reader, { filtering });
+      expect(missing).not.toBe(source);
+      expect(exactFiltering && exactDistinct).toBe(true);
     });
     test("The default guarantees nothing: every plain IDataSource<T> annotation keeps compiling", () => {
       const fromFactory: IDataSource<Item> = createDataSource(reader, {
@@ -399,9 +429,10 @@ describe("DataSource extensions by key", () => {
         filtering,
       });
       const empty: IDataSource<Item> = createDataSource(reader, {});
+      // @ts-expect-error nothing is guaranteed, so nothing is a property
       expect(fromFactory.filtering).toBe(filtering);
-      expect(fromClass.filtering).toBe(filtering);
-      expect(empty.filtering).toBeUndefined();
+      expect(propertiesOf(fromClass).filtering).toBe(filtering);
+      expect("filtering" in empty).toBe(false);
     });
     test("A key whose value may be undefined is optional, not guaranteed", () => {
       const maybePagination: PaginationExtension<Item> | undefined =
@@ -414,9 +445,9 @@ describe("DataSource extensions by key", () => {
         typeof source.pagination,
         PaginationExtension<Item> | undefined
       > = true;
-      const one: IDataSource<Item, "filtering"> = source;
+      const one: IDataSourceWith<Item, "filtering"> = source;
       // @ts-expect-error `pagination` may be undefined: not guaranteed
-      const both: IDataSource<Item, "filtering" | "pagination"> = source;
+      const both: IDataSourceWith<Item, "filtering" | "pagination"> = source;
       expect(one).toBe(both);
       expect(optional).toBe(true);
       // Given at runtime, the extension is exposed anyway.
@@ -424,16 +455,20 @@ describe("DataSource extensions by key", () => {
     });
     test("A consumer states what it needs in a signature", () => {
       const bindPager = (
-        source: IDataSource<Item, "pagination">,
+        source: IDataSourceWith<Item, "pagination">,
       ): IPaginationExtension<Item> => source.pagination;
       const source = createDataSource(reader, { pagination, sorting });
       expect(bindPager(source)).toBe(pagination);
       // @ts-expect-error a source without a guaranteed `pagination` does not fit
       bindPager(createDataSource(reader, { sorting }));
     });
-    test("The record is checked: the keys of the package against their interface, every key against the extension contract", () => {
-      // @ts-expect-error a sorting is not a filtering
-      createDataSource(reader, { filtering: sorting });
+    test("The record is checked against the extension contract, the keys of the package where a consumer asks for them", () => {
+      // Any key may hold any extension: the data source knows no key.
+      const odd = createDataSource(reader, { filtering: sorting });
+      expect(odd.filtering).toBe(sorting);
+      // @ts-expect-error a sorting is not the filtering a consumer asks for
+      const asked: IDataSourceWith<Item, "filtering"> = odd;
+      expect(asked).toBe(odd);
       createDataSource(reader, {
         // @ts-expect-error a pagination of another item type
         pagination: new PaginationExtension<{ other: string }>(
@@ -443,7 +478,6 @@ describe("DataSource extensions by key", () => {
       });
       // @ts-expect-error a custom key must hold an extension
       createDataSource(reader, { distinct: 1 });
-      expect(true).toBe(true);
     });
   });
 });

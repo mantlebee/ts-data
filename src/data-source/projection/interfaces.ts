@@ -2,7 +2,7 @@ import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Projection } from "@/query-items";
 
-import { IDataSourceExtension } from "../interfaces";
+import { IDataSourceExtension } from "../extensions/interfaces";
 import { ProjectionExtensionEvents } from "./types";
 
 /**

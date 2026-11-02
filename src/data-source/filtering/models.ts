@@ -7,8 +7,9 @@ import type {
   FiltersList,
 } from "@/query-items/filtering/types";
 
-import { DataSourceExtension } from "../models";
-import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
+import { DataSourceExtension } from "../extensions/models";
+import { DataSourceExtensionOptions } from "../extensions/types";
+import { DataSourcePayload } from "../types";
 import { IFilterExtension } from "./interfaces";
 import {
   FilterExtensionEvents,
@@ -18,8 +19,8 @@ import {
 /**
  * Keeps a flat list of filters and sends it in the payload as a
  * {@link FiltersList}, only when there is at least one filter.
- * The data source runs it before the {@link PaginationExtension}, so the count
- * receives the filters.
+ * Write its key before the one of the {@link PaginationExtension}, so the
+ * count receives the filters.
  * @typeParam TItem Type of the items.
  * @example
  * ```ts

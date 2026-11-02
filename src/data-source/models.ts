@@ -1,97 +1,9 @@
-import {
-  AbortableDelegate,
-  Any,
-  DebouncedDelegate,
-  EventsDefinition,
-  List,
-  Subscribable,
-} from "@mantlebee/ts-core";
+import { AbortableDelegate, Any, List, Subscribable } from "@mantlebee/ts-core";
 
-import type { IFilterExtension } from "./filtering/interfaces";
-import { IDataSource, IDataSourceExtension } from "./interfaces";
-import type { IPaginationExtension } from "./pagination/interfaces";
-import type { IProjectionExtension } from "./projection/interfaces";
-import type { ISortExtension } from "./sorting/interfaces";
-import {
-  DataSourceCapability,
-  DataSourceEvents,
-  DataSourceExtensionOptions,
-  DataSourceExtensionsDefinition,
-  DataSourcePayload,
-  DataSourceReader,
-} from "./types";
-
-/**
- * Default quiet time, in milliseconds, of the debounced `*Change` events.
- */
-export const DataSourceExtensionChangeDelayDefault = 100;
-
-/**
- * The keys of the package in the order the data source runs them: the
- * filters and the sorts before the pagination, so the count reader receives
- * them and the page reset watches them; the projection last. The custom keys
- * follow, in insertion order of the record.
- */
-export const DataSourceCapabilitiesOrder: List<DataSourceCapability> = [
-  "filtering",
-  "sorting",
-  "pagination",
-  "projection",
-];
-
-/**
- * Base class of the extensions shipped with the package: a
- * `Subscribable` of ts-core with a cancellable, debounced `*Change` event.
- * Subclasses call {@link _scheduleChange} after every mutation and raise
- * their own event in {@link _triggerChange}. Custom extensions do not have to
- * extend it: implementing {@link IDataSourceExtension} is enough.
- * @typeParam TItem Type of the items of the data source.
- * @typeParam TEvents Events of the extension.
- */
-export abstract class DataSourceExtension<
-  TItem = Any,
-  TEvents extends EventsDefinition = EventsDefinition,
->
-  extends Subscribable<TEvents>
-  implements IDataSourceExtension<TItem, TEvents>
-{
-  protected readonly _changeDelay: number;
-  private readonly _changeDelegate: DebouncedDelegate;
-
-  /**
-   * @param options Debounce of the `*Change` event.
-   */
-  public constructor(options?: DataSourceExtensionOptions) {
-    super();
-    this._changeDelay =
-      options?.changeDelay ?? DataSourceExtensionChangeDelayDefault;
-    this._changeDelegate = new DebouncedDelegate(
-      () => this._triggerChange(),
-      this._changeDelay,
-    );
-  }
-
-  /**
-   * Cancels the pending `*Change` event and removes every handler.
-   */
-  public async dispose(): Promise<void> {
-    this._changeDelegate.abort();
-    await super.dispose();
-  }
-
-  /**
-   * Raises the `*Change` event of the extension.
-   */
-  protected abstract _triggerChange(): void;
-
-  /**
-   * Schedules the `*Change` event after the quiet time, restarting the wait
-   * if one is already pending.
-   */
-  protected _scheduleChange(): void {
-    this._changeDelegate.call();
-  }
-}
+import { IDataSourceExtension } from "./extensions/interfaces";
+import { DataSourceExtensionsDefinition } from "./extensions/types";
+import { IDataSource } from "./interfaces";
+import { DataSourceEvents, DataSourcePayload, DataSourceReader } from "./types";
 
 /**
  * Data source driven only by its extensions: it knows nothing about filters,
@@ -101,17 +13,16 @@ export abstract class DataSourceExtension<
  * **Extensions by key.** The extensions are given as a record
  * ({@link DataSourceExtensionsDefinition}) and exposed under the same keys as
  * readonly own properties, set only when given: `"sorting" in source` is
- * `false` for a source without sorting. The pipeline order is canonical and
- * owned by the data source: the keys of the package in the order of
- * {@link DataSourceCapabilitiesOrder} (`filtering`, `sorting`, `pagination`,
- * `projection`), then the custom keys in insertion order of the record;
- * whatever the key order of the record, the count reader of the pagination
- * receives the filters.
+ * `false` for a source without sorting. The pipeline runs them **in the order
+ * of the keys of the record**, the order they are written in (JavaScript lists
+ * integer-like keys first: name the extensions). The order is yours and it
+ * matters: write `filtering` before `pagination`, so the count reader
+ * receives the filters. A key that is already a member of the source
+ * (`items`, `read`, …) is refused.
  *
- * The class states only the four keys of the package, as optional
- * properties: a class cannot type its members from a generic record. Build a
- * source with {@link createDataSource}, which returns the
- * {@link IDataSource} typed with every key of the record.
+ * The class cannot type its members from a generic record, so it exposes no
+ * keyed property in its type. Build a source with {@link createDataSource},
+ * which returns the {@link IDataSource} typed with every key of the record.
  *
  * **The latest read wins.** The read cycle runs in one `AbortableDelegate` of
  * ts-core: a `read()` requested while another is running aborts it, so the
@@ -128,7 +39,7 @@ export abstract class DataSourceExtension<
  * const pagination = new PaginationExtension<User>(countUsers, 20);
  * const dataSource = createDataSource(
  *   (payload, signal) => api.getUsers(payload, { signal }),
- *   { filtering, pagination },
+ *   { filtering, pagination }, // filtering first: the count receives the filters
  * ); // IDataSource<User, { filtering: FilterExtension<User>; pagination: PaginationExtension<User> }>
  * dataSource.on("items", (users) => render(users));
  * dataSource.filtering.on("filtersChange", () => dataSource.read());
@@ -149,15 +60,6 @@ export class DataSource<TItem = Any>
   extends Subscribable<DataSourceEvents<TItem>>
   implements IDataSource<TItem>
 {
-  /** The filtering extension, when given. */
-  declare public readonly filtering?: IFilterExtension<TItem>;
-  /** The pagination extension, when given. */
-  declare public readonly pagination?: IPaginationExtension<TItem>;
-  /** The projection extension, when given. */
-  declare public readonly projection?: IProjectionExtension<TItem>;
-  /** The sorting extension, when given. */
-  declare public readonly sorting?: ISortExtension<TItem>;
-
   /**
    * Mirror of `_readDelegate.isRunning`, kept by hand because the getter and
    * the `isReading` event must never disagree: `isRunning` has no event, so
@@ -174,15 +76,16 @@ export class DataSource<TItem = Any>
     this._runReadCycle(signal),
   );
 
-  /** The pipeline: every extension given, in invocation order. */
+  /** The pipeline: every extension given, in the order of the keys. */
   protected readonly _extensions: List<IDataSourceExtension<TItem>>;
   protected readonly _reader: DataSourceReader<TItem>;
 
   /**
    * @param reader Resolves the payload into the items; receives the signal
    * of the read as second argument.
-   * @param extensions Extensions by key, run in the canonical order and
+   * @param extensions Extensions by key, run in the order of the keys and
    * exposed under their key; a key set to `undefined` is skipped.
+   * @throws when a key is already a member of the data source.
    */
   public constructor(
     reader: DataSourceReader<TItem>,
@@ -244,22 +147,24 @@ export class DataSource<TItem = Any>
   }
 
   /**
-   * Builds the pipeline and defines the keyed properties: the keys of the
-   * package in the canonical order, then the custom keys in insertion order.
-   * A key set to `undefined` is skipped: no property, nothing in the
-   * pipeline.
+   * Builds the pipeline and defines the keyed properties, in the order of
+   * the keys of the record. A key set to `undefined` is skipped: no
+   * property, nothing in the pipeline. A key that would overwrite a member
+   * of the data source is refused.
    */
   private _buildPipeline(
     extensions: DataSourceExtensionsDefinition<TItem>,
   ): List<IDataSourceExtension<TItem>> {
-    const known: List<string> = DataSourceCapabilitiesOrder;
-    const custom = Object.keys(extensions).filter((a) => !known.includes(a));
     const pipeline: List<IDataSourceExtension<TItem>> = [];
-    for (const key of [...known, ...custom]) {
+    for (const key of Object.keys(extensions)) {
       const extension = extensions[key];
       if (extension === undefined) continue;
+      if (key in this)
+        throw new Error(
+          `"${key}" is a member of the data source: use another key for the extension`,
+        );
       // An own property, so that `key in source` tells whether the
-      // extension is there; the class declares the four known keys only.
+      // extension is there; the class types none of them.
       (this as unknown as Record<string, IDataSourceExtension<TItem>>)[key] =
         extension;
       pipeline.push(extension);

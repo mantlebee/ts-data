@@ -1,4 +1,5 @@
-import { DataSource, DataSourceExtension } from "../../models";
+import { DataSourceExtension } from "../../extensions/models";
+import { DataSource } from "../../models";
 import { DataSourcePayload } from "../../types";
 import { PaginationExtension } from "../models";
 

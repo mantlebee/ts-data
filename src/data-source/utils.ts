@@ -1,24 +1,23 @@
+import { DataSourceExtensionsDefinition } from "./extensions/types";
 import { IDataSource } from "./interfaces";
 import { DataSource } from "./models";
-import { DataSourceExtensionsDefinition, DataSourceReader } from "./types";
+import { DataSourceReader } from "./types";
 
 /**
- * Builds a {@link DataSource} whose type carries its extensions: the record
- * given here, key by key ({@link IDataSource}). It is the way to build a
- * source: the class cannot type its members from a generic record, so
- * `new DataSource(...)` only knows the four keys of the package, as optional
- * properties.
+ * Builds a data source whose type carries its extensions: the record given
+ * here, key by key ({@link IDataSource}). It is the only way to build a
+ * source: the class behind it is not exported, since a class cannot type its
+ * members from a generic record.
  *
- * The pipeline order is canonical, whatever the key order of the record:
- * `filtering`, `sorting`, `pagination`, `projection`, then the custom keys in
- * insertion order of the record.
+ * The extensions run in the order of the keys of the record, the order you
+ * write them in: `filtering` before `pagination`, so the count reader
+ * receives the filters.
  * @example
  * ```ts
  * const users = createDataSource(readUsers, { filtering, pagination, distinct });
  * // IDataSource<User, { filtering: FilterExtension<User>; pagination: PaginationExtension<User>; distinct: DistinctExtension<User> }>
  * users.filtering.addFilter(adult);
  * users.distinct; // a custom key, typed
- * if (users.sorting) users.sorting.addSort(byName); // a key of the package not given: optional
  *
  * const maybeSorting: SortExtension<User> | undefined = options.sortable
  *   ? new SortExtension<User>()
@@ -30,16 +29,15 @@ import { DataSourceExtensionsDefinition, DataSourceReader } from "./types";
  * @typeParam TExt Record of the extensions by key, inferred from `extensions`.
  * @param reader Resolves the payload into the items; receives the signal of
  * the read as second argument.
- * @param extensions Extensions by key; `{}` for none.
+ * @param extensions Extensions by key, run in this order; `{}` for none.
  * @returns the data source, typed with the extensions of the record.
  */
 export function createDataSource<
   TItem,
   TExt extends DataSourceExtensionsDefinition<TItem>,
 >(reader: DataSourceReader<TItem>, extensions: TExt): IDataSource<TItem, TExt> {
-  // The class declares the four keys of the package only; the custom keys
-  // are own properties set by the constructor, which the type of the record
-  // describes exactly (see the type specs).
+  // The keyed properties are own properties set by the constructor, which
+  // the type of the record describes exactly (see the type specs).
   return new DataSource<TItem>(reader, extensions) as unknown as IDataSource<
     TItem,
     TExt

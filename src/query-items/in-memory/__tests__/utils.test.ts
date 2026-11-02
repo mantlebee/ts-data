@@ -1,7 +1,7 @@
 import { List } from "@mantlebee/ts-core";
 
 import {
-  DataSource,
+  createDataSource,
   FilterExtension,
   PaginationExtension,
   ProjectionExtension,
@@ -227,7 +227,7 @@ describe("query-items", () => {
       });
       test("The readers resolve asynchronously, so isReading is observable", async () => {
         const { reader } = createInMemoryQueryItemsReader(() => GenericItems);
-        const dataSource = new DataSource<GenericItem>(reader);
+        const dataSource = createDataSource(reader, {});
         const isReading: List<boolean> = [];
         dataSource.on("isReading", (value) => isReading.push(value));
         const read = dataSource.read();
@@ -244,7 +244,7 @@ describe("query-items", () => {
         const filtering = new FilterExtension<GenericItem>();
         const sorting = new SortExtension<GenericItem>();
         const paginating = new PaginationExtension<GenericItem>(countReader, 5);
-        const dataSource = new DataSource<GenericItem>(reader, {
+        const dataSource = createDataSource(reader, {
           filtering,
           sorting,
           pagination: paginating,
@@ -271,7 +271,7 @@ describe("query-items", () => {
         const { reader } = createInMemoryQueryItemsReader(() => GenericItems);
         const projecting = new ProjectionExtension<GenericItem>();
         const sorting = new SortExtension<GenericItem>();
-        const dataSource = new DataSource<GenericItem>(reader, {
+        const dataSource = createDataSource(reader, {
           projection: projecting,
           sorting,
         });

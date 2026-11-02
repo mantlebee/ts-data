@@ -127,11 +127,11 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       await dataSource.read();
       expect(paginating.page).toBe(1);
     });
-    test("A changed projection does not reset the page: the projection runs after the pagination", async () => {
+    test("A changed projection resets the page: the projection precedes the pagination in the record", async () => {
       const { dataSource, paginating, projecting } = await setup();
       projecting.addProjection({ field: "name" });
       await dataSource.read();
-      expect(paginating.page).toBe(3);
+      expect(paginating.page).toBe(1);
     });
     test("A changed filters logic resets the page", async () => {
       const { dataSource, filtering, paginating } = await setup();

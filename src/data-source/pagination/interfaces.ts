@@ -1,6 +1,6 @@
 import { Any, List } from "@mantlebee/ts-core";
 
-import { IDataSourceExtension } from "../interfaces";
+import { IDataSourceExtension } from "../extensions/interfaces";
 import { PaginationExtensionEvents } from "./types";
 
 /**

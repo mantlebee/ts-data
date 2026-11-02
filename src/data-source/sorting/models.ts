@@ -3,8 +3,9 @@ import type { Any, KeyOf, List } from "@mantlebee/ts-core";
 import type { Sort } from "@/query-items/sorting/types";
 import { addSort, removeSort } from "@/query-items/sorting/utils";
 
-import { DataSourceExtension } from "../models";
-import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
+import { DataSourceExtension } from "../extensions/models";
+import { DataSourceExtensionOptions } from "../extensions/types";
+import { DataSourcePayload } from "../types";
 import { ISortExtension } from "./interfaces";
 import { SortExtensionEvents } from "./types";
 

@@ -43,7 +43,7 @@ and the `in-memory` folder composes them into the one reader of the package.
   then `pageItems`), `countItems(items, payload, options?)` (the matching
   items, distinct ones when the payload says so, for the pagination) and
   `createInMemoryQueryItemsReader(getItems, options?)` returning
-  `{ reader, countReader }` for a `DataSource`, calling the getter on every
+  `{ reader, countReader }` for a data source, calling the getter on every
   read and resolving on the next microtask. `comparer.ts` holds what the delegates
   share: `toComparableValue`, the default conversion of the compared values
   (strings lower-cased unless `options.caseSensitive`, `Date` by time, value

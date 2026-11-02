@@ -2,7 +2,6 @@
 // of the package sees, and the only test that goes through it.
 import {
   createDataSource as createTypedDataSource,
-  DataSource,
   DataSourcePayload,
   Filter,
   FilterExtension,
@@ -69,8 +68,9 @@ const projections: Projection<GenericItem>[] = [
 ];
 
 /**
- * A data source with every extension of the package, in the order a consumer
- * is expected to use: filtering, sorting, projection, then pagination.
+ * A data source with every extension of the package, the keys in the order a
+ * consumer is expected to write them: filtering, sorting, projection, then
+ * pagination, so the count receives everything but the pagination.
  */
 function createDataSource(options: { singleSort?: boolean } = {}) {
   const count = createCountReader<GenericItem>(GenericItems.length);
@@ -84,7 +84,7 @@ function createDataSource(options: { singleSort?: boolean } = {}) {
   const sorting = options.singleSort
     ? new SingleSortExtension<GenericItem>()
     : new SortExtension<GenericItem>();
-  const dataSource = new DataSource<GenericItem>(items.reader, {
+  const dataSource = createTypedDataSource(items.reader, {
     filtering,
     sorting,
     projection: projecting,
@@ -166,7 +166,7 @@ describe("DataSource", () => {
         expect(items.payloads[0]).toEqual(expected);
         expect(items.payloads[0]).not.toHaveProperty("distinct");
       });
-      test("The count reader receives filters and sorts, but neither the projections nor the pagination", async () => {
+      test("The count reader receives what the keys before the pagination built: filters, sorts and projections, not the pagination", async () => {
         const { count, dataSource, filtering, items, projecting, sorting } =
           createDataSource();
         filtering.addFilter(adult);
@@ -176,15 +176,13 @@ describe("DataSource", () => {
         expect(count.payloads).toHaveLength(1);
         expect(count.payloads[0]).toEqual({
           filters: { filters: [adult], logic: FilterLogics.and },
+          projections: [projections[0]],
           sorts: [byLastName],
         });
         expect(count.payloads[0]).not.toHaveProperty("pagination");
-        expect(count.payloads[0]).not.toHaveProperty("projections");
-        // The items reader then receives the same query, completed with the
-        // pagination and the projections (the projection runs after the pagination).
+        // The items reader then receives the same query, completed with the pagination.
         expect(items.payloads[0]).toEqual({
           ...count.payloads[0],
-          projections: [projections[0]],
           pagination: {
             itemsPerPage: ITEMS_PER_PAGE,
             page: 1,
@@ -327,7 +325,7 @@ describe("DataSource", () => {
           count.reader,
           ITEMS_PER_PAGE,
         );
-        const dataSource = new DataSource<GenericItem>(items.reader, {
+        const dataSource = createTypedDataSource(items.reader, {
           filtering,
           pagination: paginating,
         });
@@ -374,8 +372,8 @@ describe("DataSource", () => {
       });
     });
 
-    describe("canonical order of the extensions", () => {
-      function createUnordered() {
+    describe("order of the extensions", () => {
+      function createPaginationFirst() {
         const count = createCountReader<GenericItem>(GenericItems.length);
         const items = createItemsReader(GenericItems);
         const filtering = new FilterExtension<GenericItem>();
@@ -383,7 +381,7 @@ describe("DataSource", () => {
           count.reader,
           ITEMS_PER_PAGE,
         );
-        // The pagination first in the record: the order of the keys is irrelevant.
+        // The pagination first in the record: it runs before the filtering.
         const dataSource = createTypedDataSource(items.reader, {
           pagination: paginating,
           filtering,
@@ -391,23 +389,24 @@ describe("DataSource", () => {
         return { count, dataSource, filtering, items, paginating };
       }
 
-      test("The count reader receives the filters whatever the key order of the record", async () => {
-        const { count, dataSource, filtering, items } = createUnordered();
+      test("The extensions run in the order of the keys: a pagination written first counts without the filters", async () => {
+        const { count, dataSource, filtering, items } = createPaginationFirst();
         filtering.addFilter(adult);
         await dataSource.read();
-        expect(count.payloads[0].filters).toEqual({
+        expect(count.payloads[0].filters).toBeUndefined();
+        expect(items.payloads[0].filters).toEqual({
           filters: [adult],
           logic: FilterLogics.and,
         });
-        expect(items.payloads[0].filters).toEqual(count.payloads[0].filters);
       });
-      test("A filter change resets the page whatever the key order of the record", async () => {
-        const { dataSource, filtering, items, paginating } = createUnordered();
+      test("A filter change does not reset the page of a pagination written before the filtering", async () => {
+        const { dataSource, filtering, items, paginating } =
+          createPaginationFirst();
         await dataSource.read();
         paginating.goToPage(2);
         filtering.addFilter(adult);
         await dataSource.read();
-        expect(items.payloads[1].pagination?.page).toBe(1);
+        expect(items.payloads[1].pagination?.page).toBe(2);
       });
     });
 

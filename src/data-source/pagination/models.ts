@@ -2,7 +2,7 @@ import { Any, createHash, List, Nullable } from "@mantlebee/ts-core";
 
 import { Pagination } from "@/query-items";
 
-import { DataSourceExtension } from "../models";
+import { DataSourceExtension } from "../extensions/models";
 import { DataSourcePayload, DataSourceReader } from "../types";
 import { IPaginationExtension } from "./interfaces";
 import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";

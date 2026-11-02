@@ -1,11 +1,12 @@
 import { AbortedException, isAbortedException } from "@mantlebee/ts-core";
 
 import {
-  DataSource,
   DataSourcePayload,
   IDataSourceExtension,
   PaginationExtension,
 } from "@/data-source";
+
+import { DataSource } from "../models";
 
 type Item = { id: number; name: string };
 type Reader = (

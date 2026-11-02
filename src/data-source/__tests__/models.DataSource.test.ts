@@ -1,10 +1,11 @@
 import {
-  DataSource,
   DataSourcePayload,
   FilterExtension,
   IDataSourceExtension,
 } from "@/data-source";
 import { Filter, FilterOperators } from "@/query-items";
+
+import { DataSource } from "../models";
 
 type Item = { id: number; name: string };
 type Reader = (payload: DataSourcePayload<Item>) => Promise<Item[]>;

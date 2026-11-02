@@ -1,13 +1,10 @@
-import { Any, EventsDefinition, ISubscribable, List } from "@mantlebee/ts-core";
+import { Any, ISubscribable, List } from "@mantlebee/ts-core";
 
 import type {
-  DataSourceCapability,
-  DataSourceEvents,
   DataSourceExtensionProperties,
   DataSourceExtensionsDefinition,
-  DataSourceExtensionsOf,
-  DataSourcePayload,
-} from "./types";
+} from "./extensions/types";
+import type { DataSourceEvents } from "./types";
 
 /**
  * The members of a data source that do not depend on its extensions: the
@@ -54,14 +51,13 @@ export interface IDataSourceBase<TItem = Any> extends ISubscribable<
  * source, by key ({@link DataSourceExtensionsDefinition}), the way the
  * events of a `Subscribable` of ts-core are a record. Every key whose value
  * cannot be `undefined` is a required readonly property, every key whose
- * value may be `undefined` and every key of {@link DataSourceCapabilities}
- * not in the record is an optional one, to narrow on. A union of the keys
- * of the package is a shorthand: `IDataSource<User, "filtering" |
- * "pagination">` has `filtering` and `pagination` for sure, `sorting?` and
- * `projection?` to check (`if (source.sorting) ...`). A source with more
- * extensions is assignable to a parameter asking for fewer, never the
- * opposite, and the default, an empty record, guarantees nothing.
- * {@link createDataSource}
+ * value may be `undefined` is an optional one, to narrow on; a key not in
+ * the record is not a property. The data source knows no key: the extensions
+ * of the package are named through {@link IDataSourceWith}
+ * (`IDataSourceWith<User, "filtering" | "pagination">`), the shortcut for
+ * the record of their interfaces. A source with more extensions is
+ * assignable to a parameter asking for fewer, never the opposite, and the
+ * default, an empty record, guarantees nothing. {@link createDataSource}
  * infers `TExt` from the record it is given, custom keys included: no
  * registration anywhere.
  *
@@ -76,10 +72,9 @@ export interface IDataSourceBase<TItem = Any> extends ISubscribable<
  * `items` always hold the result of the latest completed read.
  * @example
  * ```ts
- * function bindGrid(source: IDataSource<User, "filtering" | "pagination">) {
+ * function bindGrid(source: IDataSourceWith<User, "filtering" | "pagination">) {
  *   source.filtering.addFilter(adult); // guaranteed by the type
  *   source.pagination.goToNextPage();
- *   if (source.sorting) source.sorting.addSort({ field: "name", asc: true }); // optional
  * }
  * const users = createDataSource(readUsers, { filtering, pagination, sorting, distinct });
  * bindGrid(users); // more extensions than asked: fits
@@ -90,73 +85,9 @@ export interface IDataSourceBase<TItem = Any> extends ISubscribable<
  * });
  * ```
  * @typeParam TItem Type of the items.
- * @typeParam TExt Record of the extensions by key, or a union of the keys of
- * the package ones.
+ * @typeParam TExt Record of the extensions by key.
  */
 export type IDataSource<
   TItem = Any,
-  TExt extends DataSourceExtensionsDefinition<TItem> | DataSourceCapability =
-    Record<never, never>,
-> = IDataSourceBase<TItem> &
-  DataSourceExtensionProperties<TItem, DataSourceExtensionsOf<TItem, TExt>>;
-
-/**
- * Hooks of the read cycle of an {@link IDataSource}. Every hook is optional
- * and the extensions are invoked in pipeline order:
- * 1. `getItemsBefore` of each extension builds the payload;
- * 2. the reader resolves the payload into the items;
- * 3. `getItemsAfter` of each extension may transform the items.
- * An error thrown by the reader or by a hook propagates as a read error.
- * The pipeline order is owned by the data source: `filtering`, `sorting`,
- * `pagination`, `projection`, then the custom keys in insertion order of the
- * record (see {@link DataSource}); so the count reader of the pagination
- * always receives the filters and the sorts.
- *
- * Both hooks receive the `AbortSignal` of the read, aborted when a newer read
- * supersedes it: a hook that reads something hands it to its reader, the
- * others ignore it. Once the signal is aborted the data source stops the
- * cycle: the remaining hooks and the reader are not invoked. An implementer
- * declaring fewer parameters still type-checks.
- * @example
- * ```ts
- * class DistinctExtension<TItem>
- *   extends Subscribable<EventsDefinition>
- *   implements IDataSourceExtension<TItem>
- * {
- *   public async getItemsBefore(payload: DataSourcePayload<TItem>) {
- *     return { ...payload, distinct: true };
- *   }
- *   public async getItemsAfter(items: List<TItem>) {
- *     return Array.from(new Set(items));
- *   }
- * }
- * const users = createDataSource(readUsers, { filtering, distinct: new DistinctExtension<User>() });
- * ```
- */
-export interface IDataSourceExtension<
-  TItem = Any,
-  TEvents extends EventsDefinition = EventsDefinition,
-> extends ISubscribable<TEvents> {
-  /**
-   * Adds the contribution of the extension to the payload.
-   * @param payload Payload built by the previous extensions.
-   * @param signal Signal of the read, aborted when the read is superseded.
-   * @returns the payload for the next extension.
-   */
-  getItemsBefore?(
-    payload: DataSourcePayload<TItem>,
-    signal?: AbortSignal,
-  ): Promise<DataSourcePayload<TItem>>;
-  /**
-   * Transforms the items read.
-   * @param items Items returned by the reader or by the previous extension.
-   * @param payload Payload the items were read with.
-   * @param signal Signal of the read, aborted when the read is superseded.
-   * @returns the items for the next extension.
-   */
-  getItemsAfter?(
-    items: List<TItem>,
-    payload: DataSourcePayload<TItem>,
-    signal?: AbortSignal,
-  ): Promise<List<TItem>>;
-}
+  TExt extends DataSourceExtensionsDefinition<TItem> = Record<never, never>,
+> = IDataSourceBase<TItem> & DataSourceExtensionProperties<TExt>;
