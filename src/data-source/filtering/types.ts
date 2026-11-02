@@ -2,7 +2,7 @@ import { Any, EventsDefinition, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Filter, FilterLogics } from "@/query-items";
 
-import { DataSourceExtensionOptions } from "../extension";
+import { DataSourceExtensionOptions } from "../types";
 
 /**
  * Events of a {@link FilterExtension}.

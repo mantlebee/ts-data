@@ -1,31 +1,36 @@
 import {
   AbortableDelegate,
   Any,
-  ConstructorOf,
+  DebouncedDelegate,
+  EventsDefinition,
   List,
-  Nullable,
   Subscribable,
 } from "@mantlebee/ts-core";
 
-import { FilterExtension } from "./filtering/models";
+import type { IFilterExtension } from "./filtering/interfaces";
 import { IDataSource, IDataSourceExtension } from "./interfaces";
-import { PaginationExtension } from "./pagination/models";
-import { ProjectionExtension } from "./projection/models";
-import { SortExtension } from "./sorting/models";
+import type { IPaginationExtension } from "./pagination/interfaces";
+import type { IProjectionExtension } from "./projection/interfaces";
+import type { ISortExtension } from "./sorting/interfaces";
 import {
   DataSourceCapability,
-  DataSourceCapabilityProperty,
   DataSourceEvents,
-  DataSourceExtensions,
+  DataSourceExtensionOptions,
+  DataSourceExtensionsDefinition,
   DataSourcePayload,
   DataSourceReader,
 } from "./types";
 
 /**
- * The known capabilities in the order the data source runs them: the filters
- * and the sorts before the pagination, so the count reader receives them and
- * the page reset watches them; the projection last. The augmented keys follow,
- * in insertion order of the record, after the `others`.
+ * Default quiet time, in milliseconds, of the debounced `*Change` events.
+ */
+export const DataSourceExtensionChangeDelayDefault = 100;
+
+/**
+ * The keys of the package in the order the data source runs them: the
+ * filters and the sorts before the pagination, so the count reader receives
+ * them and the page reset watches them; the projection last. The custom keys
+ * follow, in insertion order of the record.
  */
 export const DataSourceCapabilitiesOrder: List<DataSourceCapability> = [
   "filtering",
@@ -35,38 +40,78 @@ export const DataSourceCapabilitiesOrder: List<DataSourceCapability> = [
 ];
 
 /**
- * The classes of the package by the capability they implement, used to fill
- * the keyed properties from a plain list of extensions (the deprecated form of
- * the constructor). A subclass counts as its base: a
- * `FilterExtensionWithFixedFilters` is a `filtering`, a `SingleSortExtension`
- * a `sorting`.
+ * Base class of the extensions shipped with the package: a
+ * `Subscribable` of ts-core with a cancellable, debounced `*Change` event.
+ * Subclasses call {@link _scheduleChange} after every mutation and raise
+ * their own event in {@link _triggerChange}. Custom extensions do not have to
+ * extend it: implementing {@link IDataSourceExtension} is enough.
+ * @typeParam TItem Type of the items of the data source.
+ * @typeParam TEvents Events of the extension.
  */
-const knownClasses: List<[DataSourceCapability, ConstructorOf<Any>]> = [
-  ["filtering", FilterExtension],
-  ["sorting", SortExtension],
-  ["pagination", PaginationExtension],
-  ["projection", ProjectionExtension],
-];
+export abstract class DataSourceExtension<
+  TItem = Any,
+  TEvents extends EventsDefinition = EventsDefinition,
+>
+  extends Subscribable<TEvents>
+  implements IDataSourceExtension<TItem, TEvents>
+{
+  protected readonly _changeDelay: number;
+  private readonly _changeDelegate: DebouncedDelegate;
+
+  /**
+   * @param options Debounce of the `*Change` event.
+   */
+  public constructor(options?: DataSourceExtensionOptions) {
+    super();
+    this._changeDelay =
+      options?.changeDelay ?? DataSourceExtensionChangeDelayDefault;
+    this._changeDelegate = new DebouncedDelegate(
+      () => this._triggerChange(),
+      this._changeDelay,
+    );
+  }
+
+  /**
+   * Cancels the pending `*Change` event and removes every handler.
+   */
+  public async dispose(): Promise<void> {
+    this._changeDelegate.abort();
+    await super.dispose();
+  }
+
+  /**
+   * Raises the `*Change` event of the extension.
+   */
+  protected abstract _triggerChange(): void;
+
+  /**
+   * Schedules the `*Change` event after the quiet time, restarting the wait
+   * if one is already pending.
+   */
+  protected _scheduleChange(): void {
+    this._changeDelegate.call();
+  }
+}
 
 /**
  * Data source driven only by its extensions: it knows nothing about filters,
  * pagination and so on, it just runs the read cycle described in
  * {@link IDataSourceExtension} over its pipeline of extensions.
  *
- * **Capabilities.** The extensions are given by key
- * ({@link DataSourceExtensions}) and exposed under the same key as readonly
- * properties (`filtering`, `pagination`, `projection`, `sorting`, plus the
- * augmented keys), set only when given: `"sorting" in source` is `false` for a
- * source without sorting. The pipeline order is canonical and owned by the
- * data source ({@link DataSourceCapabilitiesOrder}): `filtering`, `sorting`,
- * `pagination`, `projection`, then the `others` in array order, then the
- * augmented keys in insertion order of the record; whatever the key order of
- * the record, the count reader of the pagination receives the filters.
+ * **Extensions by key.** The extensions are given as a record
+ * ({@link DataSourceExtensionsDefinition}) and exposed under the same keys as
+ * readonly own properties, set only when given: `"sorting" in source` is
+ * `false` for a source without sorting. The pipeline order is canonical and
+ * owned by the data source: the keys of the package in the order of
+ * {@link DataSourceCapabilitiesOrder} (`filtering`, `sorting`, `pagination`,
+ * `projection`), then the custom keys in insertion order of the record;
+ * whatever the key order of the record, the count reader of the pagination
+ * receives the filters.
  *
- * `TCaps` are the capabilities the type guarantees. The constructor cannot
- * infer them from the record: build a source with {@link createDataSource},
- * which does, or state them by hand (`new DataSource<User, "filtering">`).
- * Without them the keyed properties are typed as possibly `undefined`.
+ * The class states only the four keys of the package, as optional
+ * properties: a class cannot type its members from a generic record. Build a
+ * source with {@link createDataSource}, which returns the
+ * {@link IDataSource} typed with every key of the record.
  *
  * **The latest read wins.** The read cycle runs in one `AbortableDelegate` of
  * ts-core: a `read()` requested while another is running aborts it, so the
@@ -84,7 +129,7 @@ const knownClasses: List<[DataSourceCapability, ConstructorOf<Any>]> = [
  * const dataSource = createDataSource(
  *   (payload, signal) => api.getUsers(payload, { signal }),
  *   { filtering, pagination },
- * ); // IDataSource<User, "filtering" | "pagination">
+ * ); // IDataSource<User, { filtering: FilterExtension<User>; pagination: PaginationExtension<User> }>
  * dataSource.on("items", (users) => render(users));
  * dataSource.filtering.on("filtersChange", () => dataSource.read());
  * await dataSource.read();
@@ -99,36 +144,19 @@ const knownClasses: List<[DataSourceCapability, ConstructorOf<Any>]> = [
  * await dataSource.read();
  * ```
  * @typeParam TItem Type of the items.
- * @typeParam TCaps Keys of the capabilities the type guarantees.
  */
-export class DataSource<TItem = Any, TCaps extends DataSourceCapability = never>
+export class DataSource<TItem = Any>
   extends Subscribable<DataSourceEvents<TItem>>
   implements IDataSource<TItem>
 {
   /** The filtering extension, when given. */
-  declare public readonly filtering: DataSourceCapabilityProperty<
-    TItem,
-    TCaps,
-    "filtering"
-  >;
+  declare public readonly filtering?: IFilterExtension<TItem>;
   /** The pagination extension, when given. */
-  declare public readonly pagination: DataSourceCapabilityProperty<
-    TItem,
-    TCaps,
-    "pagination"
-  >;
+  declare public readonly pagination?: IPaginationExtension<TItem>;
   /** The projection extension, when given. */
-  declare public readonly projection: DataSourceCapabilityProperty<
-    TItem,
-    TCaps,
-    "projection"
-  >;
+  declare public readonly projection?: IProjectionExtension<TItem>;
   /** The sorting extension, when given. */
-  declare public readonly sorting: DataSourceCapabilityProperty<
-    TItem,
-    TCaps,
-    "sorting"
-  >;
+  declare public readonly sorting?: ISortExtension<TItem>;
 
   /**
    * Mirror of `_readDelegate.isRunning`, kept by hand because the getter and
@@ -146,7 +174,7 @@ export class DataSource<TItem = Any, TCaps extends DataSourceCapability = never>
     this._runReadCycle(signal),
   );
 
-  /** The pipeline: every extension, keyed or not, in invocation order. */
+  /** The pipeline: every extension given, in invocation order. */
   protected readonly _extensions: List<IDataSourceExtension<TItem>>;
   protected readonly _reader: DataSourceReader<TItem>;
 
@@ -154,24 +182,15 @@ export class DataSource<TItem = Any, TCaps extends DataSourceCapability = never>
    * @param reader Resolves the payload into the items; receives the signal
    * of the read as second argument.
    * @param extensions Extensions by key, run in the canonical order and
-   * exposed under their key. A plain list is still accepted (**deprecated**,
-   * removed in 2.0): it runs in array order and the keyed properties are
-   * filled by `instanceof` on the classes of the package.
-   * @param others Extensions without a key, run after the keyed ones in
-   * array order (after the list, with the list form).
+   * exposed under their key; a key set to `undefined` is skipped.
    */
   public constructor(
     reader: DataSourceReader<TItem>,
-    extensions:
-      | DataSourceExtensions<TItem>
-      | List<IDataSourceExtension<TItem>> = {},
-    others: List<IDataSourceExtension<TItem>> = [],
+    extensions: DataSourceExtensionsDefinition<TItem> = {},
   ) {
     super();
     this._reader = reader;
-    this._extensions = Array.isArray(extensions)
-      ? this._fromList(extensions, others)
-      : this._fromRecord(extensions, others);
+    this._extensions = this._buildPipeline(extensions);
   }
 
   public get isReading(): boolean {
@@ -184,26 +203,12 @@ export class DataSource<TItem = Any, TCaps extends DataSourceCapability = never>
   /**
    * Aborts the running read (its `read()` rejects with `AbortedException`
    * and it raises no event afterwards), removes every handler and disposes
-   * every extension, keyed or not.
+   * every extension.
    */
   public async dispose(): Promise<void> {
     this._readDelegate.abort();
     await this._eventBus.dispose();
     for (const extension of this._extensions) await extension.dispose();
-  }
-
-  /**
-   * Finds an extension by class, among the keyed ones and the `others`.
-   * @deprecated Use the keyed properties (`filtering`, `pagination`,
-   * `projection`, `sorting` and the augmented keys). Removed in 2.0.
-   * @param constructor Class of the extension to find.
-   * @returns the first extension that is an instance of `constructor`, or `null`.
-   */
-  public getExtension<TExtension extends IDataSourceExtension<TItem>>(
-    constructor: ConstructorOf<TExtension>,
-  ): Nullable<TExtension> {
-    const extension = this._extensions.find((a) => a instanceof constructor);
-    return (extension as TExtension | undefined) ?? null;
   }
 
   /**
@@ -239,57 +244,27 @@ export class DataSource<TItem = Any, TCaps extends DataSourceCapability = never>
   }
 
   /**
-   * Builds the pipeline from a plain list (the deprecated form): the list in
-   * its order, then `others`. The keyed properties are filled by `instanceof`
-   * on the classes of the package, the first instance of each winning as in
-   * {@link getExtension}.
+   * Builds the pipeline and defines the keyed properties: the keys of the
+   * package in the canonical order, then the custom keys in insertion order.
+   * A key set to `undefined` is skipped: no property, nothing in the
+   * pipeline.
    */
-  private _fromList(
-    extensions: List<IDataSourceExtension<TItem>>,
-    others: List<IDataSourceExtension<TItem>>,
+  private _buildPipeline(
+    extensions: DataSourceExtensionsDefinition<TItem>,
   ): List<IDataSourceExtension<TItem>> {
-    for (const [key, constructor] of knownClasses) {
-      const extension = extensions.find((a) => a instanceof constructor);
-      if (extension) this._setCapability(key, extension);
-    }
-    return [...extensions, ...others];
-  }
-  /**
-   * Builds the pipeline from the record: the known keys in the canonical
-   * order, then `others`, then the augmented keys in insertion order. A key
-   * set to `undefined` is skipped: no property, nothing in the pipeline.
-   */
-  private _fromRecord(
-    extensions: DataSourceExtensions<TItem>,
-    others: List<IDataSourceExtension<TItem>>,
-  ): List<IDataSourceExtension<TItem>> {
-    const record = extensions as Record<string, IDataSourceExtension<TItem>>;
     const known: List<string> = DataSourceCapabilitiesOrder;
-    const augmented = Object.keys(record).filter((key) => !known.includes(key));
-    const keyed = (keys: List<string>) =>
-      keys
-        .filter((key) => record[key] !== undefined)
-        .map((key) => {
-          this._setCapability(key, record[key]);
-          return record[key];
-        });
-    return [
-      ...keyed(DataSourceCapabilitiesOrder),
-      ...others,
-      ...keyed(augmented),
-    ];
-  }
-  /**
-   * Defines the keyed property as an own property, so that `key in source`
-   * tells whether the capability is there. The property types are
-   * conditional on `TCaps`, hence the untyped write.
-   */
-  private _setCapability(
-    key: string,
-    extension: IDataSourceExtension<TItem>,
-  ): void {
-    (this as unknown as Record<string, IDataSourceExtension<TItem>>)[key] =
-      extension;
+    const custom = Object.keys(extensions).filter((a) => !known.includes(a));
+    const pipeline: List<IDataSourceExtension<TItem>> = [];
+    for (const key of [...known, ...custom]) {
+      const extension = extensions[key];
+      if (extension === undefined) continue;
+      // An own property, so that `key in source` tells whether the
+      // extension is there; the class declares the four known keys only.
+      (this as unknown as Record<string, IDataSourceExtension<TItem>>)[key] =
+        extension;
+      pipeline.push(extension);
+    }
+    return pipeline;
   }
   /**
    * The function of the delegate: one read cycle. Returns at once, without

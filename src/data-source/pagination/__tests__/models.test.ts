@@ -1,5 +1,4 @@
-import { DataSourceExtension } from "../../extension";
-import { DataSource } from "../../models";
+import { DataSource, DataSourceExtension } from "../../models";
 import { DataSourcePayload } from "../../types";
 import { PaginationExtension } from "../models";
 
@@ -392,16 +391,20 @@ describe("PaginationExtension", () => {
         10,
       );
       const itemsReader = jest.fn(async () => [] as Item[]);
-      const dataSource = new DataSource<Item>(itemsReader, [paginating]);
+      const dataSource = new DataSource<Item>(itemsReader, {
+        pagination: paginating,
+      });
       await expect(dataSource.read()).rejects.toBe(error);
       expect(itemsReader).not.toHaveBeenCalled();
     });
     test("DataSource.read passes the paging to the items reader", async () => {
       const { extension } = createExtension(25, 10);
-      const itemsReader = jest.fn(
-        async (_payload: DataSourcePayload<Item>) => [{ id: 1 }],
-      );
-      const dataSource = new DataSource<Item>(itemsReader, [extension]);
+      const itemsReader = jest.fn(async (_payload: DataSourcePayload<Item>) => [
+        { id: 1 },
+      ]);
+      const dataSource = new DataSource<Item>(itemsReader, {
+        pagination: extension,
+      });
       await dataSource.read();
       expect(itemsReader).toHaveBeenCalledTimes(1);
       expect(itemsReader.mock.calls[0][0].paging).toEqual({

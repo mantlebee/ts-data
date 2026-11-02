@@ -1,32 +1,35 @@
-import { Any, EventsDefinition, List } from "@mantlebee/ts-core";
+import { Any, Dictionary, EventsDefinition, List } from "@mantlebee/ts-core";
 
 import { QueryItemsPayload, QueryItemsReader } from "@/query-items";
 
-import type { DataSourceCapabilities } from "./interfaces";
+import type { IFilterExtension } from "./filtering/interfaces";
+import type { IDataSourceExtension } from "./interfaces";
+import type { IPaginationExtension } from "./pagination/interfaces";
+import type { IProjectionExtension } from "./projection/interfaces";
+import type { ISortExtension } from "./sorting/interfaces";
+
+/**
+ * The extensions shipped with the package, by key, each one typed with its
+ * **interface**: a `FilterExtensionWithFixedFilters` is a `filtering`, a
+ * `SingleSortExtension` is a `sorting`. These keys are always part of the
+ * type of a data source, as optional properties when not guaranteed, and run
+ * first in the pipeline, in the order of {@link DataSourceCapabilitiesOrder}.
+ * A consumer adds its own keys per source, in the record given to
+ * {@link createDataSource}: nothing to register here.
+ * @typeParam TItem Type of the items.
+ */
+export type DataSourceCapabilities<TItem = Any> = {
+  filtering: IFilterExtension<TItem>;
+  pagination: IPaginationExtension<TItem>;
+  projection: IProjectionExtension<TItem>;
+  sorting: ISortExtension<TItem>;
+};
 
 /**
  * A key of {@link DataSourceCapabilities}: `"filtering"`, `"pagination"`,
- * `"projection"`, `"sorting"`, plus the keys a consumer augmented.
+ * `"projection"` or `"sorting"`.
  */
 export type DataSourceCapability = keyof DataSourceCapabilities;
-
-/**
- * Type of the keyed property `TKey` of a {@link DataSource} guaranteeing
- * `TCaps`: the extension when `TKey` is guaranteed, the extension or
- * `undefined` otherwise. It is how the class states its capabilities, since a
- * class cannot pick its members from a generic key; a consumer annotates with
- * {@link IDataSource} and never needs this type.
- * @typeParam TItem Type of the items.
- * @typeParam TCaps Keys the source guarantees.
- * @typeParam TKey The key of the property.
- */
-export type DataSourceCapabilityProperty<
-  TItem,
-  TCaps extends DataSourceCapability,
-  TKey extends DataSourceCapability,
-> = TKey extends TCaps
-  ? DataSourceCapabilities<TItem>[TKey]
-  : DataSourceCapabilities<TItem>[TKey] | undefined;
 
 /**
  * Events of a {@link DataSource}.
@@ -48,32 +51,78 @@ export type DataSourceEvents<TItem = Any> = EventsDefinition & {
 };
 
 /**
- * Extensions of a data source by key: the record given to
- * {@link createDataSource} and to the constructor of {@link DataSource}. A key
- * whose value may be `undefined` is not a capability of the source: the
- * extension is exposed when set, but the type does not guarantee it.
+ * Options of a {@link DataSourceExtension}.
+ */
+export type DataSourceExtensionOptions = {
+  /**
+   * Milliseconds of quiet time before the debounced `*Change` event of the
+   * extension is raised. Default {@link DataSourceExtensionChangeDelayDefault}.
+   */
+  changeDelay?: number;
+};
+
+/**
+ * The shape of the extensions of a data source: a record from a key to an
+ * extension, like `EventsDefinition` of ts-core for the events. A key of
+ * {@link DataSourceCapabilities} must hold its interface (a `filtering` is an
+ * `IFilterExtension`), any other key holds a custom extension; a value that
+ * may be `undefined` is an extension the source may lack. Written as a type
+ * literal (an interface has no implicit index signature, so it would not
+ * satisfy the constraint).
  * @example
  * ```ts
- * const extensions: DataSourceExtensions<User> = { filtering, pagination };
+ * type UsersExtensions = {
+ *   filtering: IFilterExtension<User>;
+ *   pagination: IPaginationExtension<User>;
+ *   distinct?: DistinctExtension<User>;
+ * };
  * ```
  * @typeParam TItem Type of the items.
  */
-export type DataSourceExtensions<TItem = Any> = Partial<
-  DataSourceCapabilities<TItem>
->;
+export type DataSourceExtensionsDefinition<TItem = Any> = Dictionary<
+  IDataSourceExtension<TItem> | undefined
+> &
+  Partial<DataSourceCapabilities<TItem>>;
 
 /**
- * The capabilities a record of extensions guarantees: the keys of `TExt` that
- * are known capabilities and whose value type does not admit `undefined`.
- * `{ filtering: FilterExtension<User>; pagination: PaginationExtension<User> | undefined }`
- * gives `"filtering"`. It is the `TCaps` {@link createDataSource} infers.
- * @typeParam TExt Record of extensions by key.
+ * The keyed properties of a data source whose extensions are `TExt`: the
+ * keys whose value cannot be `undefined` as required readonly properties,
+ * the keys whose value may be `undefined` as optional ones (without the
+ * `undefined`), and every key of {@link DataSourceCapabilities} not in
+ * `TExt` as an optional one, to narrow on. The capability part of
+ * {@link IDataSource}.
+ * @typeParam TItem Type of the items.
+ * @typeParam TExt Record of the extensions by key.
  */
-export type DefinedCapabilities<TExt> = {
-  [TKey in keyof TExt & DataSourceCapability]-?: undefined extends TExt[TKey]
-    ? never
-    : TKey;
-}[keyof TExt & DataSourceCapability];
+export type DataSourceExtensionProperties<TItem, TExt> = {
+  readonly [
+    TKey in keyof TExt as undefined extends TExt[TKey] ? never : TKey
+  ]: TExt[TKey];
+} & {
+  readonly [
+    TKey in keyof TExt as undefined extends TExt[TKey] ? TKey : never
+  ]?: Exclude<TExt[TKey], undefined>;
+} & {
+  readonly [
+    TKey in Exclude<DataSourceCapability, keyof TExt>
+  ]?: DataSourceCapabilities<TItem>[TKey];
+};
+
+/**
+ * Resolves the second type argument of {@link IDataSource}: a union of
+ * {@link DataSourceCapability} is a shorthand for the record picking those
+ * keys from {@link DataSourceCapabilities}, any record is taken as it is.
+ * `IDataSource<User, "filtering" | "pagination">` is
+ * `IDataSource<User, { filtering: IFilterExtension<User>; pagination: IPaginationExtension<User> }>`.
+ * @typeParam TItem Type of the items.
+ * @typeParam TExt Record of the extensions by key, or keys of the package ones.
+ */
+export type DataSourceExtensionsOf<
+  TItem,
+  TExt extends DataSourceExtensionsDefinition<TItem> | DataSourceCapability,
+> = [TExt] extends [DataSourceCapability]
+  ? Pick<DataSourceCapabilities<TItem>, Extract<TExt, DataSourceCapability>>
+  : TExt;
 
 /**
  * Query built by the extensions and given to the readers.

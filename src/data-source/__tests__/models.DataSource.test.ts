@@ -3,7 +3,6 @@ import {
   DataSourcePayload,
   FilterExtension,
   IDataSourceExtension,
-  PaginationExtension,
 } from "@/data-source";
 import { Filter, FilterOperators } from "@/query-items";
 
@@ -77,9 +76,9 @@ describe("DataSource", () => {
       expect(handler).toHaveBeenCalledWith([item1, item2]);
     });
     test("Without extensions the reader is called with an empty payload", async () => {
-      const reader = jest.fn<Promise<Item[]>, Parameters<Reader>>(
-        async () => [item1],
-      );
+      const reader = jest.fn<Promise<Item[]>, Parameters<Reader>>(async () => [
+        item1,
+      ]);
       const dataSource = new DataSource<Item>(reader);
       await dataSource.read();
       expect(reader).toHaveBeenCalledWith({}, expect.any(AbortSignal));
@@ -133,7 +132,7 @@ describe("DataSource", () => {
             throw error;
           },
         });
-        const dataSource = new DataSource<Item>(reader, [extension]);
+        const dataSource = new DataSource<Item>(reader, { extension });
         const errorHandler = jest.fn();
         const isReadingHandler = jest.fn();
         dataSource.on("error", errorHandler);
@@ -150,7 +149,7 @@ describe("DataSource", () => {
   });
 
   describe("hooks order", () => {
-    test("getItemsBefore and getItemsAfter run in array order and the payload flows through the extensions", async () => {
+    test("getItemsBefore and getItemsAfter run in insertion order and the payload flows through the extensions", async () => {
       const calls: string[] = [];
       let payloadReceivedByB: DataSourcePayload<Item> | undefined;
       const payloadOfA: DataSourcePayload<Item> = {
@@ -184,10 +183,10 @@ describe("DataSource", () => {
         calls.push("reader");
         return [item1];
       });
-      const dataSource = new DataSource<Item>(reader, [
+      const dataSource = new DataSource<Item>(reader, {
         extensionA,
         extensionB,
-      ]);
+      });
       await dataSource.read();
       expect(calls).toEqual([
         "before A",
@@ -210,10 +209,10 @@ describe("DataSource", () => {
         getItemsBefore: async () => payload,
       });
       const extensionB = createStub({ getItemsAfter: afterB });
-      const dataSource = new DataSource<Item>(async () => [item1], [
+      const dataSource = new DataSource<Item>(async () => [item1], {
         extensionA,
         extensionB,
-      ]);
+      });
       await dataSource.read();
       expect(afterB).toHaveBeenCalledWith(
         [item3],
@@ -223,9 +222,9 @@ describe("DataSource", () => {
       expect(dataSource.items).toEqual([item3]);
     });
     test("Extensions without hooks are skipped", async () => {
-      const dataSource = new DataSource<Item>(async () => [item1], [
-        createStub(),
-      ]);
+      const dataSource = new DataSource<Item>(async () => [item1], {
+        stub: createStub(),
+      });
       await dataSource.read();
       expect(dataSource.items).toEqual([item1]);
     });
@@ -238,7 +237,7 @@ describe("DataSource", () => {
       });
       const dataSource = new DataSource<Item>(
         async () => [item1, item2, item3],
-        [reverse],
+        { reverse },
       );
       const handler = jest.fn();
       dataSource.on("items", handler);
@@ -254,51 +253,14 @@ describe("DataSource", () => {
           throw error;
         },
       });
-      const dataSource = new DataSource<Item>(async () => [item1], [
+      const dataSource = new DataSource<Item>(async () => [item1], {
         extension,
-      ]);
+      });
       const handler = jest.fn();
       dataSource.on("error", handler);
       await expect(dataSource.read()).rejects.toBe(error);
       expect(handler).toHaveBeenCalledWith(error);
       expect(dataSource.items).toEqual([]);
-    });
-  });
-
-  describe("getExtension", () => {
-    test("Returns the instance when present, typed", () => {
-      const filtering = new FilterExtension<Item>();
-      const dataSource = new DataSource<Item>(async () => [], [
-        createStub(),
-        filtering,
-      ]);
-      // The type argument is needed: FilterExtension is generic, so the
-      // constructor alone is inferred as the constraint (IDataSourceExtension).
-      const found = dataSource.getExtension<FilterExtension<Item>>(FilterExtension);
-      expect(found).toBe(filtering);
-      // No cast needed to reach the members of the extension.
-      found?.addFilter(filter);
-      expect(found?.filters).toEqual([filter]);
-    });
-    test("Returns null when absent", () => {
-      const dataSource = new DataSource<Item>(async () => [], [
-        createStub(),
-      ]);
-      expect(dataSource.getExtension(FilterExtension)).toBeNull();
-      expect(dataSource.getExtension(PaginationExtension)).toBeNull();
-    });
-    test("Returns null when there are no extensions", () => {
-      const dataSource = new DataSource<Item>(async () => []);
-      expect(dataSource.getExtension(FilterExtension)).toBeNull();
-    });
-    test("Returns the first extension when more than one is an instance", () => {
-      const first = new FilterExtension<Item>();
-      const second = new FilterExtension<Item>();
-      const dataSource = new DataSource<Item>(async () => [], [
-        first,
-        second,
-      ]);
-      expect(dataSource.getExtension(FilterExtension)).toBe(first);
     });
   });
 
@@ -312,10 +274,10 @@ describe("DataSource", () => {
     test("Disposes every extension", async () => {
       const extensionA = createStub();
       const extensionB = createStub();
-      const dataSource = new DataSource<Item>(async () => [], [
+      const dataSource = new DataSource<Item>(async () => [], {
         extensionA,
         extensionB,
-      ]);
+      });
       await dataSource.dispose();
       expect(extensionA.dispose).toHaveBeenCalledTimes(1);
       expect(extensionB.dispose).toHaveBeenCalledTimes(1);

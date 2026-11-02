@@ -1,58 +1,23 @@
-import {
-  Any,
-  ConstructorOf,
-  EventsDefinition,
-  ISubscribable,
-  List,
-  Nullable,
-} from "@mantlebee/ts-core";
+import { Any, EventsDefinition, ISubscribable, List } from "@mantlebee/ts-core";
 
-import type { IFilterExtension } from "./filtering/interfaces";
-import type { IPaginationExtension } from "./pagination/interfaces";
-import type { IProjectionExtension } from "./projection/interfaces";
-import type { ISortExtension } from "./sorting/interfaces";
 import type {
   DataSourceCapability,
   DataSourceEvents,
+  DataSourceExtensionProperties,
+  DataSourceExtensionsDefinition,
+  DataSourceExtensionsOf,
   DataSourcePayload,
 } from "./types";
 
 /**
- * The extensions a data source may expose, by key. The keys are the
- * **interfaces**, not the classes: a `FilterExtensionWithFixedFilters` is a
- * `filtering`, a `SingleSortExtension` is a `sorting`. A data source declares
- * the keys it guarantees in its type ({@link IDataSource}) and exposes every
- * extension it was given under its key, so a consumer reads `source.filtering`
- * instead of probing the classes with `getExtension`.
- *
- * Consumers may add their own keys by augmenting this interface; an augmented
- * key runs after the known ones, in insertion order of the record given to
- * {@link createDataSource} (see the README).
- * @example
- * ```ts
- * declare module "@mantlebee/ts-data" {
- *   interface DataSourceCapabilities<TItem> {
- *     distinct: DistinctExtension<TItem>;
- *   }
- * }
- * ```
+ * The members of a data source that do not depend on its extensions: the
+ * state and the read cycle. {@link IDataSource} adds the keyed extensions;
+ * annotate with that one.
  * @typeParam TItem Type of the items.
  */
-export interface DataSourceCapabilities<TItem = Any> {
-  filtering: IFilterExtension<TItem>;
-  pagination: IPaginationExtension<TItem>;
-  projection: IProjectionExtension<TItem>;
-  sorting: ISortExtension<TItem>;
-}
-
-/**
- * The members of a data source that do not depend on its capabilities: the
- * state, the read cycle and the deprecated lookup by class. {@link IDataSource}
- * adds the keyed extensions; annotate with that one.
- * @typeParam TItem Type of the items.
- */
-export interface IDataSourceBase<TItem = Any>
-  extends ISubscribable<DataSourceEvents<TItem>> {
+export interface IDataSourceBase<TItem = Any> extends ISubscribable<
+  DataSourceEvents<TItem>
+> {
   /**
    * `true` from the first `read()` until the latest one settles: a read
    * superseded by a newer one does not reset it.
@@ -60,21 +25,6 @@ export interface IDataSourceBase<TItem = Any>
   readonly isReading: boolean;
   /** Items of the latest completed read; a superseded read never sets them. */
   readonly items: List<TItem>;
-  /**
-   * Finds an extension by class. TypeScript cannot infer the item type of a
-   * generic extension class from its constructor: without a type argument
-   * the result is typed with the default item type (`FilterExtension<Any>`,
-   * methods available but fields unchecked); pass the type argument to get
-   * the complete type: `getExtension<FilterExtension<Item>>(FilterExtension)`.
-   * @deprecated Use the keyed properties (`filtering`, `pagination`,
-   * `projection`, `sorting` and the augmented keys): they are part of the
-   * type of the source and need no class probing. Removed in 2.0.
-   * @param constructor Class of the extension to find.
-   * @returns the first extension that is an instance of `constructor`, or `null`.
-   */
-  getExtension<TExtension extends IDataSourceExtension<TItem>>(
-    constructor: ConstructorOf<TExtension>,
-  ): Nullable<TExtension>;
   /**
    * Runs the read cycle and updates {@link items}. Rejects with the error of
    * the reader or of an extension, after raising the `error` event.
@@ -100,21 +50,25 @@ export interface IDataSourceBase<TItem = Any>
  * Reads items through a reader, letting its extensions shape the query and
  * the result. See {@link IDataSourceExtension} for the read cycle.
  *
- * **Capabilities.** `TCaps` lists the keys of {@link DataSourceCapabilities}
- * the source guarantees: each one is a required readonly property, every
- * other known capability is an optional one to narrow on.
- * `IDataSource<User, "filtering" | "pagination">` has `filtering` and
- * `pagination` for sure and `sorting?` / `projection?` to check
- * (`if (source.sorting) ...`). A source with more capabilities is assignable
- * to a parameter asking for fewer, never the opposite, and the default
- * `never` guarantees nothing, as a plain `IDataSource<User>` always did.
- * {@link createDataSource} infers `TCaps` from the record of extensions it is
- * given.
+ * **Extensions in the type.** `TExt` is the record of the extensions of the
+ * source, by key ({@link DataSourceExtensionsDefinition}), the way the
+ * events of a `Subscribable` of ts-core are a record. Every key whose value
+ * cannot be `undefined` is a required readonly property, every key whose
+ * value may be `undefined` and every key of {@link DataSourceCapabilities}
+ * not in the record is an optional one, to narrow on. A union of the keys
+ * of the package is a shorthand: `IDataSource<User, "filtering" |
+ * "pagination">` has `filtering` and `pagination` for sure, `sorting?` and
+ * `projection?` to check (`if (source.sorting) ...`). A source with more
+ * extensions is assignable to a parameter asking for fewer, never the
+ * opposite, and the default, an empty record, guarantees nothing.
+ * {@link createDataSource}
+ * infers `TExt` from the record it is given, custom keys included: no
+ * registration anywhere.
  *
  * This is a type alias, not an interface: TypeScript does not let an
- * interface extend a `Pick` over a generic key. Extend or implement it with
- * concrete type arguments only; {@link IDataSourceBase} holds the members
- * that do not depend on the capabilities.
+ * interface extend a mapped type over a generic record. Extend or implement
+ * it with concrete type arguments only; {@link IDataSourceBase} holds the
+ * members that do not depend on the extensions.
  *
  * **The latest read wins**: a `read()` requested while another is running
  * supersedes it. The superseded `read()` rejects with the `AbortedException`
@@ -127,22 +81,24 @@ export interface IDataSourceBase<TItem = Any>
  *   source.pagination.goToNextPage();
  *   if (source.sorting) source.sorting.addSort({ field: "name", asc: true }); // optional
  * }
- * const users = createDataSource(readUsers, { filtering, pagination, sorting });
- * bindGrid(users); // IDataSource<User, "filtering" | "pagination" | "sorting"> fits
+ * const users = createDataSource(readUsers, { filtering, pagination, sorting, distinct });
+ * bindGrid(users); // more extensions than asked: fits
+ * users.distinct; // DistinctExtension<User>, a custom key
  * users.on("items", (items) => render(items));
  * users.read().catch((error) => {
  *   if (!isAbortedException(error)) throw error; // superseded: nothing to do
  * });
  * ```
  * @typeParam TItem Type of the items.
- * @typeParam TCaps Keys of the capabilities the source guarantees.
+ * @typeParam TExt Record of the extensions by key, or a union of the keys of
+ * the package ones.
  */
 export type IDataSource<
   TItem = Any,
-  TCaps extends DataSourceCapability = never,
+  TExt extends DataSourceExtensionsDefinition<TItem> | DataSourceCapability =
+    Record<never, never>,
 > = IDataSourceBase<TItem> &
-  Readonly<Pick<DataSourceCapabilities<TItem>, TCaps>> &
-  Readonly<Partial<Omit<DataSourceCapabilities<TItem>, TCaps>>>;
+  DataSourceExtensionProperties<TItem, DataSourceExtensionsOf<TItem, TExt>>;
 
 /**
  * Hooks of the read cycle of an {@link IDataSource}. Every hook is optional
@@ -152,9 +108,9 @@ export type IDataSource<
  * 3. `getItemsAfter` of each extension may transform the items.
  * An error thrown by the reader or by a hook propagates as a read error.
  * The pipeline order is owned by the data source: `filtering`, `sorting`,
- * `pagination`, `projection`, then the extensions given as `others`, then
- * the augmented keys (see {@link DataSource}); so the count reader of the
- * pagination always receives the filters and the sorts.
+ * `pagination`, `projection`, then the custom keys in insertion order of the
+ * record (see {@link DataSource}); so the count reader of the pagination
+ * always receives the filters and the sorts.
  *
  * Both hooks receive the `AbortSignal` of the read, aborted when a newer read
  * supersedes it: a hook that reads something hands it to its reader, the
@@ -174,6 +130,7 @@ export type IDataSource<
  *     return Array.from(new Set(items));
  *   }
  * }
+ * const users = createDataSource(readUsers, { filtering, distinct: new DistinctExtension<User>() });
  * ```
  */
 export interface IDataSourceExtension<

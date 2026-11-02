@@ -2,7 +2,7 @@ import { Any, createHash, List, Nullable } from "@mantlebee/ts-core";
 
 import { Paging } from "@/query-items";
 
-import { DataSourceExtension } from "../extension";
+import { DataSourceExtension } from "../models";
 import { DataSourcePayload, DataSourceReader } from "../types";
 import { IPaginationExtension } from "./interfaces";
 import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
@@ -19,11 +19,11 @@ import { PaginationExtensionEvents, PaginationExtensionOptions } from "./types";
  * @example
  * ```ts
  * const countUsers = (payload, signal) => api.countUsers(payload, { signal });
- * const paginating = new PaginationExtension<User>(countUsers, 20, [10, 20, 50]);
- * const dataSource = new DataSource<User>(readUsers, [filtering, paginating]);
- * paginating.on("page", () => dataSource.read());
+ * const pagination = new PaginationExtension<User>(countUsers, 20, [10, 20, 50]);
+ * const dataSource = createDataSource(readUsers, { filtering, pagination });
+ * pagination.on("page", () => dataSource.read());
  * await dataSource.read(); // countUsers(payload) then readUsers({ ..., paging: { page: 1, itemsPerPage: 20, totalItemsCount } })
- * paginating.goToNextPage(); // page event (if there is a second page), hence a new read
+ * pagination.goToNextPage(); // page event (if there is a second page), hence a new read
  * ```
  */
 export class PaginationExtension<TItem = Any>
@@ -35,8 +35,7 @@ export class PaginationExtension<TItem = Any>
   protected readonly _itemsPerPageOptions?: List<number>;
   protected _page: number = 1;
   protected readonly _resetPageOnQueryChange:
-    | boolean
-    | List<keyof DataSourcePayload<TItem>>;
+    boolean | List<keyof DataSourcePayload<TItem>>;
   protected _totalItemsCount: number = 0;
   /** Hash of the upstream query of the last read, `null` before the first. */
   private _queryHash: Nullable<string> = null;
@@ -170,7 +169,9 @@ export class PaginationExtension<TItem = Any>
   }
   private _validateItemsPerPage(itemsPerPage: number): void {
     if (!Number.isInteger(itemsPerPage) || itemsPerPage < 1)
-      throw new Error(`itemsPerPage must be a positive integer, got ${itemsPerPage}`);
+      throw new Error(
+        `itemsPerPage must be a positive integer, got ${itemsPerPage}`,
+      );
     const options = this._itemsPerPageOptions;
     if (options && !options.includes(itemsPerPage))
       throw new Error(

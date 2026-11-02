@@ -244,11 +244,11 @@ describe("query-items", () => {
         const filtering = new FilterExtension<GenericItem>();
         const sorting = new SortExtension<GenericItem>();
         const paginating = new PaginationExtension<GenericItem>(countReader, 5);
-        const dataSource = new DataSource<GenericItem>(reader, [
+        const dataSource = new DataSource<GenericItem>(reader, {
           filtering,
           sorting,
-          paginating,
-        ]);
+          pagination: paginating,
+        });
         filtering.addFilter({
           field: "gender",
           operator: FilterOperators.equal,
@@ -271,10 +271,10 @@ describe("query-items", () => {
         const { reader } = createInMemoryQueryItemsReader(() => GenericItems);
         const projecting = new ProjectionExtension<GenericItem>();
         const sorting = new SortExtension<GenericItem>();
-        const dataSource = new DataSource<GenericItem>(reader, [
-          projecting,
+        const dataSource = new DataSource<GenericItem>(reader, {
+          projection: projecting,
           sorting,
-        ]);
+        });
         projecting.setProjections([{ field: "id" }]);
         sorting.addSort({ asc: false, field: "id" });
         await dataSource.read();

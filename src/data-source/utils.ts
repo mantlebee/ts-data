@@ -1,62 +1,47 @@
-import { List } from "@mantlebee/ts-core";
-
-import { IDataSource, IDataSourceExtension } from "./interfaces";
+import { IDataSource } from "./interfaces";
 import { DataSource } from "./models";
-import {
-  DataSourceExtensions,
-  DataSourceReader,
-  DefinedCapabilities,
-} from "./types";
+import { DataSourceExtensionsDefinition, DataSourceReader } from "./types";
 
 /**
- * Builds a {@link DataSource} whose type states its capabilities: the keys of
- * `extensions` whose value cannot be `undefined` ({@link DefinedCapabilities}).
- * It is the public way to build a source: a class constructor cannot infer
- * its type parameters from a record this way, so `new DataSource(...)` gives
- * an `IDataSource<TItem>` guaranteeing nothing unless the capabilities are
- * written by hand.
+ * Builds a {@link DataSource} whose type carries its extensions: the record
+ * given here, key by key ({@link IDataSource}). It is the way to build a
+ * source: the class cannot type its members from a generic record, so
+ * `new DataSource(...)` only knows the four keys of the package, as optional
+ * properties.
  *
  * The pipeline order is canonical, whatever the key order of the record:
- * `filtering`, `sorting`, `pagination`, `projection`, then `others` in array
- * order, then the augmented keys in insertion order of the record.
+ * `filtering`, `sorting`, `pagination`, `projection`, then the custom keys in
+ * insertion order of the record.
  * @example
  * ```ts
- * const users = createDataSource(readUsers, { filtering, pagination });
- * // IDataSource<User, "filtering" | "pagination">
+ * const users = createDataSource(readUsers, { filtering, pagination, distinct });
+ * // IDataSource<User, { filtering: FilterExtension<User>; pagination: PaginationExtension<User>; distinct: DistinctExtension<User> }>
  * users.filtering.addFilter(adult);
- * if (users.sorting) users.sorting.addSort(byName); // optional: not given
+ * users.distinct; // a custom key, typed
+ * if (users.sorting) users.sorting.addSort(byName); // a key of the package not given: optional
  *
  * const maybeSorting: SortExtension<User> | undefined = options.sortable
  *   ? new SortExtension<User>()
  *   : undefined;
  * const products = createDataSource(readProducts, { filtering, sorting: maybeSorting });
- * // IDataSource<Product, "filtering">: a key that may be undefined is not guaranteed
+ * products.sorting; // SortExtension<User> | undefined: a value that may be undefined is optional
  * ```
  * @typeParam TItem Type of the items, inferred from the reader.
- * @typeParam TExt Record of extensions by key, inferred from `extensions`.
+ * @typeParam TExt Record of the extensions by key, inferred from `extensions`.
  * @param reader Resolves the payload into the items; receives the signal of
  * the read as second argument.
  * @param extensions Extensions by key; `{}` for none.
- * @param others Extensions without a key (e.g. a custom one), run after the
- * keyed ones in array order.
- * @returns the data source, typed with the capabilities `extensions` defines.
+ * @returns the data source, typed with the extensions of the record.
  */
 export function createDataSource<
   TItem,
-  TExt extends DataSourceExtensions<TItem>,
->(
-  reader: DataSourceReader<TItem>,
-  extensions: TExt,
-  others: List<IDataSourceExtension<TItem>> = [],
-): IDataSource<TItem, DefinedCapabilities<TExt>> {
-  // The class states its properties as conditional on `TCaps`, which
-  // TypeScript cannot relate to the `Pick` of the interface while `TCaps` is
-  // still generic; the two shapes agree for every concrete `TCaps` (see the
-  // type specs).
-  const source = new DataSource<TItem, DefinedCapabilities<TExt>>(
-    reader,
-    extensions,
-    others,
-  );
-  return source as unknown as IDataSource<TItem, DefinedCapabilities<TExt>>;
+  TExt extends DataSourceExtensionsDefinition<TItem>,
+>(reader: DataSourceReader<TItem>, extensions: TExt): IDataSource<TItem, TExt> {
+  // The class declares the four keys of the package only; the custom keys
+  // are own properties set by the constructor, which the type of the record
+  // describes exactly (see the type specs).
+  return new DataSource<TItem>(reader, extensions) as unknown as IDataSource<
+    TItem,
+    TExt
+  >;
 }

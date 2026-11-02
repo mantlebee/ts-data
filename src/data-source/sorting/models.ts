@@ -3,8 +3,8 @@ import type { Any, KeyOf, List } from "@mantlebee/ts-core";
 import type { Sort } from "@/query-items/sorting/types";
 import { addSort, removeSort } from "@/query-items/sorting/utils";
 
-import { DataSourceExtension, DataSourceExtensionOptions } from "../extension";
-import { DataSourcePayload } from "../types";
+import { DataSourceExtension } from "../models";
+import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
 import { ISortExtension } from "./interfaces";
 import { SortExtensionEvents } from "./types";
 
@@ -34,10 +34,7 @@ export class SortExtension<TItem = Any>
    * unlimited.
    * @param options Debounce of the `sortsChange` event.
    */
-  public constructor(
-    sortsLimit = 0,
-    options?: DataSourceExtensionOptions,
-  ) {
+  public constructor(sortsLimit = 0, options?: DataSourceExtensionOptions) {
     super(options);
     this._sortsLimit = sortsLimit;
   }

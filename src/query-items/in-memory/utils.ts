@@ -76,10 +76,11 @@ export function countItems<TItem = Any>(
  * @example
  * ```ts
  * const { countReader, reader } = createInMemoryQueryItemsReader(() => users);
- * const filtering = new FilterExtension<User>();
- * const sorting = new SortExtension<User>();
- * const paginating = new PaginationExtension<User>(countReader, 20);
- * const dataSource = new DataSource<User>(reader, [filtering, sorting, paginating]);
+ * const dataSource = createDataSource(reader, {
+ *   filtering: new FilterExtension<User>(),
+ *   sorting: new SortExtension<User>(),
+ *   pagination: new PaginationExtension<User>(countReader, 20),
+ * });
  * ```
  */
 export function createInMemoryQueryItemsReader<TItem = Any>(

@@ -2,8 +2,8 @@ import { Any, KeyOf, List } from "@mantlebee/ts-core";
 
 import { Projection } from "@/query-items";
 
-import { DataSourceExtension, DataSourceExtensionOptions } from "../extension";
-import { DataSourcePayload } from "../types";
+import { DataSourceExtension } from "../models";
+import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
 import { IProjectionExtension } from "./interfaces";
 import { ProjectionExtensionEvents } from "./types";
 

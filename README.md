@@ -15,7 +15,7 @@ each change without polling.
 - [Installation](#installation)
 - [Upgrading to 1.0](#upgrading-to-10)
 - [Upgrading to 1.2](#upgrading-to-12)
-- [Upgrading to 1.3](#upgrading-to-13)
+- [Upgrading to 2.0](#upgrading-to-20)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
   - [The payload](#the-payload)
@@ -34,7 +34,7 @@ each change without polling.
 ## Features
 
 - 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own
-- 🧾 **Typed capabilities**: `createDataSource(reader, { filtering, pagination })` returns an `IDataSource<User, "filtering" | "pagination">`, so a consumer declares what it needs in a signature (`source: IDataSource<User, "filtering">`) and the compiler checks it, no `instanceof` probing
+- 🧾 **Extensions in the type**: `createDataSource(reader, { filtering, pagination, distinct })` returns an `IDataSource` whose type carries every extension by key, custom ones included, so a consumer declares what it needs in a signature (`source: IDataSource<User, "filtering" | "pagination">`) and the compiler checks it, no `instanceof` probing
 - 🏁 **The latest read wins**: a `read()` requested while another is running supersedes it, `items` always come from the latest read, `isReading` follows it, and the readers receive an `AbortSignal` to hand to `fetch`
 - 📄 **Storage-agnostic query model**: `QueryItemsPayload` with typed `Filter`s (OData-like operators), `Sort`s, `Paging` and `Projection`s, translated by your reader
 - 🔔 **Typed events**: every mutation raises its own event, plus a debounced `*Change` event per extension, on top of `Subscribable` of [`@mantlebee/ts-core`](https://github.com/mantlebee/ts-core)
@@ -69,15 +69,16 @@ rejection with `isAbortedException`; one that only listens to `items` and
 `error` has nothing to change. It needs `@mantlebee/ts-core` 1.3.0. See the
 [1.2.0 release notes](https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/1.2.0.md).
 
-## Upgrading to 1.3
+## Upgrading to 2.0
 
-Version 1.3.0 is additive: it makes the capabilities of a source part of its
-type ([Capabilities](#capabilities)). Build sources with `createDataSource`
-and read the extensions from their keyed properties (`source.filtering`,
-`source.pagination`, …); `getExtension(Class)` and the list form of the
-`DataSource` constructor keep working but are **deprecated** and will be
-removed in 2.0. See the
-[1.3.0 release notes](https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/1.3.0.md).
+Version 2.0.0 makes the extensions of a source part of its type
+([Capabilities](#capabilities)) and **breaks** the way a source is built and
+inspected: the extensions are given **by key** (`createDataSource(reader,
+{ filtering, pagination })`) instead of as an ordered list, and read from the
+keyed properties (`source.filtering`, `source.pagination`, …);
+`getExtension(Class)` is gone. See the
+[2.0.0 release notes](https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/2.0.0.md)
+for the migration.
 
 ## Quick Start
 
@@ -114,8 +115,8 @@ const pagination = new PaginationExtension<User>(countUsers, 20, [10, 20, 50]);
 
 // The extensions are given by key and run in the canonical order (filtering,
 // sorting, pagination, projection), so the count always receives the filters.
-// The type says what the source can do:
-// IDataSource<User, "filtering" | "sorting" | "pagination">.
+// The type carries them: IDataSource<User, { filtering: FilterExtension<User>;
+// sorting: SortExtension<User>; pagination: PaginationExtension<User> }>.
 const users = createDataSource(readUsers, { filtering, sorting, pagination });
 
 users.on("items", (items) => render(items));
@@ -178,7 +179,7 @@ flag, and runs the **read cycle** on `read()`:
 
 The data source knows nothing about filters or pages, but it owns the order
 of the pipeline: `filtering`, `sorting`, `pagination`, `projection`, then the
-extensions given as `others`, then the augmented keys (see
+custom keys in insertion order of the record (see
 [Capabilities](#capabilities)). The pagination therefore always reads the
 total count with the filters and the sorts in the payload, whatever the key
 order you write. A failure anywhere (reader or hook) raises the `error`
@@ -221,8 +222,7 @@ request, or ignore it, the result of a superseded read is discarded anyway.
 
 Read the extensions from the source by key (`users.filtering`,
 `users.pagination`, …): they are part of its type, see
-[Capabilities](#capabilities). `getExtension(Class)` still finds one by class
-but is deprecated and goes away in 2.0.
+[Capabilities](#capabilities).
 
 Write the item type on the extension (`new FilterExtension<User>()`):
 TypeScript cannot infer it from the data source the extension is later passed
@@ -231,42 +231,67 @@ loses the field suggestions and checks.
 
 ### Capabilities
 
-`DataSourceCapabilities<TItem>` maps a **key** to the **interface** of the
-extension a source may expose. The keys are the interfaces, not the classes: a
-`FilterExtensionWithFixedFilters` is a `filtering`, a `SingleSortExtension` is
-a `sorting`.
+The second type argument of `IDataSource<TItem, TExt>` is the **record of the
+extensions of the source, by key**, the way the events of a `Subscribable` of
+ts-core are a record: `createDataSource` infers it from the record it is
+given, custom keys included, and nothing has to be registered anywhere.
 
 ```typescript
-interface DataSourceCapabilities<TItem> {
-  filtering: IFilterExtension<TItem>;
-  pagination: IPaginationExtension<TItem>;
-  projection: IProjectionExtension<TItem>;
-  sorting: ISortExtension<TItem>;
-}
-type DataSourceCapability = keyof DataSourceCapabilities; // "filtering" | "pagination" | ...
+const users = createDataSource(readUsers, { filtering, pagination, distinct });
+// IDataSource<User, {
+//   filtering: FilterExtension<User>;
+//   pagination: PaginationExtension<User>;
+//   distinct: DistinctExtension<User>;
+// }>
+users.filtering.addFilter(adult); // required: the key is in the record
+users.distinct; // DistinctExtension<User>: a custom key, typed
+if (users.sorting) users.sorting.addSort(byName); // optional: a key of the package not given
 ```
 
-`IDataSource<TItem, TCaps>` carries the keys it guarantees: each one is a
-required readonly property, every other known key is an optional one. The
-default `TCaps = never` guarantees nothing, which is what a plain
-`IDataSource<User>` always meant: every existing annotation keeps compiling.
+The rules of the type:
+
+- a key whose value cannot be `undefined` is a **required** readonly property;
+- a key whose value may be `undefined` (`sorting: maybeSorting`, or `sorting?:`
+  in a type you write) is an **optional** one: the extension is exposed when
+  given, but the type does not guarantee it;
+- the four keys of the package (`filtering`, `pagination`, `projection`,
+  `sorting`, see `DataSourceCapabilities`) are always there, as optional
+  properties when not in the record, so you can narrow on them;
+- a custom key not in the record is not a property at all.
+
+A consumer declares what it needs in its signature. A union of the keys of
+the package is a shorthand for the record of their interfaces, the common
+case; a record states custom keys and optional ones:
 
 ```typescript
-// The grid says what it needs; the compiler checks the source given to it.
+// Shorthand: IDataSource<User, { filtering: IFilterExtension<User>; pagination: IPaginationExtension<User> }>
 function useTable(source: IDataSource<User, "filtering" | "pagination">) {
   source.filtering.addFilter(adult); // required: no check needed
   source.pagination.goToNextPage();
   if (source.sorting) source.sorting.addSort(byName); // optional: narrow first
 }
+
+// A record: a custom key, required, and one that may be missing.
+type UsersSource = IDataSource<
+  User,
+  {
+    filtering: IFilterExtension<User>;
+    distinct: DistinctExtension<User>;
+    audit?: AuditExtension<User>;
+  }
+>;
 ```
 
-`createDataSource(reader, extensions, others?)` builds a source and **infers**
-`TCaps` from the keys of the record whose value cannot be `undefined`:
+Assignability is structural: a source with more extensions fits a parameter
+asking for fewer (`IDataSource<User, "filtering" | "pagination">` →
+`IDataSource<User, "filtering">` → `IDataSource<User>`), never the opposite.
+The default, an empty record, guarantees nothing: a plain `IDataSource<User>`
+accepts every source and offers the four keys of the package as optional
+properties.
 
 ```typescript
-const users = createDataSource(readUsers, { filtering, pagination, sorting });
-// IDataSource<User, "filtering" | "pagination" | "sorting">
-useTable(users); // ok: more capabilities than asked
+useTable(users); // ok: more extensions than asked
+useTable(createDataSource(readUsers, { filtering })); // compile error: no `pagination`
 
 const maybeSorting: SortExtension<User> | undefined = sortable
   ? new SortExtension<User>()
@@ -275,47 +300,23 @@ const products = createDataSource(readProducts, {
   filtering,
   sorting: maybeSorting,
 });
-// IDataSource<Product, "filtering">: `sorting` may be undefined, so it is not
-// guaranteed, but the extension is exposed when given (`products.sorting`).
-
-useTable(createDataSource(readUsers, { filtering })); // compile error: no `pagination`
+products.sorting; // SortExtension<User> | undefined
 ```
 
-A source with more capabilities is assignable to a parameter asking for
-fewer (`IDataSource<User, "filtering" | "pagination">` →
-`IDataSource<User, "filtering">` → `IDataSource<User>`), never the opposite.
-A key set to `undefined` or not given is absent at runtime too:
-`"sorting" in source` is `false`, and `source.sorting` is `undefined`.
+The record is checked: a key of the package must hold its interface
+(`{ filtering: sorting }` is a compile error) and every value must be an
+`IDataSourceExtension` of the item type. Write the shape of a record as a type
+literal, as above: an interface has no implicit index signature and does not
+satisfy the constraint.
 
-The pipeline order is **canonical** and owned by the library, whatever the key
-order of the record: `filtering`, `sorting`, `pagination`, `projection`, then
-`others` in array order, then the augmented keys in insertion order. The
-constructor of `DataSource` accepts the same record
-(`new DataSource<User, "filtering">(readUsers, { filtering })`), but it cannot
-infer `TCaps`: write them by hand there, or use the factory.
-
-A custom extension has two homes. Pass it in `others` to run it after the
-known ones, untyped; or give it a key by **augmenting** the map, so that it
-becomes a capability like the others:
-
-```typescript
-import { DistinctExtension } from "./distinct";
-
-declare module "@mantlebee/ts-data" {
-  interface DataSourceCapabilities<TItem> {
-    distinct: DistinctExtension<TItem>;
-  }
-}
-
-const users = createDataSource(readUsers, { filtering, distinct });
-// IDataSource<User, "filtering" | "distinct">
-users.distinct; // DistinctExtension<User>
-```
-
-Augmented keys run after the known ones and after `others`, in insertion order
-of the record (`{ filtering, audit, distinct }` runs `audit` before
-`distinct`). See [Writing an extension](#writing-an-extension) for
-`DistinctExtension`.
+A key set to `undefined` or not given is absent at runtime too: `"sorting" in
+source` is `false`, and `source.sorting` is `undefined`. The pipeline order is
+**canonical** and owned by the library, whatever the key order of the record:
+`filtering`, `sorting`, `pagination`, `projection`, then the custom keys in
+insertion order (`{ distinct, filtering, audit }` runs `filtering`, then
+`distinct`, then `audit`). The constructor of `DataSource` accepts the same
+record but, being a class, types only the four keys of the package, as
+optional properties: build the sources with `createDataSource`.
 
 ### Events
 
@@ -516,21 +517,17 @@ class DistinctExtension<TItem>
   }
 }
 
-// Untyped, after the known extensions: filtering, pagination, then distinct.
-const users = createDataSource(readUsers, { filtering, pagination }, [
-  new DistinctExtension<User>(),
-]);
-
-// Or as a capability of its own, once the map is augmented (see Capabilities).
-const distinctUsers = createDataSource(readUsers, {
+// A key of your own: the pipeline runs filtering, pagination, then distinct.
+const users = createDataSource(readUsers, {
   filtering,
   pagination,
   distinct: new DistinctExtension<User>(),
-}); // IDataSource<User, "filtering" | "pagination" | "distinct">
+});
+users.distinct; // DistinctExtension<User>
 ```
 
-The known extensions run first, so a custom extension never changes the query
-the pagination counts, nor the hash it watches for the page reset.
+The extensions of the package run first, so a custom extension never changes
+the query the pagination counts, nor the hash it watches for the page reset.
 
 ## API Reference
 
@@ -540,19 +537,21 @@ The generated API documentation, release notes included, is published at
 ## Project Structure
 
 - [`src/query-items`](src/query-items/README.md): the query model (`QueryItemsPayload`, filters, sorts, paging, projections), the `FilterRange` helpers and the in-memory reader.
-- [`src/data-source`](src/data-source/README.md): `DataSource`, `createDataSource`, the capabilities map, the extension contract and the extensions shipped with the package.
+- [`src/data-source`](src/data-source/README.md): `DataSource`, `createDataSource`, the extension contract and the extensions shipped with the package.
 - `docs/release-notes`: one file per release with the migration guide; `docs/api` is generated by `npm run doc`.
 - `test/fixtures`: deterministic items and readers used by the tests.
 
 Scripts: `npm run build` (CommonJS + ES modules into `dist`), `npm test`,
-`npm run coverage` (95 % threshold), `npm run doc`, `npm run doc:publish`.
+`npm run coverage` (95 % threshold), `npm run lint` (ESLint, Prettier and the
+type-check; `npm run lint:fix` and `npm run format` fix what they can),
+`npm run doc`, `npm run doc:publish`.
 
 ## Contributing
 
 Issues and pull requests are welcome at
 [github.com/mantlebee/ts-data](https://github.com/mantlebee/ts-data). Every
-export has TSDoc and tests: keep both up to date, and run `npm run coverage`
-before opening a pull request.
+export has TSDoc and tests: keep both up to date, and run `npm run lint` and
+`npm run coverage` before opening a pull request.
 
 ## License
 

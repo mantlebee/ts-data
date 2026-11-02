@@ -1,4 +1,3 @@
-export * from "./extension";
 export * from "./filtering";
 export * from "./interfaces";
 export * from "./models";

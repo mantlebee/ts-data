@@ -7,8 +7,8 @@ import type {
   FiltersList,
 } from "@/query-items/filtering/types";
 
-import { DataSourceExtension, DataSourceExtensionOptions } from "../extension";
-import { DataSourcePayload } from "../types";
+import { DataSourceExtension } from "../models";
+import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
 import { IFilterExtension } from "./interfaces";
 import {
   FilterExtensionEvents,
@@ -18,12 +18,13 @@ import {
 /**
  * Keeps a flat list of filters and sends it in the payload as a
  * {@link FiltersList}, only when there is at least one filter.
- * Place it before the {@link PaginationExtension}, so the count receives the filters.
+ * The data source runs it before the {@link PaginationExtension}, so the count
+ * receives the filters.
  * @typeParam TItem Type of the items.
  * @example
  * ```ts
  * const filtering = new FilterExtension<User>();
- * const dataSource = new DataSource<User>(readUsers, [filtering]);
+ * const dataSource = createDataSource(readUsers, { filtering });
  * // Reads once the user stops typing, whatever the number of changes.
  * filtering.on("filtersChange", () => dataSource.read());
  * filtering.addFilter({ field: "name", operator: FilterOperators.contains, value: "ann" });
