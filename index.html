@@ -36,6 +36,7 @@ each change without polling.</p>
 <li><a href="#range-filters-from-the-ui">Range filters from the UI</a></li>
 <li><a href="#in-memory-data">In-memory data</a></li>
 <li><a href="#writing-an-extension">Writing an extension</a></li>
+<li><a href="#lookup-sources">Lookup sources</a></li>
 </ul>
 </li>
 <li><a href="#api-reference">API Reference</a></li>
@@ -53,6 +54,7 @@ each change without polling.</p>
 <li>📑 <strong>Complete pagination</strong>: 1-based pages, clamped navigation, total count kept up to date, automatic return to page 1 when the query changes</li>
 <li>🎚️ <strong>Range helpers</strong>: <code>FilterRange</code> / <code>FilterRangeLimit</code> to bind an interval UI control to a filter</li>
 <li>🧠 <strong>In-memory reader</strong>: <code>createInMemoryQueryItemsReader</code> resolves filters, sorts and pagination over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories</li>
+<li>🔎 <strong>Lookup sources</strong>: <code>ILookupSource</code>, a stateless request/response contract for the widgets that ask about reference items (a combobox, a lookup column), built over the same reader with <code>createLookupSource</code>, decorated with <code>withBatching</code> and <code>withCache</code></li>
 <li>🌳 <strong>Tree-shakable</strong>: ES modules next to the CommonJS bundle, no side effects, no runtime dependency besides the peer</li>
 </ul>
 <h2 id="installation" class="tsd-anchor-link">Installation<a href="#installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
@@ -348,13 +350,41 @@ count of the pagination, which runs in the build phase with a reader of its
 own (decorate the count reader instead); and a batching does not compose with
 the pagination for free, since merging N results already paginated does not
 give the right page.</p>
+<h3 id="lookup-sources" class="tsd-anchor-link">Lookup sources<a href="#lookup-sources" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>A combobox searching departments by name and a lookup column showing the
+department of each row from its id ask questions of the same entity, many at
+a time, and need no cursor: a data source is one (&quot;the latest read wins&quot;, one
+<code>items</code>). <code>ILookupSource</code> is a stateless, request/response contract for them:
+each call has its own parameters, result and <code>AbortSignal</code>, nothing is shared
+between calls, so one instance serves any number of consumers at once.</p>
+<pre><code class="typescript"><span class="hl-3">import</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">createLookupSource</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">withBatching</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">withCache</span><span class="hl-1">,</span><br/><span class="hl-1">} </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-data&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">departments</span><span class="hl-1"> = </span><span class="hl-0">withCache</span><span class="hl-1">(</span><br/><span class="hl-1">  </span><span class="hl-0">withBatching</span><span class="hl-1">(</span><br/><span class="hl-1">    </span><span class="hl-0">createLookupSource</span><span class="hl-1">(</span><br/><span class="hl-1">      (</span><span class="hl-4">payload</span><span class="hl-1">, </span><span class="hl-4">signal</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">api</span><span class="hl-1">.</span><span class="hl-0">getDepartments</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">, { </span><span class="hl-4">signal</span><span class="hl-1"> }),</span><br/><span class="hl-1">      { </span><span class="hl-4">textField:</span><span class="hl-1"> </span><span class="hl-2">&quot;name&quot;</span><span class="hl-1">, </span><span class="hl-4">valueField:</span><span class="hl-1"> </span><span class="hl-2">&quot;id&quot;</span><span class="hl-1"> },</span><br/><span class="hl-1">    ),</span><br/><span class="hl-1">  ),</span><br/><span class="hl-1">); </span><span class="hl-7">// ICachedLookupSource&lt;Department, number&gt;</span><br/><br/><span class="hl-7">// A combobox panel and a page of grid cells, on the same instance, at once.</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">panel</span><span class="hl-1"> = </span><span class="hl-4">departments</span><span class="hl-1">.</span><span class="hl-0">search</span><span class="hl-1">(</span><span class="hl-2">&quot;sal&quot;</span><span class="hl-1">, { </span><span class="hl-4">limit:</span><span class="hl-1"> </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-4">offset:</span><span class="hl-1"> </span><span class="hl-9">0</span><span class="hl-1"> }, </span><span class="hl-4">signal</span><span class="hl-1">);</span><br/><span class="hl-7">// { items: Department[], hasMore: boolean }</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">cells</span><span class="hl-1"> = </span><span class="hl-4">rows</span><span class="hl-1">.</span><span class="hl-0">map</span><span class="hl-1">((</span><span class="hl-4">row</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">departments</span><span class="hl-1">.</span><span class="hl-0">resolve</span><span class="hl-1">([</span><span class="hl-4">row</span><span class="hl-1">.</span><span class="hl-4">departmentId</span><span class="hl-1">]));</span><br/><span class="hl-7">// one `id in [...]` request for the cells rendered in this tick, cached afterwards</span><br/><span class="hl-4">departments</span><span class="hl-1">.</span><span class="hl-0">valueOf</span><span class="hl-1">(</span><span class="hl-4">sales</span><span class="hl-1">); </span><span class="hl-7">// 7, what a widget emits as its value</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>search(query, page, signal?)</code> pages the items whose text contains <code>query</code>
+(every item for <code>&quot;&quot;</code>) by <code>offset</code> and <code>limit</code> and tells whether more follow;
+<code>resolve(values, signal?)</code> returns the items of the keys given, without the
+missing ones, in no particular order (index them with <code>valueOf</code>). Over a
+reader, <code>search</code> sends <code>textField contains query</code> with the 1-based
+<code>pagination</code> of the page (<code>offset</code> must be a multiple of <code>limit</code>; <code>hasMore</code> is
+<code>items.length &gt;= limit</code>, no count reader) and <code>resolve</code> sends
+<code>valueField in values</code>; <code>createInMemoryLookupSource(items, options)</code> does
+the same over a list, so fixtures and stories behave like a server, and a
+service with its own endpoints is an object literal satisfying the interface.
+<code>withBatching</code> coalesces the <code>resolve</code> calls of the same microtask into one
+(<code>chunkSize</code> caps the values per call), <code>withCache</code> remembers every resolved
+value, missing ones included, for the life of the source and adds
+<code>invalidate(values?)</code>. An aborted call rejects with the <code>AbortedException</code>
+of ts-core, like a superseded read; the decorators do not forward the signal
+to the inner source, so one caller's abort does not starve the others. See
+<a href="media/README.md"><code>src/lookup</code></a>.</p>
 <h2 id="api-reference" class="tsd-anchor-link">API Reference<a href="#api-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>The generated API documentation, release notes included, is published at
 <a href="https://mantlebee.github.io/ts-data/">https://mantlebee.github.io/ts-data/</a>.</p>
 <h2 id="project-structure" class="tsd-anchor-link">Project Structure<a href="#project-structure" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <ul>
-<li><a href="media/README.md"><code>src/query-items</code></a>: the query model (<code>QueryItemsPayload</code>, filters, sorts, pagination, projections), the <code>FilterRange</code> helpers and the in-memory reader.</li>
-<li><a href="media/README-1.md"><code>src/data-source</code></a>: <code>DataSource</code> and <code>createDataSource</code>; <code>extensions/</code> holds the extension contract, the base class and the typing of the extensions by key (<code>IDataSourceWith</code>), next to the extensions shipped with the package.</li>
+<li><a href="media/README-1.md"><code>src/query-items</code></a>: the query model (<code>QueryItemsPayload</code>, filters, sorts, pagination, projections), the <code>FilterRange</code> helpers and the in-memory reader.</li>
+<li><a href="media/README-2.md"><code>src/data-source</code></a>: <code>DataSource</code> and <code>createDataSource</code>; <code>extensions/</code> holds the extension contract, the base class and the typing of the extensions by key (<code>IDataSourceWith</code>), next to the extensions shipped with the package.</li>
+<li><a href="media/README.md"><code>src/lookup</code></a>: <code>ILookupSource</code> and its factories over a reader or a list, <code>withBatching</code> and <code>withCache</code>.</li>
 <li><code>docs/release-notes</code>: one file per release with the migration guide; <code>docs/api</code> is generated by <code>npm run doc</code>.</li>
 <li><code>test/fixtures</code>: deterministic items and readers used by the tests.</li>
 </ul>
@@ -403,7 +433,8 @@ export has TSDoc and tests: keep both up to date, and run <code>npm run lint</co
 <li><a href="#filters-sorts-pagination-and-projections"><span>Filters, sorts, pagination and projections</span></a></li>
 <li><a href="#range-filters-from-the-ui"><span>Range filters from the <wbr/>UI</span></a></li>
 <li><a href="#in-memory-data"><span>In-<wbr/>memory data</span></a></li>
-<li><a href="#writing-an-extension"><span>Writing an extension</span></a></li></ul></li>
+<li><a href="#writing-an-extension"><span>Writing an extension</span></a></li>
+<li><a href="#lookup-sources"><span>Lookup sources</span></a></li></ul></li>
 <li><a href="#api-reference"><span>API <wbr/>Reference</span></a></li>
 <li><a href="#project-structure"><span>Project <wbr/>Structure</span></a></li>
 <li><a href="#contributing"><span>Contributing</span></a></li>

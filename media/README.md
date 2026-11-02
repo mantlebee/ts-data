@@ -1,66 +1,80 @@
-# `query-items`
+# `lookup`
 
-**The query model**: plain types describing what to read, agnostic of the
-storage that runs the query. A reader (yours) translates a
-`QueryItemsPayload` into the actual request; the extensions of
-[`data-source`](../data-source) build it. Every feature folder carries an
-`in-memory` subfolder resolving its part of the payload over a plain array,
-and the `in-memory` folder composes them into the one reader of the package.
+**A stateless source of reference items.** A combobox searches departments by
+name, a lookup column of a grid shows the department of each row from its id:
+both ask questions of the same entity, many at a time, and need no cursor. A
+data source is a cursor, one query and one `items`, "the latest read wins";
+`ILookupSource` is a request/response contract instead: each call has its own
+parameters, its own result and its own `AbortSignal`, nothing is shared
+between calls, so one instance serves any number of consumers at once.
 
 ## What's in here
 
-- **`types.ts`** — `QueryItemsPayload<TItem>`: `distinct?`, `filters?`,
-  `pagination?`, `projections?`, `sorts?`, every property optional and set only by
-  who needs it. `QueryItemsReader<TItem, TResult = List<TItem>>`: the function
-  `(payload, signal?) => Promise<TResult>` resolving a payload into a result
-  (`DataSourceReader` of `data-source` is the same type); the optional
-  `AbortSignal` is aborted when the read is superseded by a newer one.
-- **`filtering/`**:
-  - **`constants.ts`** — `FilterLogics` (`and`, `or`) and `FilterOperators`
-    (`eq`, `ne`, `gt`, `ge`, `lt`, `le`, `contains`, `notContains`, `in`,
-    `notIn`, `startsWith`, `endsWith`, `eqi`, `between`): OData 4 values where
-    OData defines them, the most common naming otherwise.
-  - **`types.ts`** — `Filter<TItem>`, a union discriminated by `operator`:
-    `ListFilter` (`in`/`notIn`, `value` is a list), `RangeFilter` (`range`,
-    `value` is a `Range`), `ValueFilter` (everything else, nullable value).
-    `FiltersExpression<TItem>` is a tree whose node is either a `FiltersList`
-    (`{ logic, filters }`) or a `FiltersGroup` (`{ logic, groups }`), never both.
-  - **`utils.ts`** — `isFiltersList`, `isFiltersGroup`: type guards to walk an
-    expression.
-  - **`in-memory/`** — `filterItems(items, filters?, options?)`: the items
-    matching an expression (every operator, trees at any depth, an empty node
-    matches every item); `itemMatchesFilterExpression(item, expression, options?)` and
-    `itemMatchesFilter(item, filter, options?)` for a single item.
-  - **`range/`** — `Range<TValue>` / `RangeLimit<TValue>` (the value of a
-    `range` filter: `min`/`max`, each with `value` and `exclude`), and the
-    editable `FilterRange` / `FilterRangeLimit`, `Subscribable`s meant for UI
-    controls: `setValue`, `setExclude`, `toggleExclude`, one `change` event
-    raised only on an actual change, `toRange()` / `toRangeLimit()` to get the
-    plain value.
-- **`in-memory/`** — the reader of the package, composed from the
-  `in-memory` delegates of the features: `queryItems(items, payload, options?)`
-  (`filterItems`, then `sortItems`, then `projectItems` and `distinctItems`,
-  then `pageItems`), `countItems(items, payload, options?)` (the matching
-  items, distinct ones when the payload says so, for the pagination) and
-  `createInMemoryQueryItemsReader(getItems, options?)` returning
-  `{ reader, countReader }` for a data source, calling the getter on every
-  read and resolving on the next microtask. `comparer.ts` holds what the delegates
-  share: `toComparableValue`, the default conversion of the compared values
-  (strings lower-cased unless `options.caseSensitive`, `Date` by time, value
-  objects by `valueOf()`), overridable per field with `options.toComparable`,
-  and `createInMemoryQueryItemsComparer(options?)` resolving the options into the
-  `InMemoryQueryItemsComparer`. Types: `InMemoryQueryItemsComparer`,
-  `InMemoryQueryItemsReaderOptions`, `InMemoryQueryItemsReader`.
-- **`pagination/`** — `Pagination`: `page` (1-based), `itemsPerPage`,
-  `totalItemsCount`.
-  - **`in-memory/`** — `pageItems(items, pagination?)`: the items of the page,
-    1-based, empty beyond the last one.
-- **`projection/`** — `Projection<TItem>`: the `field` to return.
-  - **`in-memory/`** — `projectItems(items, projections?)`: new objects with
-    the projected fields only; `distinctItems(items)`: the first occurrence
-    of every item, duplicates found by value on the fields.
-- **`sorting/`** — `Sort<TItem>` (`field`, `asc`) and the pure helpers
-  `addSort(sort, sorts, sortsLimit = 0)` (replaces the sort on the same field,
-  honours the limit) and `removeSort(field, sorts)`.
-  - **`in-memory/`** — `sortItems(items, sorts?, options?)`: stable, by
-    priority, unset values first ascending.
+- **`interfaces.ts`** — `ILookupSource<TItem, TValue>`: `search(query, page,
+signal?)` pages the items whose text contains `query` and tells whether
+  more follow (`LookupSearchResult`); `resolve(values, signal?)` returns the
+  items of the keys given, without the missing ones, in no particular order;
+  `valueOf(item)` is the key of an item, what `resolve` resolves by and what a
+  widget emits as its value. An aborted call rejects with the
+  `AbortedException` of ts-core, like a superseded read of a data source.
+- **`types.ts`** — `LookupValue` (`number | string`, the default key type:
+  keys are compared with `===`, keep them primitive), `LookupPage`
+  (`{ limit, offset }`, `offset` a multiple of `limit`),
+  `LookupSearchResult<TItem>` (`{ hasMore, items }`),
+  `LookupReaderOptions<TItem, TValueField>` (`textField`, `valueField`).
+- **`utils.ts`** — `createLookupSource(reader, options)`: a source over the
+  same `QueryItemsReader` a data source reads through; `search` sends
+  `textField contains query` (no filter for `""`) with the 1-based
+  `pagination` of the page, `resolve` sends `valueField in values` without
+  pagination and never calls the reader for an empty list, `valueOf` reads
+  `valueField`, whose type becomes the key type of the source. `hasMore` is
+  `items.length >= limit`: no count reader, at the cost of one empty page
+  when the total is a multiple of `limit`. The signal goes to the reader as
+  it is, and the call rejects with `AbortedException` as soon as it is
+  aborted, whatever the reader does with it.
+  `createInMemoryLookupSource(items | getItems, options)`: the same over a
+  list, through `createInMemoryQueryItemsReader` of `query-items`, with its
+  comparison options (`caseSensitive`, `toComparable`).
+- **`batching/`** — `withBatching(source, { chunkSize? })`: coalesces the
+  `resolve` calls of the same microtask into one call of the inner source
+  with the distinct values (`chunkSize` caps the values of one call), and
+  gives each caller the items of its own values, picked with `valueOf`. A
+  rejected call rejects every caller of the batch. The inner call runs
+  without a signal, so one caller's abort does not starve the others: the
+  aborted caller alone rejects, at once.
+- **`caching/`** — `withCache(source)`: an `ICachedLookupSource` that
+  remembers the item of every resolved value for the life of the source, only
+  asks the inner source the values it has never seen, shares a pending
+  resolution among the callers asking for the same value, remembers a value
+  the source does not return as missing and forgets a rejected one;
+  `invalidate(values?)` forgets entries by hand, pending ones included. The
+  inner call runs without a signal, as in `withBatching`.
+- **`internals.ts`** — `abortable(signal, run)`, not exported: runs `run` and
+  rejects with `AbortedException` as soon as the signal is aborted, ignoring a
+  late settlement. The one piece of abort handling of the folder.
+
+## How it fits together
+
+```typescript
+const departments = withCache(
+  withBatching(
+    createLookupSource(
+      (payload, signal) => api.getDepartments(payload, { signal }),
+      { textField: "name", valueField: "id" },
+    ),
+  ),
+); // ICachedLookupSource<Department, number>
+
+// A combobox panel and a page of grid cells, on the same instance, at once.
+const panel = departments.search("sal", { limit: 20, offset: 0 }, signal);
+const cells = rows.map((row) => departments.resolve([row.departmentId]));
+```
+
+The cells of one render share one `id in [...]` request (batching), a
+department already shown is never asked again (cache), and the panel runs its
+own query meanwhile: no lock, no restore of filters, no shared `items`.
+
+A `FilterExtension` of a data source is still the right tool for a grid or a
+list the user browses: one query, one page, events on every change. The
+lookup source is for the widgets that ask about reference items on behalf of
+other data.
