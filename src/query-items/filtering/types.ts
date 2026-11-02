@@ -69,9 +69,7 @@ export type ValueFilter<TItem = Any> = {
  * ```
  */
 export type Filter<TItem = Any> =
-  | ListFilter<TItem>
-  | RangeFilter<TItem>
-  | ValueFilter<TItem>;
+  ListFilter<TItem> | RangeFilter<TItem> | ValueFilter<TItem>;
 
 /**
  * Flat list of filters combined with the same logic. A list never contains
@@ -113,5 +111,4 @@ export type FiltersGroup<TItem = Any> = {
  * ```
  */
 export type FiltersExpression<TItem = Any> =
-  | FiltersGroup<TItem>
-  | FiltersList<TItem>;
+  FiltersGroup<TItem> | FiltersList<TItem>;

@@ -98,7 +98,11 @@ describe("DataSource", () => {
             extension.addSort(byNameAsc);
             extension.addSort(byAgeDesc);
             extension.addSort(byActiveAsc);
-            expect(extension.sorts).toEqual([byNameAsc, byAgeDesc, byActiveAsc]);
+            expect(extension.sorts).toEqual([
+              byNameAsc,
+              byAgeDesc,
+              byActiveAsc,
+            ]);
             expect(extension.hasSorts).toBe(true);
             expect(handler).toHaveBeenCalledTimes(3);
           });

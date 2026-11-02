@@ -18,7 +18,10 @@ describe("query-items", () => {
           expect(empty).not.toBe(GenericItems);
         });
         test("Keeps only the projected fields, as new objects", () => {
-          const result = projectItems(GenericItems.slice(0, 2), [{ field: "id" }, { field: "lastName" }]);
+          const result = projectItems(GenericItems.slice(0, 2), [
+            { field: "id" },
+            { field: "lastName" },
+          ]);
           expect(result).toEqual([
             { id: 1, lastName: "Consectetur" },
             { id: 2, lastName: "Congue" },
@@ -26,7 +29,10 @@ describe("query-items", () => {
           expect(result[0]).not.toBe(GenericItems[0]);
         });
         test("A field projected twice is kept once", () => {
-          const result = projectItems(GenericItems.slice(0, 1), [{ field: "id" }, { field: "id" }]);
+          const result = projectItems(GenericItems.slice(0, 1), [
+            { field: "id" },
+            { field: "id" },
+          ]);
           expect(result).toEqual([{ id: 1 }]);
           expect(Object.keys(result[0])).toEqual(["id"]);
         });
@@ -37,12 +43,16 @@ describe("query-items", () => {
           expect("name" in result[1]).toBe(false);
         });
         test("Null and undefined items stay as they are", () => {
-          const items = [null, undefined, { name: "a" }] as List<{ name?: string }>;
+          const items = [null, undefined, { name: "a" }] as List<{
+            name?: string;
+          }>;
           const result = projectItems(items, [{ field: "name" }]);
           expect(result).toEqual([null, undefined, { name: "a" }]);
         });
         test("Neither the list nor its items are mutated", () => {
-          const items = Object.freeze(GenericItems.map((a) => Object.freeze({ ...a })));
+          const items = Object.freeze(
+            GenericItems.map((a) => Object.freeze({ ...a })),
+          );
           const snapshot = JSON.stringify(items);
           projectItems(items as List<GenericItem>, [{ field: "age" }]);
           expect(JSON.stringify(items)).toBe(snapshot);
@@ -51,7 +61,9 @@ describe("query-items", () => {
 
       describe("distinctItems", () => {
         test("Keeps the first occurrence of every item, in its order", () => {
-          const genders = distinctItems(projectItems(GenericItems, [{ field: "gender" }]));
+          const genders = distinctItems(
+            projectItems(GenericItems, [{ field: "gender" }]),
+          );
           expect(genders).toEqual([{ gender: "M" }, { gender: "F" }]);
         });
         test("Items with the same fields in another order are duplicates", () => {
@@ -71,7 +83,9 @@ describe("query-items", () => {
         });
         test("Values of different types are not duplicates", () => {
           expect(distinctItems([{ id: 1 }, { id: "1" }])).toHaveLength(2);
-          expect(distinctItems([1, "1", 1, null, null, undefined] as List<unknown>)).toEqual([1, "1", null, undefined]);
+          expect(
+            distinctItems([1, "1", 1, null, null, undefined] as List<unknown>),
+          ).toEqual([1, "1", null, undefined]);
         });
         test("A whole list without duplicates is returned as a copy", () => {
           const result = distinctItems(GenericItems);

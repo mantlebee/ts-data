@@ -24,7 +24,7 @@ const pureEnums = () => ({
     return {
       code: code.replace(
         enumPattern,
-        "var $1 = /*#__PURE__*/ (function ($1) {$2\n    return $1;\n})({});"
+        "var $1 = /*#__PURE__*/ (function ($1) {$2\n    return $1;\n})({});",
       ),
       map: null,
     };

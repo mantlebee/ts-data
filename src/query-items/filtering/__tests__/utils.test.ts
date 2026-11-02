@@ -1,10 +1,5 @@
 import { FilterLogics, FilterOperators } from "../constants";
-import {
-  Filter,
-  FiltersExpression,
-  FiltersGroup,
-  FiltersList,
-} from "../types";
+import { Filter, FiltersExpression, FiltersGroup, FiltersList } from "../types";
 import { isFiltersGroup, isFiltersList } from "../utils";
 
 type Item = { active: boolean; age: number; name: string };

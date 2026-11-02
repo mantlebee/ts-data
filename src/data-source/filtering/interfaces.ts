@@ -11,8 +11,10 @@ import { FilterExtensionEvents } from "./types";
  * `filtersChange` event (see {@link FilterExtensionEvents}).
  * @typeParam TItem Type of the items.
  */
-export interface IFilterExtension<TItem = Any>
-  extends IDataSourceExtension<TItem, FilterExtensionEvents<TItem>> {
+export interface IFilterExtension<TItem = Any> extends IDataSourceExtension<
+  TItem,
+  FilterExtensionEvents<TItem>
+> {
   /** Current filters, in insertion order. */
   readonly filters: List<Filter<TItem>>;
   /** `true` when at least one filter is set. */

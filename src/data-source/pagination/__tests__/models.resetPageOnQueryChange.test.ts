@@ -5,12 +5,26 @@ import { ProjectionExtension } from "../../projection/models";
 import { DataSourcePayload } from "../../types";
 import { PaginationExtension } from "../models";
 import { PaginationExtensionOptions } from "../types";
-import { Filter, FilterLogics, FilterOperators, FiltersExpression, Sort } from "@/query-items";
+import {
+  Filter,
+  FilterLogics,
+  FilterOperators,
+  FiltersExpression,
+  Sort,
+} from "@/query-items";
 
 type Item = { id: number; name: string };
 
-const filterId: Filter<Item> = { field: "id", operator: FilterOperators.equal, value: 1 };
-const filterName: Filter<Item> = { field: "name", operator: FilterOperators.contains, value: "o" };
+const filterId: Filter<Item> = {
+  field: "id",
+  operator: FilterOperators.equal,
+  value: 1,
+};
+const filterName: Filter<Item> = {
+  field: "name",
+  operator: FilterOperators.contains,
+  value: "o",
+};
 
 /**
  * 50 items, 10 per page, already read and sitting on page 3.
@@ -28,12 +42,12 @@ async function setup(options?: PaginationExtensionOptions<Item>) {
     undefined,
     options,
   );
-  const dataSource = new DataSource<Item>(reader, [
+  const dataSource = new DataSource<Item>(reader, {
     filtering,
     sorting,
-    projecting,
-    paginating,
-  ]);
+    projection: projecting,
+    pagination: paginating,
+  });
   await dataSource.read();
   paginating.goToPage(3);
   expect(paginating.page).toBe(3);
@@ -47,7 +61,9 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       const paginating = new PaginationExtension<Item>(async () => 50, 10);
       const handler = jest.fn();
       paginating.on("page", handler);
-      await paginating.getItemsBefore({ filters: { logic: FilterLogics.and, filters: [] } });
+      await paginating.getItemsBefore({
+        filters: { logic: FilterLogics.and, filters: [] },
+      });
       expect(handler).not.toHaveBeenCalled();
       expect(paginating.page).toBe(1);
     });
@@ -72,7 +88,9 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       }, 10);
       await paginating.getItemsBefore({});
       paginating.goToPage(3);
-      await paginating.getItemsBefore({ filters: { logic: FilterLogics.and, filters: [filterId] } });
+      await paginating.getItemsBefore({
+        filters: { logic: FilterLogics.and, filters: [filterId] },
+      });
       expect(pages).toEqual([1, 1]);
     });
     test("A single page event is raised when the page is reset", async () => {
@@ -109,11 +127,11 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       await dataSource.read();
       expect(paginating.page).toBe(1);
     });
-    test("A changed projection resets the page", async () => {
+    test("A changed projection does not reset the page: the projection runs after the pagination", async () => {
       const { dataSource, paginating, projecting } = await setup();
       projecting.addProjection({ field: "name" });
       await dataSource.read();
-      expect(paginating.page).toBe(1);
+      expect(paginating.page).toBe(3);
     });
     test("A changed filters logic resets the page", async () => {
       const { dataSource, filtering, paginating } = await setup();
@@ -136,7 +154,10 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
     });
     test("The property order of the payload does not matter", async () => {
       const paginating = new PaginationExtension<Item>(async () => 50, 10);
-      const filters: FiltersExpression<Item> = { logic: FilterLogics.and, filters: [filterId] };
+      const filters: FiltersExpression<Item> = {
+        logic: FilterLogics.and,
+        filters: [filterId],
+      };
       const sorts: Sort<Item>[] = [{ field: "name", asc: true }];
       await paginating.getItemsBefore({ filters, sorts: [...sorts] });
       paginating.goToPage(3);

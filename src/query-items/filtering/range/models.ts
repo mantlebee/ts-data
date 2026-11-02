@@ -92,7 +92,8 @@ export class FilterRange<TValue = Any> extends Subscribable<
    * Disposes the limits, their subscriptions and the handlers of this range.
    */
   public async dispose(): Promise<void> {
-    for (const subscription of this._subscriptions) await subscription.dispose();
+    for (const subscription of this._subscriptions)
+      await subscription.dispose();
     await this.max.dispose();
     await this.min.dispose();
     await super.dispose();

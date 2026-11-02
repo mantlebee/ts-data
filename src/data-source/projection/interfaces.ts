@@ -11,8 +11,10 @@ import { ProjectionExtensionEvents } from "./types";
  * `projectionsChange` event (see {@link ProjectionExtensionEvents}).
  * @typeParam TItem Type of the items.
  */
-export interface IProjectionExtension<TItem = Any>
-  extends IDataSourceExtension<TItem, ProjectionExtensionEvents<TItem>> {
+export interface IProjectionExtension<TItem = Any> extends IDataSourceExtension<
+  TItem,
+  ProjectionExtensionEvents<TItem>
+> {
   /** `true` when at least one projection is set. */
   readonly hasProjections: boolean;
   /** Current projections, in insertion order; empty means "every field". */

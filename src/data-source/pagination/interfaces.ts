@@ -13,8 +13,10 @@ import { PaginationExtensionEvents } from "./types";
  * (see {@link PaginationExtensionEvents}).
  * @typeParam TItem Type of the items.
  */
-export interface IPaginationExtension<TItem = Any>
-  extends IDataSourceExtension<TItem, PaginationExtensionEvents> {
+export interface IPaginationExtension<TItem = Any> extends IDataSourceExtension<
+  TItem,
+  PaginationExtensionEvents
+> {
   /** `true` when {@link page} is not the last one. */
   readonly canGoNextPage: boolean;
   /** `true` when {@link page} is not the first one. */

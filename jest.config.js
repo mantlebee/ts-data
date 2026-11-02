@@ -9,7 +9,7 @@ module.exports = {
   },
   modulePaths: ["<rootDir>/src"],
   testEnvironment: "jsdom",
-  testRegex: "\.test\.ts$",
-  transform: { "^.+\.ts$": "ts-jest" },
+  testRegex: "\\.test\\.ts$",
+  transform: { "^.+\\.ts$": "ts-jest" },
   transformIgnorePatterns: ["!node_modules/"],
 };

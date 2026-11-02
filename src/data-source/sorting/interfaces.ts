@@ -11,8 +11,10 @@ import { SortExtensionEvents } from "./types";
  * event (see {@link SortExtensionEvents}).
  * @typeParam TItem Type of the items.
  */
-export interface ISortExtension<TItem = Any>
-  extends IDataSourceExtension<TItem, SortExtensionEvents<TItem>> {
+export interface ISortExtension<TItem = Any> extends IDataSourceExtension<
+  TItem,
+  SortExtensionEvents<TItem>
+> {
   /** `true` when at least one sort is set. */
   readonly hasSorts: boolean;
   /** Current sorts, by priority: the first one wins. */
