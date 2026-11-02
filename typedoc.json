@@ -1,5 +1,6 @@
 {
   "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.prod.json",
   "out": "docs/api",
   "projectDocuments": ["docs/release-notes/*.md"],
   "externalSymbolLinkMappings": {

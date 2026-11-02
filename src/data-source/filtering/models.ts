@@ -7,8 +7,8 @@ import type {
   FiltersList,
 } from "@/query-items/filtering/types";
 
-import { DataSourceExtension } from "../models";
-import { DataSourceExtensionOptions, DataSourcePayload } from "../types";
+import { DataSourceExtension, DataSourceExtensionOptions } from "../extension";
+import { DataSourcePayload } from "../types";
 import { IFilterExtension } from "./interfaces";
 import {
   FilterExtensionEvents,
