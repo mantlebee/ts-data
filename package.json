@@ -1,6 +1,6 @@
 {
   "name": "@mantlebee/ts-data",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Models and utils to navigate and interact with data.",
   "main": "dist/index.js",
   "module": "dist/esm/index.mjs",
@@ -40,7 +40,8 @@
     "filtering",
     "pagination",
     "sorting",
-    "query"
+    "query",
+    "lookup"
   ],
   "author": "MantleBee",
   "license": "MIT",
