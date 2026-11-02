@@ -33,7 +33,7 @@ each change without polling.
 
 ## Features
 
-- 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own, up to wrapping the reading itself (a cache, a batching), up to wrapping the reading itself (a cache, a batching), up to wrapping the reading itself (a cache, a batching)
+- 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own, up to wrapping the reading itself (a cache, a batching)
 - 🧾 **Extensions in the type**: `createDataSource(reader, { filtering, pagination, distinct })` returns an `IDataSource` whose type carries every extension by key, custom ones included, so a consumer declares what it needs in a signature (`source: IDataSourceWith<User, "filtering" | "pagination">`) and the compiler checks it, no `instanceof` probing
 - 🏁 **The latest read wins**: a `read()` requested while another is running supersedes it, `items` always come from the latest read, `isReading` follows it, and the readers receive an `AbortSignal` to hand to `fetch`
 - 📄 **Storage-agnostic query model**: `QueryItemsPayload` with typed `Filter`s (OData-like operators), `Sort`s, `Pagination` and `Projection`s, translated by your reader
@@ -49,8 +49,7 @@ each change without polling.
 npm install @mantlebee/ts-data @mantlebee/ts-core
 ```
 
-`@mantlebee/ts-core` (`^1.3.0`, the version that ships `AbortableDelegate`) is a
-**peer dependency**: install it alongside this package. It works in the browser and in Node alike. TypeScript projects need `strict` or at least
+`@mantlebee/ts-core` (`^1.4.0`) is a **peer dependency**: install it alongside this package. It works in the browser and in Node alike. TypeScript projects need `strict` or at least
 `strictNullChecks` for the discriminated `Filter` type to work as intended.
 
 ## Upgrading to 1.0
@@ -546,92 +545,6 @@ users.distinct; // DistinctExtension<User>
 
 Anything written before `pagination` is part of the query it counts and of
 the hash it watches for the page reset: here `distinct` is.
-
-`readItems` sees the **whole payload**, whatever the position of its key: the
-build phase completes before any reading. It decides what reading means:
-
-- call `next` **zero** times: a cache hit returns its items and the reader is
-  never invoked;
-- call it **once**, with the payload given or another one;
-- call it **N** times, e.g. for a backend taking one sort per call: one read
-  per sort, results merged. Every call runs the inner layers and the reader
-  again, so their hooks and events fire as many times;
-- transform the result before returning it: the result flows outward, so the
-  **outermost extension transforms last**, as in every middleware.
-
-```typescript
-/** A read-through cache: a hit skips `next`, hence the reader. */
-class CacheExtension<TItem>
-  extends Subscribable<EventsDefinition>
-  implements IDataSourceExtension<TItem>
-{
-  private readonly _cache = new Map<string, TItem[]>();
-  public async readItems(
-    payload: DataSourcePayload<TItem>,
-    next: DataSourceReadNext<TItem>,
-  ): Promise<TItem[]> {
-    const key = createHash(payload);
-    const hit = this._cache.get(key);
-    if (hit) return hit;
-    const items = await next(payload);
-    this._cache.set(key, items);
-    return items;
-  }
-}
-```
-
-The latest read still wins inside the chain: every layer, the reader
-included, rejects with the `AbortedException` of ts-core once the read is
-superseded, so a `next` called or pending after that rejects, and a result
-returned in silence never reaches the outer layers nor the source. Two
-things such extensions cannot do, by design: a cache does not intercept the
-count of the pagination, which runs in the build phase with a reader of its
-own (decorate the count reader instead); and a batching does not compose with
-the pagination for free, since merging N results already paginated does not
-give the right page.
-
-`readItems` sees the **whole payload**, whatever the position of its key: the
-build phase completes before any reading. It decides what reading means:
-
-- call `next` **zero** times: a cache hit returns its items and the reader is
-  never invoked;
-- call it **once**, with the payload given or another one;
-- call it **N** times, e.g. for a backend taking one sort per call: one read
-  per sort, results merged. Every call runs the inner layers and the reader
-  again, so their hooks and events fire as many times;
-- transform the result before returning it: the result flows outward, so the
-  **outermost extension transforms last**, as in every middleware.
-
-```typescript
-/** A read-through cache: a hit skips `next`, hence the reader. */
-class CacheExtension<TItem>
-  extends Subscribable<EventsDefinition>
-  implements IDataSourceExtension<TItem>
-{
-  private readonly _cache = new Map<string, TItem[]>();
-  public async readItems(
-    payload: DataSourcePayload<TItem>,
-    next: DataSourceReadNext<TItem>,
-  ): Promise<TItem[]> {
-    const key = createHash(payload);
-    const hit = this._cache.get(key);
-    if (hit) return hit;
-    const items = await next(payload);
-    this._cache.set(key, items);
-    return items;
-  }
-}
-```
-
-The latest read still wins inside the chain: every layer, the reader
-included, rejects with the `AbortedException` of ts-core once the read is
-superseded, so a `next` called or pending after that rejects, and a result
-returned in silence never reaches the outer layers nor the source. Two
-things such extensions cannot do, by design: a cache does not intercept the
-count of the pagination, which runs in the build phase with a reader of its
-own (decorate the count reader instead); and a batching does not compose with
-the pagination for free, since merging N results already paginated does not
-give the right page.
 
 `readItems` sees the **whole payload**, whatever the position of its key: the
 build phase completes before any reading. It decides what reading means:
