@@ -72,11 +72,23 @@ rejection with `isAbortedException`; one that only listens to `items` and
 ## Upgrading to 2.0
 
 Version 2.0.0 makes the extensions of a source part of its type
-([Capabilities](#capabilities)) and **breaks** the way a source is built and
-inspected: the extensions are given **by key** (`createDataSource(reader,
+([Capabilities](#capabilities)) and **breaks** the way a source is built,
+inspected and extended:
+
+- the extensions are given **by key** (`createDataSource(reader,
 { filtering, pagination })`) instead of as an ordered list, still in the
-order you write them, and read from the keyed properties (`source.filtering`,
-`source.pagination`, …); `getExtension(Class)` is gone. See the
+  order you write them, and read from the keyed properties
+  (`source.filtering`, `source.pagination`, …); `getExtension(Class)` is gone;
+- the `DataSource` class is no longer exported: `createDataSource` is the only
+  way to build a source, and a source of your own implements `IDataSource`;
+- the hooks of an extension are `buildPayload(payload, signal?)` (was
+  `getItemsBefore`) and `readItems(payload, next, signal?)`, which wraps the
+  reading and replaces `getItemsAfter`: transform the result of
+  `next(payload)`, knowing that the first key now transforms last (see
+  [Writing an extension](#writing-an-extension));
+- `Paging` is `Pagination`, `payload.paging` is `payload.pagination`.
+
+See the
 [2.0.0 release notes](https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/2.0.0.md)
 for the migration.
 
