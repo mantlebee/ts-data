@@ -262,11 +262,11 @@ describe("DataSource", () => {
           });
         });
 
-        describe("getItemsBefore", () => {
+        describe("buildPayload", () => {
           test("Does not add the filters key to the payload when there are no filters", async () => {
             const extension = new FilterExtension<Item>();
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect("filters" in result).toBe(false);
           });
@@ -274,7 +274,7 @@ describe("DataSource", () => {
             const extension = new FilterExtension<Item>();
             extension.setFilters([activeFilter, nameFilter]);
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect(result.filters).toEqual({
               filters: [activeFilter, nameFilter],
@@ -285,7 +285,7 @@ describe("DataSource", () => {
             const extension = new FilterExtension<Item>();
             extension.addFilter(activeFilter);
             extension.setLogic(FilterLogics.or);
-            const result = await extension.getItemsBefore({});
+            const result = await extension.buildPayload({});
             expect(result.filters).toEqual({
               filters: [activeFilter],
               logic: FilterLogics.or,

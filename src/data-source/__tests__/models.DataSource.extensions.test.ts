@@ -5,6 +5,7 @@ import {
   DataSourceExtensionsDefinition,
   DataSourcePayload,
   DataSourceReader,
+  DataSourceReadNext,
   FilterExtension,
   FilterExtensionWithFixedFilters,
   IDataSource,
@@ -29,7 +30,7 @@ const item2: Item = { id: 2, name: "two" };
 const reader: DataSourceReader<Item> = async () => [item1, item1, item2];
 const countReader: DataSourceReader<Item, number> = async () => 3;
 
-/** Records the order of the `getItemsBefore` hooks: every extension pushes its name. */
+/** Records the order of the `buildPayload` hooks: every extension pushes its name. */
 let calls: string[] = [];
 
 /** Asks for distinct items and drops the duplicates the reader let through. */
@@ -37,15 +38,18 @@ class DistinctExtension<TItem>
   extends Subscribable<EventsDefinition>
   implements IDataSourceExtension<TItem>
 {
-  public async getItemsBefore(
+  public async buildPayload(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
     calls.push("distinct");
     payload.distinct = true;
     return payload;
   }
-  public async getItemsAfter(items: List<TItem>): Promise<List<TItem>> {
-    return Array.from(new Set(items));
+  public async readItems(
+    payload: DataSourcePayload<TItem>,
+    next: DataSourceReadNext<TItem>,
+  ): Promise<List<TItem>> {
+    return Array.from(new Set(await next(payload)));
   }
 }
 
@@ -54,7 +58,7 @@ class AuditExtension<TItem>
   extends Subscribable<EventsDefinition>
   implements IDataSourceExtension<TItem>
 {
-  public async getItemsBefore(
+  public async buildPayload(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
     calls.push("audit");
@@ -64,11 +68,11 @@ class AuditExtension<TItem>
 
 type Stub = IDataSourceExtension<Item> & { dispose: jest.Mock };
 
-/** An extension recording `name` when its `getItemsBefore` runs. */
+/** An extension recording `name` when its `buildPayload` runs. */
 function createStub(name: string): Stub {
   return {
     dispose: jest.fn(async () => {}),
-    getItemsBefore: async (payload: DataSourcePayload<Item>) => {
+    buildPayload: async (payload: DataSourcePayload<Item>) => {
       calls.push(name);
       return payload;
     },
@@ -77,7 +81,7 @@ function createStub(name: string): Stub {
 }
 
 /**
- * The four extensions of the package, each one spying its `getItemsBefore`
+ * The four extensions of the package, each one spying its `buildPayload`
  * to record the call order under its key.
  */
 function createKnown() {
@@ -87,7 +91,7 @@ function createKnown() {
   const sorting = new SortExtension<Item>();
   const spy = (key: string, extension: IDataSourceExtension<Item>) =>
     jest
-      .spyOn(extension, "getItemsBefore")
+      .spyOn(extension, "buildPayload")
       .mockImplementation(async (payload) => {
         calls.push(key);
         return payload;
@@ -380,9 +384,9 @@ describe("DataSource extensions by key", () => {
       > = true;
       const unnarrowed = (): void => {
         // @ts-expect-error `distinct` is possibly undefined
-        without.distinct.getItemsBefore({});
+        without.distinct.buildPayload({});
       };
-      if (without.distinct) without.distinct.getItemsBefore({});
+      if (without.distinct) without.distinct.buildPayload({});
       expect(unnarrowed).toThrow(TypeError);
       expect(withDistinct.distinct).toBe(distinct);
       expect(without.distinct).toBeUndefined();

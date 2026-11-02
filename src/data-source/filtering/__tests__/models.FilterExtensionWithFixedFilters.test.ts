@@ -78,14 +78,14 @@ describe("DataSource", () => {
           });
         });
 
-        describe("getItemsBefore", () => {
+        describe("buildPayload", () => {
           test("Puts exactly the fixed expression in the payload when there are no user filters", async () => {
             const fixedFilters = getFixedFilters();
             const extension = new FilterExtensionWithFixedFilters<Item>(
               fixedFilters,
             );
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect(result.filters).toBe(fixedFilters);
             expect(result.filters).toEqual(getFixedFilters());
@@ -96,7 +96,7 @@ describe("DataSource", () => {
               fixedFilters,
             );
             extension.setFilters([ageFilter, nameFilter]);
-            const result = await extension.getItemsBefore({});
+            const result = await extension.buildPayload({});
             expect(result.filters).toEqual({
               groups: [
                 fixedFilters,
@@ -115,7 +115,7 @@ describe("DataSource", () => {
               { groupsLogic: FilterLogics.or },
             );
             extension.addFilter(ageFilter);
-            const result = await extension.getItemsBefore({});
+            const result = await extension.buildPayload({});
             expect(result.filters).toEqual({
               groups: [
                 fixedFilters,
@@ -131,7 +131,7 @@ describe("DataSource", () => {
             );
             extension.addFilter(ageFilter);
             extension.setLogic(FilterLogics.or);
-            const result = await extension.getItemsBefore({});
+            const result = await extension.buildPayload({});
             expect(result.filters).toEqual({
               groups: [
                 fixedFilters,
@@ -147,7 +147,7 @@ describe("DataSource", () => {
             );
             extension.addFilter(ageFilter);
             extension.clearFilters();
-            const result = await extension.getItemsBefore({});
+            const result = await extension.buildPayload({});
             expect(result.filters).toBe(fixedFilters);
           });
         });

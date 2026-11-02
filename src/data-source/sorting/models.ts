@@ -72,7 +72,7 @@ export class SortExtension<TItem = Any>
   }
 
   //#region Extension Methods
-  public async getItemsBefore(
+  public async buildPayload(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
     payload.sorts = this.sorts;

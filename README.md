@@ -33,7 +33,7 @@ each change without polling.
 
 ## Features
 
-- 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own
+- 🧩 **Extensible data source**: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own, up to wrapping the reading itself (a cache, a batching), up to wrapping the reading itself (a cache, a batching), up to wrapping the reading itself (a cache, a batching)
 - 🧾 **Extensions in the type**: `createDataSource(reader, { filtering, pagination, distinct })` returns an `IDataSource` whose type carries every extension by key, custom ones included, so a consumer declares what it needs in a signature (`source: IDataSourceWith<User, "filtering" | "pagination">`) and the compiler checks it, no `instanceof` probing
 - 🏁 **The latest read wins**: a `read()` requested while another is running supersedes it, `items` always come from the latest read, `isReading` follows it, and the readers receive an `AbortSignal` to hand to `fetch`
 - 📄 **Storage-agnostic query model**: `QueryItemsPayload` with typed `Filter`s (OData-like operators), `Sort`s, `Pagination` and `Projection`s, translated by your reader
@@ -174,9 +174,8 @@ A data source, built with `createDataSource(reader, extensions)`, holds the
 items of the latest read and the `isReading` flag, and runs the **read
 cycle** on `read()`:
 
-1. `getItemsBefore(payload, signal)` of each extension, in the order of the keys, builds the payload;
-2. the reader resolves the payload into the items, `reader(payload, signal)`;
-3. `getItemsAfter(items, payload, signal)` of each extension, in the order of the keys, may transform the items.
+1. **build**: `buildPayload(payload, signal)` of each extension, in the order of the keys, adds its contribution to the payload; the phase completes before any item is read;
+2. **read**: `readItems(payload, next, signal)` of each extension wraps the reading, like a middleware: the extensions with the hook form an onion around the reader, `reader(payload, signal)`, the first key outermost, and `next(payload)` hands the payload to the layers inside. The result flows outward, so the outermost extension transforms last.
 
 The data source knows nothing about filters or pages, not even the names of
 the keys: the extensions run **in the order of the keys of the record**, the
@@ -489,29 +488,38 @@ a page beyond the last one is empty.
 ### Writing an extension
 
 An extension is any `ISubscribable` implementing the optional hooks of
-`IDataSourceExtension`. `DataSourceExtension` is the base class used by the
-package (debounced `*Change` event); your own extension does not need it.
-Both hooks receive the `AbortSignal` of the read as optional last parameter:
-declare it only if the extension reads something and can hand it over, as
-`PaginationExtension` does with its count reader.
+`IDataSourceExtension`: `buildPayload(payload, signal?)` adds to the query,
+`readItems(payload, next, signal?)` wraps the reading. `DataSourceExtension`
+is the base class used by the package (debounced `*Change` event); your own
+extension does not need it. Both hooks receive the `AbortSignal` of the read
+as optional last parameter: declare it only if the extension reads something
+of its own and can hand it over, as `PaginationExtension` does with its count
+reader. `next` has the signal bound already, nothing to forward.
 
 ```typescript
 import { EventsDefinition, Subscribable } from "@mantlebee/ts-core";
-import { DataSourcePayload, IDataSourceExtension } from "@mantlebee/ts-data";
+import {
+  DataSourcePayload,
+  DataSourceReadNext,
+  IDataSourceExtension,
+} from "@mantlebee/ts-data";
 
 /** Asks for distinct items and drops the duplicates the storage let through. */
 class DistinctExtension<TItem>
   extends Subscribable<EventsDefinition>
   implements IDataSourceExtension<TItem>
 {
-  public async getItemsBefore(
+  public async buildPayload(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
     payload.distinct = true;
     return payload;
   }
-  public async getItemsAfter(items: TItem[]): Promise<TItem[]> {
-    return Array.from(new Set(items));
+  public async readItems(
+    payload: DataSourcePayload<TItem>,
+    next: DataSourceReadNext<TItem>,
+  ): Promise<TItem[]> {
+    return Array.from(new Set(await next(payload)));
   }
 }
 
@@ -526,6 +534,135 @@ users.distinct; // DistinctExtension<User>
 
 Anything written before `pagination` is part of the query it counts and of
 the hash it watches for the page reset: here `distinct` is.
+
+`readItems` sees the **whole payload**, whatever the position of its key: the
+build phase completes before any reading. It decides what reading means:
+
+- call `next` **zero** times: a cache hit returns its items and the reader is
+  never invoked;
+- call it **once**, with the payload given or another one;
+- call it **N** times, e.g. for a backend taking one sort per call: one read
+  per sort, results merged. Every call runs the inner layers and the reader
+  again, so their hooks and events fire as many times;
+- transform the result before returning it: the result flows outward, so the
+  **outermost extension transforms last**, as in every middleware.
+
+```typescript
+/** A read-through cache: a hit skips `next`, hence the reader. */
+class CacheExtension<TItem>
+  extends Subscribable<EventsDefinition>
+  implements IDataSourceExtension<TItem>
+{
+  private readonly _cache = new Map<string, TItem[]>();
+  public async readItems(
+    payload: DataSourcePayload<TItem>,
+    next: DataSourceReadNext<TItem>,
+  ): Promise<TItem[]> {
+    const key = createHash(payload);
+    const hit = this._cache.get(key);
+    if (hit) return hit;
+    const items = await next(payload);
+    this._cache.set(key, items);
+    return items;
+  }
+}
+```
+
+The latest read still wins inside the chain: every layer, the reader
+included, rejects with the `AbortedException` of ts-core once the read is
+superseded, so a `next` called or pending after that rejects, and a result
+returned in silence never reaches the outer layers nor the source. Two
+things such extensions cannot do, by design: a cache does not intercept the
+count of the pagination, which runs in the build phase with a reader of its
+own (decorate the count reader instead); and a batching does not compose with
+the pagination for free, since merging N results already paginated does not
+give the right page.
+
+`readItems` sees the **whole payload**, whatever the position of its key: the
+build phase completes before any reading. It decides what reading means:
+
+- call `next` **zero** times: a cache hit returns its items and the reader is
+  never invoked;
+- call it **once**, with the payload given or another one;
+- call it **N** times, e.g. for a backend taking one sort per call: one read
+  per sort, results merged. Every call runs the inner layers and the reader
+  again, so their hooks and events fire as many times;
+- transform the result before returning it: the result flows outward, so the
+  **outermost extension transforms last**, as in every middleware.
+
+```typescript
+/** A read-through cache: a hit skips `next`, hence the reader. */
+class CacheExtension<TItem>
+  extends Subscribable<EventsDefinition>
+  implements IDataSourceExtension<TItem>
+{
+  private readonly _cache = new Map<string, TItem[]>();
+  public async readItems(
+    payload: DataSourcePayload<TItem>,
+    next: DataSourceReadNext<TItem>,
+  ): Promise<TItem[]> {
+    const key = createHash(payload);
+    const hit = this._cache.get(key);
+    if (hit) return hit;
+    const items = await next(payload);
+    this._cache.set(key, items);
+    return items;
+  }
+}
+```
+
+The latest read still wins inside the chain: every layer, the reader
+included, rejects with the `AbortedException` of ts-core once the read is
+superseded, so a `next` called or pending after that rejects, and a result
+returned in silence never reaches the outer layers nor the source. Two
+things such extensions cannot do, by design: a cache does not intercept the
+count of the pagination, which runs in the build phase with a reader of its
+own (decorate the count reader instead); and a batching does not compose with
+the pagination for free, since merging N results already paginated does not
+give the right page.
+
+`readItems` sees the **whole payload**, whatever the position of its key: the
+build phase completes before any reading. It decides what reading means:
+
+- call `next` **zero** times: a cache hit returns its items and the reader is
+  never invoked;
+- call it **once**, with the payload given or another one;
+- call it **N** times, e.g. for a backend taking one sort per call: one read
+  per sort, results merged. Every call runs the inner layers and the reader
+  again, so their hooks and events fire as many times;
+- transform the result before returning it: the result flows outward, so the
+  **outermost extension transforms last**, as in every middleware.
+
+```typescript
+/** A read-through cache: a hit skips `next`, hence the reader. */
+class CacheExtension<TItem>
+  extends Subscribable<EventsDefinition>
+  implements IDataSourceExtension<TItem>
+{
+  private readonly _cache = new Map<string, TItem[]>();
+  public async readItems(
+    payload: DataSourcePayload<TItem>,
+    next: DataSourceReadNext<TItem>,
+  ): Promise<TItem[]> {
+    const key = createHash(payload);
+    const hit = this._cache.get(key);
+    if (hit) return hit;
+    const items = await next(payload);
+    this._cache.set(key, items);
+    return items;
+  }
+}
+```
+
+The latest read still wins inside the chain: every layer, the reader
+included, rejects with the `AbortedException` of ts-core once the read is
+superseded, so a `next` called or pending after that rejects, and a result
+returned in silence never reaches the outer layers nor the source. Two
+things such extensions cannot do, by design: a cache does not intercept the
+count of the pagination, which runs in the build phase with a reader of its
+own (decorate the count reader instead); and a batching does not compose with
+the pagination for free, since merging N results already paginated does not
+give the right page.
 
 ## API Reference
 

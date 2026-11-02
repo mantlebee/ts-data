@@ -1,14 +1,26 @@
-import { AbortableDelegate, Any, List, Subscribable } from "@mantlebee/ts-core";
+import {
+  AbortableDelegate,
+  AbortedException,
+  Any,
+  List,
+  Subscribable,
+} from "@mantlebee/ts-core";
 
 import { IDataSourceExtension } from "./extensions/interfaces";
-import { DataSourceExtensionsDefinition } from "./extensions/types";
+import {
+  DataSourceExtensionsDefinition,
+  DataSourceReadNext,
+} from "./extensions/types";
 import { IDataSource } from "./interfaces";
 import { DataSourceEvents, DataSourcePayload, DataSourceReader } from "./types";
 
 /**
  * Data source driven only by its extensions: it knows nothing about filters,
  * pagination and so on, it just runs the read cycle described in
- * {@link IDataSourceExtension} over its pipeline of extensions.
+ * {@link IDataSourceExtension} over its pipeline of extensions: the build
+ * phase (`buildPayload` of each extension, in the order of the keys), then
+ * the read phase (`readItems` of each extension as an onion around the
+ * reader, the first key outermost).
  *
  * **Extensions by key.** The extensions are given as a record
  * ({@link DataSourceExtensionsDefinition}) and exposed under the same keys as
@@ -17,8 +29,9 @@ import { DataSourceEvents, DataSourcePayload, DataSourceReader } from "./types";
  * of the keys of the record**, the order they are written in (JavaScript lists
  * integer-like keys first: name the extensions). The order is yours and it
  * matters: write `filtering` before `pagination`, so the count reader
- * receives the filters. A key that is already a member of the source
- * (`items`, `read`, …) is refused.
+ * receives the filters; in the read phase the first key wraps the others,
+ * so it transforms the items last. A key that is already a member of the
+ * source (`items`, `read`, …) is refused.
  *
  * The class cannot type its members from a generic record, so it exposes no
  * keyed property in its type. Build a source with {@link createDataSource},
@@ -29,7 +42,9 @@ import { DataSourceEvents, DataSourcePayload, DataSourceReader } from "./types";
  * superseded `read()` rejects with `AbortedException` at once, its signal is
  * aborted (the reader and the hooks receive it, e.g. for `fetch`) and the
  * cycle stops at the next `await` without touching `items` nor raising
- * `items` or `error`. `items` and the `items` event therefore always come
+ * `items` or `error`: the remaining `buildPayload` hooks are not invoked,
+ * and every layer of the read phase, `next` included, rejects with
+ * `AbortedException` instead of running. `items` and the `items` event therefore always come
  * from the latest read, whatever the order the readers resolve in, and
  * {@link isReading} stays `true` until the latest read settles. `dispose()`
  * aborts the running read the same way.
@@ -172,18 +187,18 @@ export class DataSource<TItem = Any>
     return pipeline;
   }
   /**
-   * The function of the delegate: one read cycle. Returns at once, without
-   * touching the state, as soon as the signal is aborted; an error of the
-   * reader or of a hook is raised as `error` and rethrown, unless the read
-   * was superseded meanwhile (e.g. `fetch` rejecting with its `AbortError`).
+   * The function of the delegate: one read cycle, the build phase then the
+   * read phase. Returns at once, without touching the state, as soon as the
+   * signal is aborted; an error of the reader or of a hook is raised as
+   * `error` and rethrown, unless the read was superseded meanwhile (the
+   * `AbortedException` of a layer, or `fetch` rejecting with its
+   * `AbortError`).
    */
   private async _runReadCycle(signal: AbortSignal): Promise<void> {
     try {
-      const payload = await this._getItemsBefore({}, signal);
+      const payload = await this._buildPayload({}, signal);
       if (signal.aborted) return;
-      const read = await this._reader(payload, signal);
-      if (signal.aborted) return;
-      const items = await this._getItemsAfter(read, payload, signal);
+      const items = await this._composeReadItems(signal)(payload);
       if (signal.aborted) return;
       this._items = items;
       this._eventBus.trigger("items", items);
@@ -193,28 +208,54 @@ export class DataSource<TItem = Any>
       throw error;
     }
   }
-  private async _getItemsAfter(
-    items: List<TItem>,
-    payload: DataSourcePayload<TItem>,
-    signal: AbortSignal,
-  ): Promise<List<TItem>> {
-    for (const extension of this._extensions) {
-      if (signal.aborted) return items;
-      if (extension.getItemsAfter)
-        items = await extension.getItemsAfter(items, payload, signal);
-    }
-    return items;
-  }
-  private async _getItemsBefore(
+  /**
+   * The build phase: `buildPayload` of each extension, in the order of the
+   * keys. Stops, returning the payload built so far, once the signal is
+   * aborted; the caller checks the signal.
+   */
+  private async _buildPayload(
     payload: DataSourcePayload<TItem>,
     signal: AbortSignal,
   ): Promise<DataSourcePayload<TItem>> {
     for (const extension of this._extensions) {
       if (signal.aborted) return payload;
-      if (extension.getItemsBefore)
-        payload = await extension.getItemsBefore(payload, signal);
+      if (extension.buildPayload)
+        payload = await extension.buildPayload(payload, signal);
     }
     return payload;
+  }
+  /**
+   * The read phase, composed from the inside out: the reader is the core,
+   * every extension with `readItems` wraps the layers built so far, so the
+   * first key ends up outermost. Every layer, the core included, checks the
+   * signal before and after running and rejects with `AbortedException` once
+   * aborted: in a chain a result returned in silence (the reader resolving
+   * late, an extension swallowing the rejection of `next`) would be
+   * processed by the outer layers. The signal is bound in `next`, so an
+   * extension has nothing to forward.
+   */
+  private _composeReadItems(signal: AbortSignal): DataSourceReadNext<TItem> {
+    const guard = (
+      read: DataSourceReadNext<TItem>,
+    ): DataSourceReadNext<TItem> => {
+      return async (payload) => {
+        if (signal.aborted) throw new AbortedException();
+        const items = await read(payload);
+        if (signal.aborted) throw new AbortedException();
+        return items;
+      };
+    };
+    const core = guard((payload) => this._reader(payload, signal));
+    return this._extensions.reduceRight<DataSourceReadNext<TItem>>(
+      (next, extension) => {
+        const readItems = extension.readItems;
+        if (!readItems) return next;
+        return guard((payload) =>
+          readItems.call(extension, payload, next, signal),
+        );
+      },
+      core,
+    );
   }
   /** Updates the flag and raises `isReading` only when the value changes. */
   private _setIsReading(isReading: boolean): void {

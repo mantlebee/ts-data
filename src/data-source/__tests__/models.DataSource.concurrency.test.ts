@@ -2,6 +2,7 @@ import { AbortedException, isAbortedException } from "@mantlebee/ts-core";
 
 import {
   DataSourcePayload,
+  DataSourceReadNext,
   IDataSourceExtension,
   PaginationExtension,
 } from "@/data-source";
@@ -268,28 +269,46 @@ describe("DataSource concurrency: the latest read wins", () => {
       await second;
       expect(secondSignal.aborted).toBe(false);
     });
-    test("getItemsBefore and getItemsAfter receive the same signal as the reader", async () => {
-      const getItemsBefore = jest.fn(
+    test("buildPayload and readItems receive the same signal as the reader; next takes the payload only", async () => {
+      const buildPayload = jest.fn(
         async (payload: DataSourcePayload<Item>) => payload,
       );
-      const getItemsAfter = jest.fn(async (items: Item[]) => items);
+      const readItems = jest.fn(
+        async (
+          payload: DataSourcePayload<Item>,
+          next: DataSourceReadNext<Item>,
+        ) => next(payload),
+      );
       const reader = jest.fn<Promise<Item[]>, Parameters<Reader>>(async () => [
         item1,
       ]);
       const dataSource = new DataSource<Item>(reader, {
-        stub: createStub({ getItemsAfter, getItemsBefore }),
+        stub: createStub({ buildPayload, readItems }),
       });
       await dataSource.read();
       const signal = reader.mock.calls[0][1];
       expect(signal).toEqual(expect.any(AbortSignal));
-      expect(getItemsBefore).toHaveBeenCalledWith({}, signal);
-      expect(getItemsAfter).toHaveBeenCalledWith([item1], {}, signal);
+      expect(buildPayload).toHaveBeenCalledWith({}, signal);
+      expect(readItems).toHaveBeenCalledWith({}, expect.any(Function), signal);
+      expect(readItems.mock.calls[0][1]).toHaveLength(1);
     });
-    test("getItemsAfter of a superseded read is not called", async () => {
+    test("next of a superseded read rejects with AbortedException when the reader resolves late: the code after it is not reached", async () => {
       const { deferreds, reader } = createDeferredReader();
-      const getItemsAfter = jest.fn(async (items: Item[]) => items);
+      const afterNext = jest.fn();
+      const caught: unknown[] = [];
       const dataSource = new DataSource<Item>(reader, {
-        stub: createStub({ getItemsAfter }),
+        stub: createStub({
+          readItems: async (payload, next) => {
+            try {
+              const items = await next(payload);
+              afterNext(items);
+              return items;
+            } catch (error) {
+              caught.push(error);
+              throw error;
+            }
+          },
+        }),
       });
       startRead(dataSource);
       await tick();
@@ -297,29 +316,39 @@ describe("DataSource concurrency: the latest read wins", () => {
       await tick();
       deferreds[0].resolve([item1]);
       await tick();
-      expect(getItemsAfter).not.toHaveBeenCalled();
+      expect(afterNext).not.toHaveBeenCalled();
+      expect(caught).toHaveLength(1);
+      expect(caught[0]).toBeInstanceOf(AbortedException);
       deferreds[1].resolve([item2]);
       await second;
-      expect(getItemsAfter).toHaveBeenCalledTimes(1);
-      expect(getItemsAfter.mock.calls[0][0]).toEqual([item2]);
+      expect(afterNext).toHaveBeenCalledTimes(1);
+      expect(afterNext).toHaveBeenCalledWith([item2]);
+      expect(caught).toHaveLength(1);
     });
-    test("A read superseded while getItemsAfter is pending does not call the next getItemsAfter", async () => {
-      const afterA = createDeferred<Item[]>();
-      const afterB = jest.fn(async (items: Item[]) => items);
+    test("A read superseded while an inner readItems is pending: its late result is not handed to the outer readItems", async () => {
+      const inner = createDeferred<Item[]>();
+      const afterNext = jest.fn();
       const reader = jest.fn<Promise<Item[]>, Parameters<Reader>>(async () => [
         item1,
       ]);
       const dataSource = new DataSource<Item>(reader, {
-        stubA: createStub({ getItemsAfter: () => afterA.promise }),
-        stubB: createStub({ getItemsAfter: afterB }),
+        outer: createStub({
+          readItems: async (payload, next) => {
+            const items = await next(payload);
+            afterNext(items);
+            return items;
+          },
+        }),
+        innerStub: createStub({ readItems: () => inner.promise }),
       });
       const first = startRead(dataSource);
       await tick();
       await dataSource.dispose();
-      afterA.resolve([item1]);
+      inner.resolve([item1]);
       await tick();
       await expect(first).rejects.toBeInstanceOf(AbortedException);
-      expect(afterB).not.toHaveBeenCalled();
+      expect(afterNext).not.toHaveBeenCalled();
+      expect(reader).not.toHaveBeenCalled();
       expect(dataSource.items).toEqual([]);
     });
     test("PaginationExtension forwards the signal to the count reader", async () => {
@@ -365,26 +394,26 @@ describe("DataSource concurrency: the latest read wins", () => {
     });
   });
 
-  describe("getItemsBefore pending", () => {
-    test("A read superseded while getItemsBefore is pending does not call the reader", async () => {
+  describe("buildPayload pending", () => {
+    test("A read superseded while buildPayload is pending does not call the reader", async () => {
       const befores: ReturnType<
         typeof createDeferred<DataSourcePayload<Item>>
       >[] = [];
-      const getItemsBefore = jest.fn(() => {
+      const buildPayload = jest.fn(() => {
         const deferred = createDeferred<DataSourcePayload<Item>>();
         befores.push(deferred);
         return deferred.promise;
       });
       const { deferreds, reader } = createDeferredReader();
       const dataSource = new DataSource<Item>(reader, {
-        stub: createStub({ getItemsBefore }),
+        stub: createStub({ buildPayload }),
       });
 
       const first = startRead(dataSource);
       await tick();
       const second = startRead(dataSource);
       await tick();
-      expect(getItemsBefore).toHaveBeenCalledTimes(2);
+      expect(buildPayload).toHaveBeenCalledTimes(2);
       const firstPayload: DataSourcePayload<Item> = { distinct: true };
       const secondPayload: DataSourcePayload<Item> = { distinct: false };
       befores[0].resolve(firstPayload);
@@ -402,16 +431,16 @@ describe("DataSource concurrency: the latest read wins", () => {
     });
   });
 
-  describe("getItemsBefore pending, between two extensions", () => {
-    test("A read superseded while getItemsBefore is pending does not call the next getItemsBefore", async () => {
+  describe("buildPayload pending, between two extensions", () => {
+    test("A read superseded while buildPayload is pending does not call the next buildPayload", async () => {
       const beforeA = createDeferred<DataSourcePayload<Item>>();
       const beforeB = jest.fn(
         async (payload: DataSourcePayload<Item>) => payload,
       );
       const { reader } = createDeferredReader();
       const dataSource = new DataSource<Item>(reader, {
-        stubA: createStub({ getItemsBefore: () => beforeA.promise }),
-        stubB: createStub({ getItemsBefore: beforeB }),
+        stubA: createStub({ buildPayload: () => beforeA.promise }),
+        stubB: createStub({ buildPayload: beforeB }),
       });
       const first = startRead(dataSource);
       await tick();

@@ -1,5 +1,6 @@
-import { Any, Dictionary } from "@mantlebee/ts-core";
+import { Any, Dictionary, List } from "@mantlebee/ts-core";
 
+import type { DataSourcePayload } from "../types";
 import type { IFilterExtension } from "../filtering/interfaces";
 import type { IPaginationExtension } from "../pagination/interfaces";
 import type { IProjectionExtension } from "../projection/interfaces";
@@ -80,3 +81,18 @@ export type DataSourceExtensionProperties<TExt> = {
     TKey in keyof TExt as undefined extends TExt[TKey] ? TKey : never
   ]?: Exclude<TExt[TKey], undefined>;
 };
+
+/**
+ * The continuation given to {@link IDataSourceExtension.readItems}: reads the
+ * items through the inner layers of the onion and the reader of the data
+ * source. The signal of the read is bound already, hence the single
+ * parameter: an extension never forwards it. Reentrant: callable zero, one
+ * or several times, every call runs the inner layers again; once the read is
+ * superseded it rejects with the `AbortedException` of ts-core.
+ * @typeParam TItem Type of the items.
+ * @param payload Payload to read with, the whole query or a variant of it.
+ * @returns the items read by the inner layers.
+ */
+export type DataSourceReadNext<TItem = Any> = (
+  payload: DataSourcePayload<TItem>,
+) => Promise<List<TItem>>;

@@ -61,7 +61,7 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
       const paginating = new PaginationExtension<Item>(async () => 50, 10);
       const handler = jest.fn();
       paginating.on("page", handler);
-      await paginating.getItemsBefore({
+      await paginating.buildPayload({
         filters: { logic: FilterLogics.and, filters: [] },
       });
       expect(handler).not.toHaveBeenCalled();
@@ -86,9 +86,9 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
         pages.push(paginating.page);
         return 50;
       }, 10);
-      await paginating.getItemsBefore({});
+      await paginating.buildPayload({});
       paginating.goToPage(3);
-      await paginating.getItemsBefore({
+      await paginating.buildPayload({
         filters: { logic: FilterLogics.and, filters: [filterId] },
       });
       expect(pages).toEqual([1, 1]);
@@ -145,9 +145,9 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
     });
     test("Only the pagination of the previous read is ignored", async () => {
       const paginating = new PaginationExtension<Item>(async () => 50, 10);
-      await paginating.getItemsBefore({});
+      await paginating.buildPayload({});
       paginating.goToPage(3);
-      await paginating.getItemsBefore({
+      await paginating.buildPayload({
         pagination: { itemsPerPage: 1, page: 1, totalItemsCount: 1 },
       });
       expect(paginating.page).toBe(3);
@@ -159,9 +159,9 @@ describe("PaginationExtension resetPageOnQueryChange", () => {
         filters: [filterId],
       };
       const sorts: Sort<Item>[] = [{ field: "name", asc: true }];
-      await paginating.getItemsBefore({ filters, sorts: [...sorts] });
+      await paginating.buildPayload({ filters, sorts: [...sorts] });
       paginating.goToPage(3);
-      await paginating.getItemsBefore({ sorts: [...sorts], filters });
+      await paginating.buildPayload({ sorts: [...sorts], filters });
       expect(paginating.page).toBe(3);
     });
   });

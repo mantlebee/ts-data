@@ -109,7 +109,7 @@ export class FilterExtension<TItem = Any>
     };
     return list;
   }
-  public async getItemsBefore(
+  public async buildPayload(
     payload: DataSourcePayload<TItem>,
   ): Promise<DataSourcePayload<TItem>> {
     const filters = this._getFiltersExpression();

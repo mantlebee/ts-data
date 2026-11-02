@@ -177,11 +177,11 @@ describe("DataSource", () => {
           });
         });
 
-        describe("getItemsBefore", () => {
+        describe("buildPayload", () => {
           test("Sets an empty list of projections when there are no projections", async () => {
             const extension = new ProjectionExtension<Item>();
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect(result.projections).toEqual([]);
           });
@@ -189,7 +189,7 @@ describe("DataSource", () => {
             const extension = new ProjectionExtension<Item>();
             extension.setProjections([nameProjection, ageProjection]);
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect(result.projections).toEqual([nameProjection, ageProjection]);
           });

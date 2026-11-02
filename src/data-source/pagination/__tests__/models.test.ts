@@ -20,7 +20,7 @@ function createExtension(
     itemsPerPageOptions,
   );
   const read = (): Promise<DataSourcePayload<Item>> =>
-    extension.getItemsBefore({});
+    extension.buildPayload({});
   return { extension, read, reader, state };
 }
 
@@ -81,11 +81,11 @@ describe("PaginationExtension", () => {
     });
   });
 
-  describe("getItemsBefore", () => {
+  describe("buildPayload", () => {
     test("Calls the count reader with the payload", async () => {
       const { extension, reader } = createExtension(25, 10);
       const payload: DataSourcePayload<Item> = {};
-      await extension.getItemsBefore(payload);
+      await extension.buildPayload(payload);
       expect(reader).toHaveBeenCalledTimes(1);
       expect(reader).toHaveBeenCalledWith(payload, undefined);
     });
@@ -104,7 +104,7 @@ describe("PaginationExtension", () => {
     test("Sets the pagination of the payload", async () => {
       const { extension } = createExtension(25, 10);
       const payload: DataSourcePayload<Item> = {};
-      await extension.getItemsBefore(payload);
+      await extension.buildPayload(payload);
       expect(payload.pagination).toEqual({
         itemsPerPage: 10,
         page: 1,
@@ -114,7 +114,7 @@ describe("PaginationExtension", () => {
     test("Returns the same payload object", async () => {
       const { extension } = createExtension(25, 10);
       const payload: DataSourcePayload<Item> = {};
-      const result = await extension.getItemsBefore(payload);
+      const result = await extension.buildPayload(payload);
       expect(result).toBe(payload);
     });
     test("Does not raise totalItemsCount again when the count is the same", async () => {
@@ -353,7 +353,7 @@ describe("PaginationExtension", () => {
       const { extension, state } = await createReadExtension(25, 10);
       extension.goToLastPage();
       state.total = 5;
-      const payload = await extension.getItemsBefore({});
+      const payload = await extension.buildPayload({});
       expect(payload.pagination).toEqual({
         itemsPerPage: 10,
         page: 1,
@@ -373,7 +373,7 @@ describe("PaginationExtension", () => {
   });
 
   describe("count reader rejection", () => {
-    test("getItemsBefore rejects with the reader error", async () => {
+    test("buildPayload rejects with the reader error", async () => {
       const error = new Error("count failed");
       const extension = new PaginationExtension<Item>(
         jest.fn(async () => {
@@ -381,7 +381,7 @@ describe("PaginationExtension", () => {
         }),
         10,
       );
-      await expect(extension.getItemsBefore({})).rejects.toBe(error);
+      await expect(extension.buildPayload({})).rejects.toBe(error);
     });
     test("DataSource.read rejects and the items reader is not called", async () => {
       const error = new Error("count failed");

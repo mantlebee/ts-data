@@ -200,11 +200,11 @@ describe("DataSource", () => {
           });
         });
 
-        describe("getItemsBefore", () => {
+        describe("buildPayload", () => {
           test("Sets an empty list of sorts when there are no sorts", async () => {
             const extension = new SortExtension<Item>();
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect(result.sorts).toEqual([]);
           });
@@ -212,7 +212,7 @@ describe("DataSource", () => {
             const extension = new SortExtension<Item>();
             extension.setSorts([byNameAsc, byAgeDesc]);
             const payload: DataSourcePayload<Item> = {};
-            const result = await extension.getItemsBefore(payload);
+            const result = await extension.buildPayload(payload);
             expect(result).toBe(payload);
             expect(result.sorts).toEqual([byNameAsc, byAgeDesc]);
           });
@@ -266,11 +266,11 @@ describe("DataSource", () => {
           jest.advanceTimersByTime(1);
           expect(handler).toHaveBeenCalledTimes(1);
         });
-        test("getItemsBefore sets the single sort in the payload", async () => {
+        test("buildPayload sets the single sort in the payload", async () => {
           const extension = new SingleSortExtension<Item>();
           extension.addSort(byActiveAsc);
           extension.addSort(byNameAsc);
-          const result = await extension.getItemsBefore({});
+          const result = await extension.buildPayload({});
           expect(result.sorts).toEqual([byNameAsc]);
         });
       });

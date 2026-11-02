@@ -121,7 +121,7 @@ export class PaginationExtension<TItem = Any>
    * reader, then adds the pagination. Nothing is updated when the read was
    * superseded while the count was pending.
    */
-  public async getItemsBefore(
+  public async buildPayload(
     payload: DataSourcePayload<TItem>,
     signal?: AbortSignal,
   ): Promise<DataSourcePayload<TItem>> {

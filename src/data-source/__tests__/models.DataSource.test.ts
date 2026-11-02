@@ -1,5 +1,6 @@
 import {
   DataSourcePayload,
+  DataSourceReadNext,
   FilterExtension,
   IDataSourceExtension,
 } from "@/data-source";
@@ -122,14 +123,14 @@ describe("DataSource", () => {
       });
     });
 
-    describe("when getItemsBefore of an extension rejects", () => {
+    describe("when buildPayload of an extension rejects", () => {
       test("The error event is raised, read rejects and the reader is not called", async () => {
         const error = new Error("before failed");
         const reader = jest.fn<Promise<Item[]>, Parameters<Reader>>(
           async () => [item1],
         );
         const extension = createStub({
-          getItemsBefore: async () => {
+          buildPayload: async () => {
             throw error;
           },
         });
@@ -150,7 +151,7 @@ describe("DataSource", () => {
   });
 
   describe("hooks order", () => {
-    test("getItemsBefore and getItemsAfter run in insertion order and the payload flows through the extensions", async () => {
+    test("buildPayload runs in the order of the keys and the payload flows through; readItems wraps the reader, the first key outermost", async () => {
       const calls: string[] = [];
       let payloadReceivedByB: DataSourcePayload<Item> | undefined;
       const payloadOfA: DataSourcePayload<Item> = {
@@ -160,24 +161,28 @@ describe("DataSource", () => {
         sorts: [{ field: "name", asc: false }],
       };
       const extensionA = createStub({
-        getItemsAfter: async (items) => {
-          calls.push("after A");
-          return items;
-        },
-        getItemsBefore: async () => {
-          calls.push("before A");
+        buildPayload: async () => {
+          calls.push("build A");
           return payloadOfA;
+        },
+        readItems: async (payload, next) => {
+          calls.push("read A in");
+          const items = await next(payload);
+          calls.push("read A out");
+          return items;
         },
       });
       const extensionB = createStub({
-        getItemsAfter: async (items) => {
-          calls.push("after B");
-          return items;
-        },
-        getItemsBefore: async (payload) => {
-          calls.push("before B");
+        buildPayload: async (payload) => {
+          calls.push("build B");
           payloadReceivedByB = payload;
           return payloadOfB;
+        },
+        readItems: async (payload, next) => {
+          calls.push("read B in");
+          const items = await next(payload);
+          calls.push("read B out");
+          return items;
         },
       });
       const reader = jest.fn<Promise<Item[]>, Parameters<Reader>>(async () => {
@@ -190,34 +195,44 @@ describe("DataSource", () => {
       });
       await dataSource.read();
       expect(calls).toEqual([
-        "before A",
-        "before B",
+        "build A",
+        "build B",
+        "read A in",
+        "read B in",
         "reader",
-        "after A",
-        "after B",
+        "read B out",
+        "read A out",
       ]);
       expect(payloadReceivedByB).toBe(payloadOfA);
       expect(reader).toHaveBeenCalledTimes(1);
       expect(reader).toHaveBeenCalledWith(payloadOfB, expect.any(AbortSignal));
     });
-    test("getItemsAfter receives the items of the previous extension and the payload used to read", async () => {
+    test("readItems receives the whole payload, the continuation and the signal, and the result of the outermost one is the result of the read", async () => {
       const payload: DataSourcePayload<Item> = {
         sorts: [{ field: "id", asc: true }],
       };
-      const afterB = jest.fn(async (items: Item[]) => items);
+      const readB = jest.fn(
+        async (
+          payload: DataSourcePayload<Item>,
+          next: DataSourceReadNext<Item>,
+        ) => next(payload),
+      );
       const extensionA = createStub({
-        getItemsAfter: async () => [item3],
-        getItemsBefore: async () => payload,
+        buildPayload: async () => payload,
+        readItems: async (payload, next) => {
+          expect(await next(payload)).toEqual([item1]);
+          return [item3];
+        },
       });
-      const extensionB = createStub({ getItemsAfter: afterB });
+      const extensionB = createStub({ readItems: readB });
       const dataSource = new DataSource<Item>(async () => [item1], {
         extensionA,
         extensionB,
       });
       await dataSource.read();
-      expect(afterB).toHaveBeenCalledWith(
-        [item3],
+      expect(readB).toHaveBeenCalledWith(
         payload,
+        expect.any(Function),
         expect.any(AbortSignal),
       );
       expect(dataSource.items).toEqual([item3]);
@@ -231,10 +246,11 @@ describe("DataSource", () => {
     });
   });
 
-  describe("getItemsAfter", () => {
+  describe("readItems", () => {
     test("Can transform the items and the items event carries the transformed list", async () => {
       const reverse = createStub({
-        getItemsAfter: async (items) => [...items].reverse(),
+        readItems: async (payload, next) =>
+          [...(await next(payload))].reverse(),
       });
       const dataSource = new DataSource<Item>(
         async () => [item1, item2, item3],
@@ -247,10 +263,10 @@ describe("DataSource", () => {
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith([item3, item2, item1]);
     });
-    test("An error thrown by getItemsAfter raises the error event and rejects", async () => {
-      const error = new Error("after failed");
+    test("An error thrown by readItems raises the error event and rejects", async () => {
+      const error = new Error("read failed");
       const extension = createStub({
-        getItemsAfter: async () => {
+        readItems: async () => {
           throw error;
         },
       });

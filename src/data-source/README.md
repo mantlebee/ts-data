@@ -40,9 +40,14 @@ filters).
   - `interfaces.ts`: `IDataSourceExtension<TItem, TEvents>`, the hooks of the
     read cycle, both optional and both given the `AbortSignal` of the read as
     optional last parameter:
-    1. `getItemsBefore(payload, signal?)` of each extension builds the payload;
-    2. the reader resolves it into the items, `reader(payload, signal)`;
-    3. `getItemsAfter(items, payload, signal?)` of each extension may transform them.
+    1. **build**: `buildPayload(payload, signal?)` of each extension, in the
+       order of the keys, adds to the payload; completed before any reading;
+    2. **read**: `readItems(payload, next, signal?)` of each extension wraps
+       the reading as an onion around the reader (`reader(payload, signal)`),
+       the first key outermost; `next(payload)` runs the inner layers, zero,
+       one or N times, and the result flows outward (the outermost extension
+       transforms last). Every layer rejects with `AbortedException` once the
+       read is superseded.
 
     And `IDataSourceWith<TItem, TCapability>`, the shortcut a consumer states
     its needs with: `IDataSourceWith<User, "filtering" | "pagination">` is
@@ -58,7 +63,8 @@ filters).
     `DataSourceCapability` (a key of it), `DataSourceExtensionsDefinition`
     (the shape of a record of extensions: any key, any extension of the item
     type), `DataSourceExtensionProperties` (the keyed properties a record
-    gives), `DataSourceExtensionOptions`.
+    gives), `DataSourceExtensionOptions`, `DataSourceReadNext` (the
+    continuation given to `readItems`, the signal bound already).
 - **`filtering/`** — `FilterExtension`: flat list of filters with one logic,
   sent as a `FiltersList` only when not empty; several filters per field
   allowed (`addFilter`, `removeFilter`, `removeFiltersOf`, `replaceFiltersOf`,
