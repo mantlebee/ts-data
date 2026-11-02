@@ -1,0 +1,212 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>IDataSourceExtension | @mantlebee/ts-data</title><meta name="description" content="Documentation for @mantlebee/ts-data"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">@mantlebee/ts-data</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/index.html">index</a></li>
+<li><a href="" aria-current="page">IDataSourceExtension</a></li></ul>
+<h1>Interface IDataSourceExtension&lt;TItem, TEvents&gt;</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>Hooks of the read cycle of an <a href="../types/index.IDataSource.html" class="tsd-kind-type-alias">IDataSource</a>, both optional. The cycle
+has two phases, each one over every extension in the order of the keys of
+the record they are given with:</p>
+<ol>
+<li><strong>build</strong>: <a href="#buildpayload" class="tsd-kind-method">buildPayload</a> of each extension adds its contribution
+to the payload. The phase completes before any item is read, so the
+second phase always sees the whole query.</li>
+<li><strong>read</strong>: <a href="#readitems" class="tsd-kind-method">readItems</a> of each extension wraps the reading, like a
+middleware. The extensions form an onion around the reader of the data
+source: the first key is the outermost layer, the reader is the core,
+and <code>next(payload)</code> hands the payload to the next layer in. An
+extension without the hook is skipped.</li>
+</ol>
+<p>The order of the keys is up to the consumer and it matters: e.g. the
+<code>filtering</code> key must precede the <code>pagination</code> one for the count reader to
+receive the filters. In the read phase it also sets the order of the
+transformations: the result of <code>next</code> flows outward, so the <strong>outermost
+extension transforms last</strong>.</p>
+<p>Both hooks receive the <code>AbortSignal</code> of the read, aborted when a newer read
+supersedes it, for the reads of their own (a hook that reads something
+hands it to its reader, the others ignore it). <code>next</code> has the signal bound
+already: nothing to forward. Once the signal is aborted the data source
+stops the cycle: the remaining hooks and the reader are not invoked, and a
+<code>next</code> called after the abort rejects with the <code>AbortedException</code> of
+ts-core. An implementer declaring fewer parameters still type-checks.</p>
+</div>
+<div class="tsd-comment tsd-typography">
+<div class="tsd-tag-example">
+<h4 class="tsd-anchor-link" id="example">Example<a href="#example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="ts"><span class="hl-7">// A read-through cache: a hit skips `next`, hence the reader.</span><br/><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">CacheExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">Subscribable</span><span class="hl-1">&lt;</span><span class="hl-6">EventsDefinition</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">implements</span><span class="hl-1"> </span><span class="hl-6">IDataSourceExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-5">private</span><span class="hl-1"> </span><span class="hl-5">readonly</span><span class="hl-1"> </span><span class="hl-4">_cache</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">Map</span><span class="hl-1">&lt;</span><span class="hl-6">string</span><span class="hl-1">, </span><span class="hl-6">List</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;&gt;();</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">readItems</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;, </span><span class="hl-4">next</span><span class="hl-1">: </span><span class="hl-6">DataSourceReadNext</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;) {</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">key</span><span class="hl-1"> = </span><span class="hl-0">createHash</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">hit</span><span class="hl-1"> = </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-4">_cache</span><span class="hl-1">.</span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">key</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-3">if</span><span class="hl-1"> (</span><span class="hl-4">hit</span><span class="hl-1">) </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">hit</span><span class="hl-1">;</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">items</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">next</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-4">_cache</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">key</span><span class="hl-1">, </span><span class="hl-4">items</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">items</span><span class="hl-1">;</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+</div>
+<div class="tsd-tag-example">
+<h4 class="tsd-anchor-link" id="example-1">Example<a href="#example-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="ts"><span class="hl-7">// A backend accepting one sort per call: one read per sort, results merged.</span><br/><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">OneSortPerCallExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">Subscribable</span><span class="hl-1">&lt;</span><span class="hl-6">EventsDefinition</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">implements</span><span class="hl-1"> </span><span class="hl-6">IDataSourceExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">readItems</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;, </span><span class="hl-4">next</span><span class="hl-1">: </span><span class="hl-6">DataSourceReadNext</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;) {</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">sorts</span><span class="hl-1"> = </span><span class="hl-4">payload</span><span class="hl-1">.</span><span class="hl-4">sorts</span><span class="hl-1"> ?? [];</span><br/><span class="hl-1">    </span><span class="hl-3">if</span><span class="hl-1"> (</span><span class="hl-4">sorts</span><span class="hl-1">.</span><span class="hl-4">length</span><span class="hl-1"> &lt; </span><span class="hl-9">2</span><span class="hl-1">) </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-0">next</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">reads</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-6">Promise</span><span class="hl-1">.</span><span class="hl-0">all</span><span class="hl-1">(</span><span class="hl-4">sorts</span><span class="hl-1">.</span><span class="hl-0">map</span><span class="hl-1">((</span><span class="hl-4">sort</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">next</span><span class="hl-1">({ ...</span><span class="hl-4">payload</span><span class="hl-1">, </span><span class="hl-4">sorts:</span><span class="hl-1"> [</span><span class="hl-4">sort</span><span class="hl-1">] })));</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-0">merge</span><span class="hl-1">(</span><span class="hl-4">reads</span><span class="hl-1">);</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1"> = </span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">readUsers</span><span class="hl-1">, { </span><span class="hl-4">filtering</span><span class="hl-1">, </span><span class="hl-4">cache:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">CacheExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;() });</span>
+</code><button type="button">Copy</button></pre>
+
+</div></div></section>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">IDataSourceExtension</span><span class="tsd-signature-symbol">&lt;</span><br/>    <a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-type">Any</span><span class="tsd-signature-symbol">,</span><br/>    <a class="tsd-signature-type tsd-kind-type-parameter" href="#tevents">TEvents</a> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">EventsDefinition</span> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-type">EventsDefinition</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-call-signature" href="#buildpayload-1">buildPayload</a><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#dispose-1">dispose</a><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#on-1">on</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">event</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">handler</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">EventHandler</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#tevents">TEvents</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">IDisposable</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#readitems-1">readItems</a><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">next</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourceReadNext.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReadNext</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="titem"><span class="tsd-kind-type-parameter">TItem</span> = <span class="tsd-signature-type">Any</span></span></li>
+<li><span id="tevents"><span class="tsd-kind-type-parameter">TEvents</span> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">EventsDefinition</span> = <span class="tsd-signature-type">EventsDefinition</span></span></li></ul></section>
+<section class="tsd-panel tsd-hierarchy" data-refl="6">
+<h4>Hierarchy (<a href="../hierarchy.html#index.IDataSourceExtension">View Summary</a>)</h4>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><span class="tsd-signature-type">ISubscribable</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#tevents">TEvents</a><span class="tsd-signature-symbol">&gt;</span>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">IDataSourceExtension</span>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><a href="index.IFilterExtension.html" class="tsd-signature-type tsd-kind-interface">IFilterExtension</a></li>
+<li class="tsd-hierarchy-item"><a href="index.IPaginationExtension.html" class="tsd-signature-type tsd-kind-interface">IPaginationExtension</a></li>
+<li class="tsd-hierarchy-item"><a href="index.IProjectionExtension.html" class="tsd-signature-type tsd-kind-interface">IProjectionExtension</a></li>
+<li class="tsd-hierarchy-item"><a href="index.ISortExtension.html" class="tsd-signature-type tsd-kind-interface">ISortExtension</a></li></ul></li></ul></li></ul></section>
+<section class="tsd-panel">
+<h4>Implemented by</h4>
+<ul class="tsd-hierarchy">
+<li><a href="../classes/index.DataSourceExtension.html" class="tsd-signature-type tsd-kind-class">DataSourceExtension</a></li></ul></section><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/extensions/interfaces.ts#L72">src/data-source/extensions/interfaces.ts:72</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#buildpayload" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Payload?</span></a>
+<a href="#dispose" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>dispose</span></a>
+<a href="#on" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>on</span></a>
+<a href="#readitems" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>read<wbr/>Items?</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="buildpayload"><code class="tsd-tag">Optional</code><span>build<wbr/>Payload</span><a href="#buildpayload" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="buildpayload-1"><span class="tsd-kind-call-signature">buildPayload</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><a href="#buildpayload-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Adds the contribution of the extension to the payload. Build phase, run
+in the order of the keys and completed before any item is read.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">payload</span>: <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Payload built by the previous extensions.</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">signal</span>: <span class="tsd-signature-type">AbortSignal</span></span>
+<div class="tsd-comment tsd-typography"><p>Signal of the read, aborted when the read is superseded.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4><p>the payload for the next extension.</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/extensions/interfaces.ts#L83">src/data-source/extensions/interfaces.ts:83</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited tsd-is-external">
+<h3 class="tsd-anchor-link" id="dispose"><span>dispose</span><a href="#dispose" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited tsd-is-external">
+<li class="tsd-is-inherited tsd-is-external">
+<div class="tsd-signature tsd-anchor-link" id="dispose-1"><span class="tsd-kind-call-signature">dispose</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#dispose-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Releases the held resource. Implementations should be safe to call more than
+once.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><p>a promise that settles once the resource has been released.</p>
+<aside class="tsd-sources">
+<p>Inherited from ISubscribable.dispose</p>
+<ul>
+<li>Defined in node_modules/@mantlebee/ts-core/dist/src/common/classes/disposable/interfaces.d.ts:11</li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited tsd-is-external">
+<h3 class="tsd-anchor-link" id="on"><span>on</span><a href="#on" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited tsd-is-external">
+<li class="tsd-is-inherited tsd-is-external">
+<div class="tsd-signature tsd-anchor-link" id="on-1"><span class="tsd-kind-call-signature">on</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">event</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">handler</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">EventHandler</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#tevents">TEvents</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">IDisposable</span><a href="#on-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Registers a handler for an event.</p>
+</div>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="ontkey"><span class="tsd-kind-type-parameter">TKey</span> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>Name of the event to listen to.</p>
+</div></li></ul></section>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">event</span>: <a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a></span>
+<div class="tsd-comment tsd-typography"><p>Event to subscribe to.</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">handler</span>: <span class="tsd-signature-type">EventHandler</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#tevents">TEvents</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Callback invoked on every <a href="https://mantlebee.github.io/ts-core/interfaces/index.IEventBus.html#trigger">trigger</a> of <code>event</code>.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">IDisposable</span></h4><p>a subscription; dispose it to remove this single handler.</p>
+<aside class="tsd-sources">
+<p>Inherited from ISubscribable.on</p>
+<ul>
+<li>Defined in node_modules/@mantlebee/ts-core/dist/src/subscriptions/event-bus/interfaces.d.ts:18</li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="readitems"><code class="tsd-tag">Optional</code><span>read<wbr/>Items</span><a href="#readitems" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="readitems-1"><span class="tsd-kind-call-signature">readItems</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">next</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourceReadNext.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReadNext</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><a href="#readitems-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Wraps the reading of the items. Read phase: the extension is a layer of
+the onion around the reader, <code>next</code> the layers inside it (the inner
+extensions, then the reader of the data source). The payload is the
+whole query, whatever the position of the extension.</p>
+<p><code>next</code> may be called zero times (e.g. a cache hit: the reader is never
+invoked), once, with this or another payload, or several times (e.g. a
+payload split into several reads whose results are merged); every call
+runs the inner layers and the reader again, so the hooks and the events
+of the inner extensions may fire as many times. The result may be
+transformed before being returned, and flows outward: the outermost
+extension transforms last.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">payload</span>: <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The whole query, built by the build phase.</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">next</span>: <a href="../types/index.DataSourceReadNext.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReadNext</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Reads the items through the inner layers and the reader; the
+signal of the read is bound already.</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">signal</span>: <span class="tsd-signature-type">AbortSignal</span></span>
+<div class="tsd-comment tsd-typography"><p>Signal of the read, aborted when the read is superseded,
+for the reads of the extension itself.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4><p>the items for the outer extension, or the data source.</p>
+<aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/extensions/interfaces.ts#L107">src/data-source/extensions/interfaces.ts:107</a></li></ul></aside></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
+<div><a href="#buildpayload"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Payload</span></a><a href="#dispose" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>dispose</span></a><a href="#on" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>on</span></a><a href="#readitems"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>read<wbr/>Items</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">@mantlebee/ts-data</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

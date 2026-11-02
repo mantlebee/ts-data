@@ -1,0 +1,416 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@mantlebee/ts-data</title><meta name="description" content="Documentation for @mantlebee/ts-data"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">@mantlebee/ts-data</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h1>@mantlebee/ts-data</h1></div>
+<div class="tsd-panel tsd-typography"><h1 id="typescript-data-mantlebeets-data" class="tsd-anchor-link">TypeScript Data (@mantlebee/ts-data)<a href="#typescript-data-mantlebeets-data" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<blockquote>
+<p>Models and utilities to query and navigate data (filtering, sorting, pagination, projection) through an extensible, event-driven data source.</p>
+</blockquote>
+<p>A small library that separates <strong>what</strong> a query asks for from <strong>how</strong> it is
+run: the <code>QueryItemsPayload</code> describes filters, sorts, pagination and projections
+in a storage-agnostic way, and a data source builds it through a chain of
+<strong>extensions</strong> before handing it to your reader (an HTTP call, a SQL query, an
+in-memory filter, …). Every piece raises typed events, so a UI can react to
+each change without polling.</p>
+<h2 id="table-of-contents" class="tsd-anchor-link">Table of Contents<a href="#table-of-contents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li><a href="#features">Features</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#upgrading-to-10">Upgrading to 1.0</a></li>
+<li><a href="#upgrading-to-12">Upgrading to 1.2</a></li>
+<li><a href="#upgrading-to-20">Upgrading to 2.0</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#core-concepts">Core Concepts</a>
+<ul>
+<li><a href="#the-payload">The payload</a></li>
+<li><a href="#the-data-source-and-its-extensions">The data source and its extensions</a></li>
+<li><a href="#capabilities">Capabilities</a></li>
+<li><a href="#events">Events</a></li>
+<li><a href="#filters-sorts-pagination-and-projections">Filters, sorts, pagination and projections</a></li>
+<li><a href="#range-filters-from-the-ui">Range filters from the UI</a></li>
+<li><a href="#in-memory-data">In-memory data</a></li>
+<li><a href="#writing-an-extension">Writing an extension</a></li>
+</ul>
+</li>
+<li><a href="#api-reference">API Reference</a></li>
+<li><a href="#project-structure">Project Structure</a></li>
+<li><a href="#contributing">Contributing</a></li>
+<li><a href="#license">License</a></li>
+</ul>
+<h2 id="features" class="tsd-anchor-link">Features<a href="#features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>🧩 <strong>Extensible data source</strong>: the core only runs a read cycle; filtering, pagination, sorting and projection are extensions you give it by key, and you can write your own, up to wrapping the reading itself (a cache, a batching)</li>
+<li>🧾 <strong>Extensions in the type</strong>: <code>createDataSource(reader, { filtering, pagination, distinct })</code> returns an <code>IDataSource</code> whose type carries every extension by key, custom ones included, so a consumer declares what it needs in a signature (<code>source: IDataSourceWith&lt;User, &quot;filtering&quot; | &quot;pagination&quot;&gt;</code>) and the compiler checks it, no <code>instanceof</code> probing</li>
+<li>🏁 <strong>The latest read wins</strong>: a <code>read()</code> requested while another is running supersedes it, <code>items</code> always come from the latest read, <code>isReading</code> follows it, and the readers receive an <code>AbortSignal</code> to hand to <code>fetch</code></li>
+<li>📄 <strong>Storage-agnostic query model</strong>: <code>QueryItemsPayload</code> with typed <code>Filter</code>s (OData-like operators), <code>Sort</code>s, <code>Pagination</code> and <code>Projection</code>s, translated by your reader</li>
+<li>🔔 <strong>Typed events</strong>: every mutation raises its own event, plus a debounced <code>*Change</code> event per extension, on top of <code>Subscribable</code> of <a href="https://github.com/mantlebee/ts-core"><code>@mantlebee/ts-core</code></a></li>
+<li>📑 <strong>Complete pagination</strong>: 1-based pages, clamped navigation, total count kept up to date, automatic return to page 1 when the query changes</li>
+<li>🎚️ <strong>Range helpers</strong>: <code>FilterRange</code> / <code>FilterRangeLimit</code> to bind an interval UI control to a filter</li>
+<li>🧠 <strong>In-memory reader</strong>: <code>createInMemoryQueryItemsReader</code> resolves filters, sorts and pagination over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories</li>
+<li>🌳 <strong>Tree-shakable</strong>: ES modules next to the CommonJS bundle, no side effects, no runtime dependency besides the peer</li>
+</ul>
+<h2 id="installation" class="tsd-anchor-link">Installation<a href="#installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">@mantlebee/ts-data</span><span class="hl-1"> </span><span class="hl-2">@mantlebee/ts-core</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>@mantlebee/ts-core</code> (<code>^1.4.0</code>) is a <strong>peer dependency</strong>: install it alongside this package. It works in the browser and in Node alike. TypeScript projects need <code>strict</code> or at least
+<code>strictNullChecks</code> for the discriminated <code>Filter</code> type to work as intended.</p>
+<h2 id="upgrading-to-10" class="tsd-anchor-link">Upgrading to 1.0<a href="#upgrading-to-10" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Version 1.0.0 replaces the whole 0.1.0 API (<code>browsing</code>, <code>querying</code>) and
+supersedes the copy of this code living in <code>bl-core</code>. See the
+<a href="https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/1.0.0.md">1.0.0 release notes</a>
+for the two migration guides and the checklist.</p>
+<h2 id="upgrading-to-12" class="tsd-anchor-link">Upgrading to 1.2<a href="#upgrading-to-12" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Version 1.2.0 makes the latest read win: a <code>read()</code> requested while another
+is running supersedes it, and the superseded <code>read()</code> <strong>rejects with
+<code>AbortedException</code></strong> of ts-core. A consumer awaiting <code>read()</code> ignores that
+rejection with <code>isAbortedException</code>; one that only listens to <code>items</code> and
+<code>error</code> has nothing to change. It needs <code>@mantlebee/ts-core</code> 1.3.0. See the
+<a href="https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/1.2.0.md">1.2.0 release notes</a>.</p>
+<h2 id="upgrading-to-20" class="tsd-anchor-link">Upgrading to 2.0<a href="#upgrading-to-20" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Version 2.0.0 makes the extensions of a source part of its type
+(<a href="#capabilities">Capabilities</a>) and <strong>breaks</strong> the way a source is built,
+inspected and extended:</p>
+<ul>
+<li>the extensions are given <strong>by key</strong> (<code>createDataSource(reader, { filtering, pagination })</code>) instead of as an ordered list, still in the
+order you write them, and read from the keyed properties
+(<code>source.filtering</code>, <code>source.pagination</code>, …); <code>getExtension(Class)</code> is gone;</li>
+<li>the <code>DataSource</code> class is no longer exported: <code>createDataSource</code> is the only
+way to build a source, and a source of your own implements <code>IDataSource</code>;</li>
+<li>the hooks of an extension are <code>buildPayload(payload, signal?)</code> (was
+<code>getItemsBefore</code>) and <code>readItems(payload, next, signal?)</code>, which wraps the
+reading and replaces <code>getItemsAfter</code>: transform the result of
+<code>next(payload)</code>, knowing that the first key now transforms last (see
+<a href="#writing-an-extension">Writing an extension</a>);</li>
+<li><code>Paging</code> is <code>Pagination</code>, <code>payload.paging</code> is <code>payload.pagination</code>.</li>
+</ul>
+<p>See the
+<a href="https://github.com/mantlebee/ts-data/blob/main/docs/release-notes/2.0.0.md">2.0.0 release notes</a>
+for the migration.</p>
+<h2 id="quick-start" class="tsd-anchor-link">Quick Start<a href="#quick-start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="typescript"><span class="hl-3">import</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">createDataSource</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">FilterExtension</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">FilterOperators</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">PaginationExtension</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">QueryItemsPayload</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">SortExtension</span><span class="hl-1">,</span><br/><span class="hl-1">} </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-data&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">type</span><span class="hl-1"> </span><span class="hl-6">User</span><span class="hl-1"> = { </span><span class="hl-4">id</span><span class="hl-1">: </span><span class="hl-6">number</span><span class="hl-1">; </span><span class="hl-4">name</span><span class="hl-1">: </span><span class="hl-6">string</span><span class="hl-1">; </span><span class="hl-4">age</span><span class="hl-1">: </span><span class="hl-6">number</span><span class="hl-1"> };</span><br/><br/><span class="hl-7">// Your readers: translate the payload into a request and return the result.</span><br/><span class="hl-7">// The signal is aborted when a newer read supersedes this one: hand it to</span><br/><span class="hl-7">// your HTTP client to cancel the request, or ignore it.</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-0">readUsers</span><span class="hl-1"> = (</span><br/><span class="hl-1">  </span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">QueryItemsPayload</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">  </span><span class="hl-4">signal</span><span class="hl-1">?: </span><span class="hl-6">AbortSignal</span><span class="hl-1">,</span><br/><span class="hl-1">): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">[]&gt; </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">api</span><span class="hl-1">.</span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-2">&quot;/users&quot;</span><span class="hl-1">, { </span><span class="hl-4">params:</span><span class="hl-1"> </span><span class="hl-0">toQueryString</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">), </span><span class="hl-4">signal</span><span class="hl-1"> });</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-0">countUsers</span><span class="hl-1"> = (</span><br/><span class="hl-1">  </span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">QueryItemsPayload</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">  </span><span class="hl-4">signal</span><span class="hl-1">?: </span><span class="hl-6">AbortSignal</span><span class="hl-1">,</span><br/><span class="hl-1">): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">number</span><span class="hl-1">&gt; </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">api</span><span class="hl-1">.</span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-2">&quot;/users/count&quot;</span><span class="hl-1">, { </span><span class="hl-4">params:</span><span class="hl-1"> </span><span class="hl-0">toQueryString</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">), </span><span class="hl-4">signal</span><span class="hl-1"> });</span><br/><br/><span class="hl-7">// Write the item type on every extension: it cannot be inferred later.</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">filtering</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">sorting</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">SortExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">pagination</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">, [</span><span class="hl-9">10</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-9">50</span><span class="hl-1">]);</span><br/><br/><span class="hl-7">// The extensions are given by key and run in the order of the keys: filtering</span><br/><span class="hl-7">// and sorting before pagination, so the count receives the filters and the sorts.</span><br/><span class="hl-7">// The type carries them: IDataSource&lt;User, { filtering: FilterExtension&lt;User&gt;;</span><br/><span class="hl-7">// sorting: SortExtension&lt;User&gt;; pagination: PaginationExtension&lt;User&gt; }&gt;.</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1"> = </span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">readUsers</span><span class="hl-1">, { </span><span class="hl-4">filtering</span><span class="hl-1">, </span><span class="hl-4">sorting</span><span class="hl-1">, </span><span class="hl-4">pagination</span><span class="hl-1"> });</span><br/><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;items&quot;</span><span class="hl-1">, (</span><span class="hl-4">items</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">render</span><span class="hl-1">(</span><span class="hl-4">items</span><span class="hl-1">));</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;isReading&quot;</span><span class="hl-1">, (</span><span class="hl-4">isReading</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">spinner</span><span class="hl-1">.</span><span class="hl-0">toggle</span><span class="hl-1">(</span><span class="hl-4">isReading</span><span class="hl-1">));</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;error&quot;</span><span class="hl-1">, (</span><span class="hl-4">error</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">toast</span><span class="hl-1">.</span><span class="hl-0">error</span><span class="hl-1">(</span><span class="hl-0">String</span><span class="hl-1">(</span><span class="hl-4">error</span><span class="hl-1">)));</span><br/><br/><span class="hl-7">// Read again once the user stops changing filters, sorts or page.</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;filtersChange&quot;</span><span class="hl-1">, () </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">());</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">sorting</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;sortsChange&quot;</span><span class="hl-1">, () </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">());</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">pagination</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;page&quot;</span><span class="hl-1">, () </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">());</span><br/><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">addFilter</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;name&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">contains</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-2">&quot;ann&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">addFilter</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;age&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">greaterThanOrEqual</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">18</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">sorting</span><span class="hl-1">.</span><span class="hl-0">addSort</span><span class="hl-1">({ </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;name&quot;</span><span class="hl-1">, </span><span class="hl-4">asc:</span><span class="hl-1"> </span><span class="hl-5">true</span><span class="hl-1"> });</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">();</span><br/><span class="hl-7">// countUsers({ filters, sorts }) → readUsers({ filters, sorts, pagination: { page: 1, itemsPerPage: 20, totalItemsCount } })</span><br/><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">pagination</span><span class="hl-1">.</span><span class="hl-0">goToNextPage</span><span class="hl-1">(); </span><span class="hl-7">// `page` event → read()</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="core-concepts" class="tsd-anchor-link">Core Concepts<a href="#core-concepts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="the-payload" class="tsd-anchor-link">The payload<a href="#the-payload" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>QueryItemsPayload&lt;TItem&gt;</code> is a plain object with optional properties, each
+one set only by who needs it:</p>
+<pre><code class="typescript"><span class="hl-5">type</span><span class="hl-1"> </span><span class="hl-6">QueryItemsPayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt; = {</span><br/><span class="hl-1">  </span><span class="hl-4">distinct</span><span class="hl-1">?: </span><span class="hl-6">boolean</span><span class="hl-1">; </span><span class="hl-7">// drop duplicated items</span><br/><span class="hl-1">  </span><span class="hl-4">filters</span><span class="hl-1">?: </span><span class="hl-6">FiltersExpression</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;; </span><span class="hl-7">// conditions</span><br/><span class="hl-1">  </span><span class="hl-4">pagination</span><span class="hl-1">?: </span><span class="hl-6">Pagination</span><span class="hl-1">; </span><span class="hl-7">// { page, itemsPerPage, totalItemsCount }, 1-based</span><br/><span class="hl-1">  </span><span class="hl-4">projections</span><span class="hl-1">?: </span><span class="hl-6">List</span><span class="hl-1">&lt;</span><span class="hl-6">Projection</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;&gt;; </span><span class="hl-7">// fields to return, empty = every field</span><br/><span class="hl-1">  </span><span class="hl-4">sorts</span><span class="hl-1">?: </span><span class="hl-6">List</span><span class="hl-1">&lt;</span><span class="hl-6">Sort</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;&gt;; </span><span class="hl-7">// by priority, the first wins</span><br/><span class="hl-1">};</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The package never runs a query: your <strong>reader</strong> does, by translating the
+payload into whatever your storage understands. The reader of the items
+returns <code>Promise&lt;TItem[]&gt;</code>, the count reader of the pagination returns
+<code>Promise&lt;number&gt;</code>; both receive the same payload and, as optional second
+argument, the <code>AbortSignal</code> of the read.</p>
+<h3 id="the-data-source-and-its-extensions" class="tsd-anchor-link">The data source and its extensions<a href="#the-data-source-and-its-extensions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>A data source, built with <code>createDataSource(reader, extensions)</code>, holds the
+items of the latest read and the <code>isReading</code> flag, and runs the <strong>read
+cycle</strong> on <code>read()</code>:</p>
+<ol>
+<li><strong>build</strong>: <code>buildPayload(payload, signal)</code> of each extension, in the order of the keys, adds its contribution to the payload; the phase completes before any item is read;</li>
+<li><strong>read</strong>: <code>readItems(payload, next, signal)</code> of each extension wraps the reading, like a middleware: the extensions with the hook form an onion around the reader, <code>reader(payload, signal)</code>, the first key outermost, and <code>next(payload)</code> hands the payload to the layers inside. The result flows outward, so the outermost extension transforms last.</li>
+</ol>
+<p>The data source knows nothing about filters or pages, not even the names of
+the keys: the extensions run <strong>in the order of the keys of the record</strong>, the
+order you write them in, and that order is yours to choose and it matters.
+Write <code>filtering</code> (and <code>sorting</code>) before <code>pagination</code>, because the pagination
+reads the total count with the payload it receives, and watches that payload
+for the page reset. A failure anywhere (reader or hook) raises the <code>error</code>
+event, rejects <code>read()</code> with the same error and, when no newer read is
+running, resets <code>isReading</code>.</p>
+<p><strong>The latest read wins.</strong> A <code>read()</code> requested while another is running
+supersedes it (the cycle runs in the <code>AbortableDelegate</code> of ts-core): the
+superseded <code>read()</code> rejects with <code>AbortedException</code> at once, its <code>signal</code> is
+aborted, and its cycle stops at the next <code>await</code> without touching <code>items</code>
+nor raising <code>items</code> or <code>error</code>, whatever its reader returns later. <code>items</code>
+and the <code>items</code> event therefore always come from the latest read, and
+<code>isReading</code> is <code>true</code> from the first <code>read()</code> of a burst until the latest one
+settles (the <code>isReading</code> event is raised only on these two transitions).
+<code>dispose()</code> aborts the running read the same way. A consumer awaiting
+<code>read()</code> ignores the supersession with <code>isAbortedException</code>:</p>
+<pre><code class="typescript"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">isAbortedException</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-core&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-3">try</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">();</span><br/><span class="hl-1">} </span><span class="hl-3">catch</span><span class="hl-1"> (</span><span class="hl-4">error</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-3">if</span><span class="hl-1"> (!</span><span class="hl-0">isAbortedException</span><span class="hl-1">(</span><span class="hl-4">error</span><span class="hl-1">)) </span><span class="hl-3">throw</span><span class="hl-1"> </span><span class="hl-4">error</span><span class="hl-1">; </span><span class="hl-7">// a newer read superseded this one</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The <code>signal</code> given to the reader and to the hooks is aborted exactly when the
+read is superseded (or the source disposed): hand it to <code>fetch</code> to cancel the
+request, or ignore it, the result of a superseded read is discarded anyway.</p>
+<table>
+<thead>
+<tr>
+<th>Extension</th>
+<th>Adds to the payload</th>
+<th>Highlights</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FilterExtension</code></td>
+<td><code>filters</code> (a <code>FiltersList</code>), only when not empty</td>
+<td>flat list with one logic (<code>and</code>/<code>or</code>); several filters per field allowed; <code>replaceFiltersOf(field, …)</code></td>
+</tr>
+<tr>
+<td><code>FilterExtensionWithFixedFilters</code></td>
+<td><code>filters</code>: the fixed expression, grouped with the user filters when there are any</td>
+<td>e.g. &quot;only active users&quot; whatever the user chooses</td>
+</tr>
+<tr>
+<td><code>PaginationExtension</code></td>
+<td><code>pagination</code>, after reading the total count</td>
+<td><code>goTo*Page()</code> clamped to <code>[1, lastPage]</code>, <code>itemsPerPageOptions</code>, <code>resetPageOnQueryChange</code></td>
+</tr>
+<tr>
+<td><code>SortExtension</code></td>
+<td><code>sorts</code> (always, <code>[]</code> = no sort)</td>
+<td>optional <code>sortsLimit</code> (<code>0</code> = unlimited); <code>addSort</code> replaces the sort on the same field</td>
+</tr>
+<tr>
+<td><code>SingleSortExtension</code></td>
+<td><code>sorts</code> with one sort at most</td>
+<td><code>addSort</code> replaces the current sort, whatever its field</td>
+</tr>
+<tr>
+<td><code>ProjectionExtension</code></td>
+<td><code>projections</code> (always, <code>[]</code> = every field)</td>
+<td><code>addProjection</code> ignores a duplicated field</td>
+</tr>
+</tbody>
+</table>
+<p>Read the extensions from the source by key (<code>users.filtering</code>,
+<code>users.pagination</code>, …): they are part of its type, see
+<a href="#capabilities">Capabilities</a>. The keys above are a convention of the
+package (<code>DataSourceCapabilities</code>), not a rule: any key may hold any
+extension.</p>
+<p>Write the item type on the extension (<code>new FilterExtension&lt;User&gt;()</code>):
+TypeScript cannot infer it from the data source the extension is later passed
+to, and the generic defaults to <code>Any</code>, so a missing type argument compiles but
+loses the field suggestions and checks.</p>
+<h3 id="capabilities" class="tsd-anchor-link">Capabilities<a href="#capabilities" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The second type argument of <code>IDataSource&lt;TItem, TExt&gt;</code> is the <strong>record of the
+extensions of the source, by key</strong>, the way the events of a <code>Subscribable</code> of
+ts-core are a record: <code>createDataSource</code> infers it from the record it is
+given, custom keys included, and nothing has to be registered anywhere.</p>
+<pre><code class="typescript"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1"> = </span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">readUsers</span><span class="hl-1">, { </span><span class="hl-4">filtering</span><span class="hl-1">, </span><span class="hl-4">pagination</span><span class="hl-1">, </span><span class="hl-4">distinct</span><span class="hl-1"> });</span><br/><span class="hl-7">// IDataSource&lt;User, {</span><br/><span class="hl-7">//   filtering: FilterExtension&lt;User&gt;;</span><br/><span class="hl-7">//   pagination: PaginationExtension&lt;User&gt;;</span><br/><span class="hl-7">//   distinct: DistinctExtension&lt;User&gt;;</span><br/><span class="hl-7">// }&gt;</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">addFilter</span><span class="hl-1">(</span><span class="hl-4">adult</span><span class="hl-1">); </span><span class="hl-7">// required: the key is in the record</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">distinct</span><span class="hl-1">; </span><span class="hl-7">// DistinctExtension&lt;User&gt;: a custom key, typed</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">sorting</span><span class="hl-1">; </span><span class="hl-7">// compile error: not in the record, not a property</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The rules of the type:</p>
+<ul>
+<li>a key whose value cannot be <code>undefined</code> is a <strong>required</strong> readonly property;</li>
+<li>a key whose value may be <code>undefined</code> (<code>sorting: maybeSorting</code>, or <code>sorting?:</code>
+in a type you write) is an <strong>optional</strong> one: the extension is exposed when
+given, but the type does not guarantee it;</li>
+<li>a key not in the record is not a property at all, whether it is a key of
+the package or your own: the data source knows no key.</li>
+</ul>
+<p>A consumer declares what it needs in its signature. <code>IDataSourceWith&lt;TItem, TCapability&gt;</code> is the shortcut for the extensions of the package: the keys of
+<code>DataSourceCapabilities</code> (<code>filtering</code>, <code>pagination</code>, <code>projection</code>, <code>sorting</code>)
+resolved to their interfaces. A record states custom keys and optional ones,
+and the two compose by intersection:</p>
+<pre><code class="typescript"><span class="hl-7">// Shortcut: IDataSource&lt;User, { filtering: IFilterExtension&lt;User&gt;; pagination: IPaginationExtension&lt;User&gt; }&gt;</span><br/><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">useTable</span><span class="hl-1">(</span><span class="hl-4">source</span><span class="hl-1">: </span><span class="hl-6">IDataSourceWith</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">, </span><span class="hl-2">&quot;filtering&quot;</span><span class="hl-1"> | </span><span class="hl-2">&quot;pagination&quot;</span><span class="hl-1">&gt;) {</span><br/><span class="hl-1">  </span><span class="hl-4">source</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">addFilter</span><span class="hl-1">(</span><span class="hl-4">adult</span><span class="hl-1">); </span><span class="hl-7">// required: no check needed</span><br/><span class="hl-1">  </span><span class="hl-4">source</span><span class="hl-1">.</span><span class="hl-4">pagination</span><span class="hl-1">.</span><span class="hl-0">goToNextPage</span><span class="hl-1">();</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-7">// A record: a custom key, required, and one that may be missing.</span><br/><span class="hl-5">type</span><span class="hl-1"> </span><span class="hl-6">UsersSource</span><span class="hl-1"> = </span><span class="hl-6">IDataSourceWith</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">, </span><span class="hl-2">&quot;filtering&quot;</span><span class="hl-1">&gt; &amp;</span><br/><span class="hl-1">  </span><span class="hl-6">IDataSource</span><span class="hl-1">&lt;</span><br/><span class="hl-1">    </span><span class="hl-6">User</span><span class="hl-1">,</span><br/><span class="hl-1">    { </span><span class="hl-4">distinct</span><span class="hl-1">: </span><span class="hl-6">DistinctExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;; </span><span class="hl-4">audit</span><span class="hl-1">?: </span><span class="hl-6">AuditExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; }</span><br/><span class="hl-1">  &gt;;</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Assignability is structural: a source with more extensions fits a parameter
+asking for fewer (<code>IDataSourceWith&lt;User, &quot;filtering&quot; | &quot;pagination&quot;&gt;</code> →
+<code>IDataSourceWith&lt;User, &quot;filtering&quot;&gt;</code> → <code>IDataSource&lt;User&gt;</code>), never the
+opposite. The default, an empty record, guarantees nothing: a plain
+<code>IDataSource&lt;User&gt;</code> accepts every source and exposes no extension.</p>
+<pre><code class="typescript"><span class="hl-0">useTable</span><span class="hl-1">(</span><span class="hl-4">users</span><span class="hl-1">); </span><span class="hl-7">// ok: more extensions than asked</span><br/><span class="hl-0">useTable</span><span class="hl-1">(</span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">readUsers</span><span class="hl-1">, { </span><span class="hl-4">filtering</span><span class="hl-1"> })); </span><span class="hl-7">// compile error: no `pagination`</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">maybeSorting</span><span class="hl-1">: </span><span class="hl-6">SortExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; | </span><span class="hl-6">undefined</span><span class="hl-1"> = </span><span class="hl-4">sortable</span><br/><span class="hl-1">  ? </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">SortExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;()</span><br/><span class="hl-1">  : </span><span class="hl-5">undefined</span><span class="hl-1">;</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">products</span><span class="hl-1"> = </span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">readProducts</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">filtering</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">sorting:</span><span class="hl-1"> </span><span class="hl-4">maybeSorting</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-4">products</span><span class="hl-1">.</span><span class="hl-4">sorting</span><span class="hl-1">; </span><span class="hl-7">// SortExtension&lt;User&gt; | undefined</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The record is checked against the extension contract: every value must be an
+<code>IDataSourceExtension</code> of the item type. The keys are not: <code>{ filtering: sorting }</code> compiles, and fails only where a consumer asks for
+<code>IDataSourceWith&lt;User, &quot;filtering&quot;&gt;</code>. Write the shape of a record as a type
+literal, as above: an interface has no implicit index signature and does not
+satisfy the constraint.</p>
+<p>A key set to <code>undefined</code> or not given is absent at runtime too: <code>&quot;sorting&quot; in source</code> is <code>false</code>, and <code>source.sorting</code> is <code>undefined</code>. The extensions run in
+the <strong>order of the keys of the record</strong>, custom or not (<code>{ distinct, filtering, audit }</code> runs <code>distinct</code>, then <code>filtering</code>, then <code>audit</code>); a key
+that is already a member of the source (<code>items</code>, <code>read</code>, …) is refused. The
+class behind the sources is not exported: a class cannot type its members
+from a generic record, so <code>createDataSource</code> is the only way to build one.</p>
+<h3 id="events" class="tsd-anchor-link">Events<a href="#events" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Every class extends <code>Subscribable</code> of ts-core: <code>on(event, handler)</code> returns an
+<code>EventSubscription</code>, <code>dispose()</code> it to stop listening, and <code>dispose()</code> the
+object itself to remove every handler (a data source disposes its extensions
+too; every <code>dispose()</code> returns a promise).</p>
+<p>Each mutation raises its own event <strong>synchronously</strong> with the new state
+(<code>addFilter</code>, <code>removeSort</code>, <code>page</code>, …). The extensions that hold a list also
+raise a <strong>debounced</strong> <code>*Change</code> event (<code>filtersChange</code>, <code>sortsChange</code>,
+<code>projectionsChange</code>) once the mutations stop for <code>changeDelay</code> milliseconds
+(100 by default, set it with the <code>options</code> argument of the constructor): the
+right place to trigger a new read. <code>PaginationExtension</code> raises <code>page</code>,
+<code>itemsPerPage</code> and <code>totalItemsCount</code> only when the value actually changes.</p>
+<pre><code class="typescript"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">subscription</span><span class="hl-1"> = </span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;addFilter&quot;</span><span class="hl-1">, (</span><span class="hl-4">filter</span><span class="hl-1">, </span><span class="hl-4">filters</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">filter</span><span class="hl-1">, </span><span class="hl-4">filters</span><span class="hl-1">),</span><br/><span class="hl-1">);</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">subscription</span><span class="hl-1">.</span><span class="hl-0">dispose</span><span class="hl-1">(); </span><span class="hl-7">// stop listening</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-0">dispose</span><span class="hl-1">(); </span><span class="hl-7">// removes every handler of the data source and of its extensions</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="filters-sorts-pagination-and-projections" class="tsd-anchor-link">Filters, sorts, pagination and projections<a href="#filters-sorts-pagination-and-projections" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>A <code>Filter</code> is <code>{ field, operator, value }</code>, where <code>field</code> is a key of the item
+and <code>operator</code> is a member of <code>FilterOperators</code> (values follow OData 4 where it
+defines them: <code>eq</code>, <code>ne</code>, <code>gt</code>, <code>ge</code>, <code>lt</code>, <code>le</code>, <code>contains</code>, <code>in</code>, …). The
+type of <code>value</code> follows the operator:</p>
+<pre><code class="typescript"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">adult</span><span class="hl-1">: </span><span class="hl-6">Filter</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; = {</span><br/><span class="hl-1">  </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;age&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">greaterThanOrEqual</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">18</span><span class="hl-1">,</span><br/><span class="hl-1">};</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">roles</span><span class="hl-1">: </span><span class="hl-6">Filter</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; = {</span><br/><span class="hl-1">  </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;role&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">in</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">value:</span><span class="hl-1"> [</span><span class="hl-2">&quot;admin&quot;</span><span class="hl-1">, </span><span class="hl-2">&quot;editor&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">};</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">price</span><span class="hl-1">: </span><span class="hl-6">Filter</span><span class="hl-1">&lt;</span><span class="hl-6">Item</span><span class="hl-1">&gt; = {</span><br/><span class="hl-1">  </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">range</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">value:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-4">min:</span><span class="hl-1"> { </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">10</span><span class="hl-1">, </span><span class="hl-4">exclude:</span><span class="hl-1"> </span><span class="hl-5">false</span><span class="hl-1"> },</span><br/><span class="hl-1">    </span><span class="hl-4">max:</span><span class="hl-1"> { </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-4">exclude:</span><span class="hl-1"> </span><span class="hl-5">true</span><span class="hl-1"> },</span><br/><span class="hl-1">  }, </span><span class="hl-7">// 10 &lt;= price &lt; 20</span><br/><span class="hl-1">};</span>
+</code><button type="button">Copy</button></pre>
+
+<p>A <code>FiltersExpression</code> is a tree whose node is either a <code>FiltersList</code>
+(<code>{ logic, filters }</code>) or a <code>FiltersGroup</code> (<code>{ logic, groups }</code>), never both;
+<code>isFiltersList</code> / <code>isFiltersGroup</code> tell them apart when a reader walks it:</p>
+<pre><code class="typescript"><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">toQuery</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;(</span><span class="hl-4">expression</span><span class="hl-1">: </span><span class="hl-6">FiltersExpression</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;): </span><span class="hl-6">string</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">if</span><span class="hl-1"> (</span><span class="hl-0">isFiltersGroup</span><span class="hl-1">(</span><span class="hl-4">expression</span><span class="hl-1">))</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> (</span><br/><span class="hl-1">      </span><span class="hl-2">&quot;(&quot;</span><span class="hl-1"> + </span><span class="hl-4">expression</span><span class="hl-1">.</span><span class="hl-4">groups</span><span class="hl-1">.</span><span class="hl-0">map</span><span class="hl-1">(</span><span class="hl-4">toQuery</span><span class="hl-1">).</span><span class="hl-0">join</span><span class="hl-1">(</span><span class="hl-2">` </span><span class="hl-5">${</span><span class="hl-4">expression</span><span class="hl-10">.</span><span class="hl-4">logic</span><span class="hl-5">}</span><span class="hl-2"> `</span><span class="hl-1">) + </span><span class="hl-2">&quot;)&quot;</span><br/><span class="hl-1">    );</span><br/><span class="hl-1">  </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">expression</span><span class="hl-1">.</span><span class="hl-4">filters</span><span class="hl-1">.</span><span class="hl-0">map</span><span class="hl-1">(</span><span class="hl-4">toCondition</span><span class="hl-1">).</span><span class="hl-0">join</span><span class="hl-1">(</span><span class="hl-2">` </span><span class="hl-5">${</span><span class="hl-4">expression</span><span class="hl-10">.</span><span class="hl-4">logic</span><span class="hl-5">}</span><span class="hl-2"> `</span><span class="hl-1">);</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>Sort</code> is <code>{ field, asc }</code>, <code>Projection</code> is <code>{ field }</code>, <code>Pagination</code> is
+<code>{ page, itemsPerPage, totalItemsCount }</code> with 1-based pages: the items to
+skip are <code>(page - 1) * itemsPerPage</code>.</p>
+<p><code>PaginationExtension</code> goes back to page 1 whenever the query built by the
+previous extensions differs from the one of the previous read (compared by
+hash, so the first read never resets and a filter removed and re-added is not
+a change). Tune it with <code>resetPageOnQueryChange</code>: <code>true</code> (default, every
+property but <code>pagination</code>), <code>false</code>, or a list of payload properties such as
+<code>[&quot;filters&quot;]</code>:</p>
+<pre><code class="typescript"><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-5">undefined</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">resetPageOnQueryChange:</span><span class="hl-1"> [</span><span class="hl-2">&quot;filters&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="range-filters-from-the-ui" class="tsd-anchor-link">Range filters from the UI<a href="#range-filters-from-the-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>FilterRange&lt;TValue&gt;</code> is an editable interval made of two <code>FilterRangeLimit</code>s
+(<code>min</code>, <code>max</code>), each with a value (<code>null</code> = unbounded) and an <code>exclude</code> flag.
+Bind your controls to the limits and the range to a filter:</p>
+<pre><code class="typescript"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">price</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterRange</span><span class="hl-1">&lt;</span><span class="hl-6">number</span><span class="hl-1">&gt;();</span><br/><br/><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;change&quot;</span><span class="hl-1">, (</span><span class="hl-4">range</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-4">isValid</span><br/><span class="hl-1">    ? </span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">replaceFiltersOf</span><span class="hl-1">(</span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">, {</span><br/><span class="hl-1">        </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">range</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-4">range</span><span class="hl-1">,</span><br/><span class="hl-1">      })</span><br/><span class="hl-1">    : </span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">removeFiltersOf</span><span class="hl-1">(</span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">),</span><br/><span class="hl-1">);</span><br/><br/><span class="hl-4">minInput</span><span class="hl-1">.</span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;input&quot;</span><span class="hl-1">, () </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-4">min</span><span class="hl-1">.</span><span class="hl-0">setValue</span><span class="hl-1">(</span><span class="hl-4">minInput</span><span class="hl-1">.</span><span class="hl-4">valueAsNumber</span><span class="hl-1"> || </span><span class="hl-5">null</span><span class="hl-1">),</span><br/><span class="hl-1">);</span><br/><span class="hl-4">maxInput</span><span class="hl-1">.</span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;input&quot;</span><span class="hl-1">, () </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-4">max</span><span class="hl-1">.</span><span class="hl-0">setValue</span><span class="hl-1">(</span><span class="hl-4">maxInput</span><span class="hl-1">.</span><span class="hl-4">valueAsNumber</span><span class="hl-1"> || </span><span class="hl-5">null</span><span class="hl-1">),</span><br/><span class="hl-1">);</span><br/><span class="hl-4">strictCheckbox</span><span class="hl-1">.</span><span class="hl-0">addEventListener</span><span class="hl-1">(</span><span class="hl-2">&quot;change&quot;</span><span class="hl-1">, () </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-4">max</span><span class="hl-1">.</span><span class="hl-0">toggleExclude</span><span class="hl-1">());</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>isClosed</code> tells whether both limits are set, <code>limitsMatch</code> whether the range
+collapses to an &quot;equal&quot;, <code>clear()</code> unsets both.</p>
+<h3 id="in-memory-data" class="tsd-anchor-link">In-memory data<a href="#in-memory-data" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>createInMemoryQueryItemsReader(getItems, options?)</code> returns the two readers of a data
+source over a plain array, so the extensions work on local data (fixtures,
+stories, small lists) without a second &quot;client mode&quot;:</p>
+<pre><code class="typescript"><span class="hl-3">import</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">createDataSource</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">createInMemoryQueryItemsReader</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">FilterExtension</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">FilterOperators</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">PaginationExtension</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">SortExtension</span><span class="hl-1">,</span><br/><span class="hl-1">} </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-data&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1">: </span><span class="hl-6">User</span><span class="hl-1">[] = [</span><br/><span class="hl-1">  { </span><span class="hl-4">id:</span><span class="hl-1"> </span><span class="hl-9">1</span><span class="hl-1">, </span><span class="hl-4">name:</span><span class="hl-1"> </span><span class="hl-2">&quot;Ann&quot;</span><span class="hl-1">, </span><span class="hl-4">age:</span><span class="hl-1"> </span><span class="hl-9">31</span><span class="hl-1"> },</span><br/><span class="hl-1">  { </span><span class="hl-4">id:</span><span class="hl-1"> </span><span class="hl-9">2</span><span class="hl-1">, </span><span class="hl-4">name:</span><span class="hl-1"> </span><span class="hl-2">&quot;Bob&quot;</span><span class="hl-1">, </span><span class="hl-4">age:</span><span class="hl-1"> </span><span class="hl-9">17</span><span class="hl-1"> } </span><span class="hl-7">/* ... */</span><span class="hl-1">,</span><br/><span class="hl-1">];</span><br/><span class="hl-5">const</span><span class="hl-1"> { </span><span class="hl-8">countReader</span><span class="hl-1">, </span><span class="hl-8">reader</span><span class="hl-1"> } = </span><span class="hl-0">createInMemoryQueryItemsReader</span><span class="hl-1">(() </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">);</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">dataSource</span><span class="hl-1"> = </span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">reader</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">filtering:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(),</span><br/><span class="hl-1">  </span><span class="hl-4">sorting:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">SortExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(),</span><br/><span class="hl-1">  </span><span class="hl-4">pagination:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countReader</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">),</span><br/><span class="hl-1">});</span><br/><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">addFilter</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;age&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">greaterThanOrEqual</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">18</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-4">sorting</span><span class="hl-1">.</span><span class="hl-0">addSort</span><span class="hl-1">({ </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;name&quot;</span><span class="hl-1">, </span><span class="hl-4">asc:</span><span class="hl-1"> </span><span class="hl-5">true</span><span class="hl-1"> });</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(); </span><span class="hl-7">// dataSource.items: the adults, by name, first page of 20</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>reader</code> applies the filters, then the sorts, then the projections (and
+<code>distinct</code>), then the page; <code>countReader</code> counts the items matching the
+filters. Both resolve on the next microtask, so <code>isReading</code> is observable,
+and both call the getter on every read: return another list to swap the
+data between two reads. The list and its items are never mutated. The same
+logic is available synchronously as <code>queryItems(items, payload, options?)</code>
+and <code>countItems(items, payload, options?)</code>, and every step on its own:
+<code>filterItems</code>, <code>sortItems</code>, <code>projectItems</code>, <code>distinctItems</code>, <code>pageItems</code>,
+each exported by the <code>in-memory</code> folder of its feature.</p>
+<p>Values are compared through <code>toComparableValue</code>: numbers and booleans as they
+are, strings lower-cased (<code>options.caseSensitive: true</code> to keep the case;
+<code>equalInsensitive</code> always ignores it), <code>Date</code>s by <code>getTime()</code>, any other
+object by its <code>valueOf()</code> when that returns a primitive (so your value objects
+plug in), by reference otherwise. <code>null</code> and <code>undefined</code> are the same &quot;unset&quot;
+value: it matches <code>equal null</code> / <code>in [null]</code>, never an ordered or string
+operator, and sorts first ascending. Override the rule per field with
+<code>options.toComparable(value, field)</code>, which receives both sides of every
+comparison. <code>contains</code> / <code>notContains</code> work on strings (substring) and on
+lists (membership); every <code>FiltersExpression</code> tree is honoured at any depth;
+a page beyond the last one is empty.</p>
+<h3 id="writing-an-extension" class="tsd-anchor-link">Writing an extension<a href="#writing-an-extension" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>An extension is any <code>ISubscribable</code> implementing the optional hooks of
+<code>IDataSourceExtension</code>: <code>buildPayload(payload, signal?)</code> adds to the query,
+<code>readItems(payload, next, signal?)</code> wraps the reading. <code>DataSourceExtension</code>
+is the base class used by the package (debounced <code>*Change</code> event); your own
+extension does not need it. Both hooks receive the <code>AbortSignal</code> of the read
+as optional last parameter: declare it only if the extension reads something
+of its own and can hand it over, as <code>PaginationExtension</code> does with its count
+reader. <code>next</code> has the signal bound already, nothing to forward.</p>
+<pre><code class="typescript"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">EventsDefinition</span><span class="hl-1">, </span><span class="hl-4">Subscribable</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-core&quot;</span><span class="hl-1">;</span><br/><span class="hl-3">import</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">DataSourcePayload</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">DataSourceReadNext</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">IDataSourceExtension</span><span class="hl-1">,</span><br/><span class="hl-1">} </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-data&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-7">/** Asks for distinct items and drops the duplicates the storage let through. */</span><br/><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">DistinctExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">Subscribable</span><span class="hl-1">&lt;</span><span class="hl-6">EventsDefinition</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">implements</span><span class="hl-1"> </span><span class="hl-6">IDataSourceExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">buildPayload</span><span class="hl-1">(</span><br/><span class="hl-1">    </span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">  ): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;&gt; {</span><br/><span class="hl-1">    </span><span class="hl-4">payload</span><span class="hl-1">.</span><span class="hl-4">distinct</span><span class="hl-1"> = </span><span class="hl-5">true</span><span class="hl-1">;</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">payload</span><span class="hl-1">;</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">readItems</span><span class="hl-1">(</span><br/><span class="hl-1">    </span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">    </span><span class="hl-4">next</span><span class="hl-1">: </span><span class="hl-6">DataSourceReadNext</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">  ): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">[]&gt; {</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">Array</span><span class="hl-1">.</span><span class="hl-0">from</span><span class="hl-1">(</span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">Set</span><span class="hl-1">(</span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">next</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">)));</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-7">// A key of your own: the keys run in this order, filtering, distinct, then pagination.</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1"> = </span><span class="hl-0">createDataSource</span><span class="hl-1">(</span><span class="hl-4">readUsers</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">filtering</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">distinct:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DistinctExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(),</span><br/><span class="hl-1">  </span><span class="hl-4">pagination</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-4">users</span><span class="hl-1">.</span><span class="hl-4">distinct</span><span class="hl-1">; </span><span class="hl-7">// DistinctExtension&lt;User&gt;</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Anything written before <code>pagination</code> is part of the query it counts and of
+the hash it watches for the page reset: here <code>distinct</code> is.</p>
+<p><code>readItems</code> sees the <strong>whole payload</strong>, whatever the position of its key: the
+build phase completes before any reading. It decides what reading means:</p>
+<ul>
+<li>call <code>next</code> <strong>zero</strong> times: a cache hit returns its items and the reader is
+never invoked;</li>
+<li>call it <strong>once</strong>, with the payload given or another one;</li>
+<li>call it <strong>N</strong> times, e.g. for a backend taking one sort per call: one read
+per sort, results merged. Every call runs the inner layers and the reader
+again, so their hooks and events fire as many times;</li>
+<li>transform the result before returning it: the result flows outward, so the
+<strong>outermost extension transforms last</strong>, as in every middleware.</li>
+</ul>
+<pre><code class="typescript"><span class="hl-7">/** A read-through cache: a hit skips `next`, hence the reader. */</span><br/><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">CacheExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">Subscribable</span><span class="hl-1">&lt;</span><span class="hl-6">EventsDefinition</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">implements</span><span class="hl-1"> </span><span class="hl-6">IDataSourceExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-5">private</span><span class="hl-1"> </span><span class="hl-5">readonly</span><span class="hl-1"> </span><span class="hl-4">_cache</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">Map</span><span class="hl-1">&lt;</span><span class="hl-6">string</span><span class="hl-1">, </span><span class="hl-6">TItem</span><span class="hl-1">[]&gt;();</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">readItems</span><span class="hl-1">(</span><br/><span class="hl-1">    </span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">    </span><span class="hl-4">next</span><span class="hl-1">: </span><span class="hl-6">DataSourceReadNext</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">  ): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">[]&gt; {</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">key</span><span class="hl-1"> = </span><span class="hl-0">createHash</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">hit</span><span class="hl-1"> = </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-4">_cache</span><span class="hl-1">.</span><span class="hl-0">get</span><span class="hl-1">(</span><span class="hl-4">key</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-3">if</span><span class="hl-1"> (</span><span class="hl-4">hit</span><span class="hl-1">) </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">hit</span><span class="hl-1">;</span><br/><span class="hl-1">    </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">items</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">next</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-4">_cache</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-4">key</span><span class="hl-1">, </span><span class="hl-4">items</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">items</span><span class="hl-1">;</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The latest read still wins inside the chain: every layer, the reader
+included, rejects with the <code>AbortedException</code> of ts-core once the read is
+superseded, so a <code>next</code> called or pending after that rejects, and a result
+returned in silence never reaches the outer layers nor the source. Two
+things such extensions cannot do, by design: a cache does not intercept the
+count of the pagination, which runs in the build phase with a reader of its
+own (decorate the count reader instead); and a batching does not compose with
+the pagination for free, since merging N results already paginated does not
+give the right page.</p>
+<h2 id="api-reference" class="tsd-anchor-link">API Reference<a href="#api-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The generated API documentation, release notes included, is published at
+<a href="https://mantlebee.github.io/ts-data/">https://mantlebee.github.io/ts-data/</a>.</p>
+<h2 id="project-structure" class="tsd-anchor-link">Project Structure<a href="#project-structure" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li><a href="media/README.md"><code>src/query-items</code></a>: the query model (<code>QueryItemsPayload</code>, filters, sorts, pagination, projections), the <code>FilterRange</code> helpers and the in-memory reader.</li>
+<li><a href="media/README-1.md"><code>src/data-source</code></a>: <code>DataSource</code> and <code>createDataSource</code>; <code>extensions/</code> holds the extension contract, the base class and the typing of the extensions by key (<code>IDataSourceWith</code>), next to the extensions shipped with the package.</li>
+<li><code>docs/release-notes</code>: one file per release with the migration guide; <code>docs/api</code> is generated by <code>npm run doc</code>.</li>
+<li><code>test/fixtures</code>: deterministic items and readers used by the tests.</li>
+</ul>
+<p>Scripts: <code>npm run build</code> (CommonJS + ES modules into <code>dist</code>), <code>npm test</code>,
+<code>npm run coverage</code> (95 % threshold), <code>npm run lint</code> (ESLint, Prettier and the
+type-check; <code>npm run lint:fix</code> and <code>npm run format</code> fix what they can),
+<code>npm run doc</code>, <code>npm run doc:publish</code>.</p>
+<h2 id="contributing" class="tsd-anchor-link">Contributing<a href="#contributing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Issues and pull requests are welcome at
+<a href="https://github.com/mantlebee/ts-data">github.com/mantlebee/ts-data</a>. Every
+export has TSDoc and tests: keep both up to date, and run <code>npm run lint</code> and
+<code>npm run coverage</code> before opening a pull request.</p>
+<h2 id="license" class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>MIT</p>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#typescript-data-mantlebeets-data"><span>Type<wbr/>Script <wbr/>Data (@mantlebee/ts-<wbr/>data)</span></a>
+<ul>
+<li><a href="#table-of-contents"><span>Table of <wbr/>Contents</span></a></li>
+<li><a href="#features"><span>Features</span></a></li>
+<li><a href="#installation"><span>Installation</span></a></li>
+<li><a href="#upgrading-to-10"><span>Upgrading to 1.0</span></a></li>
+<li><a href="#upgrading-to-12"><span>Upgrading to 1.2</span></a></li>
+<li><a href="#upgrading-to-20"><span>Upgrading to 2.0</span></a></li>
+<li><a href="#quick-start"><span>Quick <wbr/>Start</span></a></li>
+<li><a href="#core-concepts"><span>Core <wbr/>Concepts</span></a></li>
+<li>
+<ul>
+<li><a href="#the-payload"><span>The payload</span></a></li>
+<li><a href="#the-data-source-and-its-extensions"><span>The data source and its extensions</span></a></li>
+<li><a href="#capabilities"><span>Capabilities</span></a></li>
+<li><a href="#events"><span>Events</span></a></li>
+<li><a href="#filters-sorts-pagination-and-projections"><span>Filters, sorts, pagination and projections</span></a></li>
+<li><a href="#range-filters-from-the-ui"><span>Range filters from the <wbr/>UI</span></a></li>
+<li><a href="#in-memory-data"><span>In-<wbr/>memory data</span></a></li>
+<li><a href="#writing-an-extension"><span>Writing an extension</span></a></li></ul></li>
+<li><a href="#api-reference"><span>API <wbr/>Reference</span></a></li>
+<li><a href="#project-structure"><span>Project <wbr/>Structure</span></a></li>
+<li><a href="#contributing"><span>Contributing</span></a></li>
+<li><a href="#license"><span>License</span></a></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="modules.html">@mantlebee/ts-data</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

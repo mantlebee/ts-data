@@ -1,0 +1,1160 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>1.0.0 | @mantlebee/ts-data</title><meta name="description" content="Documentation for @mantlebee/ts-data"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">@mantlebee/ts-data</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="" aria-current="page">1.0.0</a></li></ul></div>
+<div class="tsd-panel tsd-typography"><h1 id="100-upgrading-from-010-and-from-bl-core" class="tsd-anchor-link">1.0.0 — upgrading from 0.1.0 and from bl-core <code>data</code><a href="#100-upgrading-from-010-and-from-bl-core" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p>Version 1.0.0 rebuilds the package around an extensible, event-driven
+<code>DataSource</code>: the core only runs a read cycle and knows nothing about filters,
+pagination or sorting, which are <strong>extensions</strong> invoked in array order. The
+query model (<code>QueryItemsPayload</code>) is a plain, storage-agnostic description
+that a reader translates into the actual request.</p>
+<p>There are two kinds of consumers, with two different migration paths:</p>
+<ul>
+<li>projects on <strong><code>@mantlebee/ts-data</code> 0.1.0</strong> (<code>browsing</code> / <code>querying</code>): the
+whole API is replaced, see <a href="#1-breaking-changes-for-010-consumers">1</a>;</li>
+<li>projects using the <strong>copy in <code>bl-core</code> (<code>client/lib/bl-core/src/data</code>)</strong>,
+which this package replaces: the API is the same one, with bug fixes and a
+few renames, see <a href="#2-breaking-changes-for-bl-core-data-consumers">2</a>.</li>
+</ul>
+<p>Both need <code>@mantlebee/ts-core</code> <code>^1.2.1</code> installed as a peer dependency.</p>
+<ul>
+<li><a href="#1-breaking-changes-for-010-consumers">1. Breaking changes for 0.1.0 consumers</a>
+<ul>
+<li><a href="#11-browsing-and-querying-removed">1.1 <code>browsing</code> and <code>querying</code> removed</a></li>
+<li><a href="#12-query-model">1.2 Query model</a></li>
+<li><a href="#13-datasource-plugins-become-extensions">1.3 <code>DataSource</code>: plugins become extensions</a></li>
+<li><a href="#14-the-extensions-plugin-by-plugin">1.4 The extensions, plugin by plugin</a></li>
+<li><a href="#15-peer-dependency-and-entry-points">1.5 Peer dependency and entry points</a></li>
+</ul>
+</li>
+<li><a href="#2-breaking-changes-for-bl-core-data-consumers">2. Breaking changes for bl-core <code>data</code> consumers</a>
+<ul>
+<li><a href="#21-imports">2.1 Imports</a></li>
+<li><a href="#22-datasource-one-class-no-named-extensions">2.2 <code>DataSource</code>: one class, no named extensions</a></li>
+<li><a href="#23-read-raises-error-and-rethrows">2.3 <code>read()</code> raises <code>error</code> and rethrows</a></li>
+<li><a href="#24-dispose-is-asynchronous">2.4 <code>dispose()</code> is asynchronous</a></li>
+<li><a href="#25-getcountbefore-removed">2.5 <code>getCountBefore</code> removed</a></li>
+<li><a href="#26-filteroperators-values">2.6 <code>FilterOperators</code> values</a></li>
+<li><a href="#27-filter-and-filtersexpression-types">2.7 <code>Filter</code> and <code>FiltersExpression</code> types</a></li>
+<li><a href="#28-filterextension-and-fixed-filters">2.8 <code>FilterExtension</code> and fixed filters</a></li>
+<li><a href="#29-paginationextension-completed">2.9 <code>PaginationExtension</code> completed</a></li>
+<li><a href="#210-sortextension">2.10 <code>SortExtension</code></a></li>
+<li><a href="#211-filterrange-on-events">2.11 <code>FilterRange</code> on events</a></li>
+<li><a href="#212-gethash-replaced-by-createhash">2.12 <code>getHash</code> replaced by <code>createHash</code></a></li>
+<li><a href="#213-checked-against-the-client">2.13 Checked against the client</a></li>
+</ul>
+</li>
+<li><a href="#3-whats-new">3. What's new</a>
+<ul>
+<li><a href="#31-modules-and-exports">3.1 Modules and exports</a></li>
+<li><a href="#32-extension-hooks">3.2 Extension hooks</a></li>
+<li><a href="#33-events">3.3 Events</a></li>
+<li><a href="#34-page-reset-on-query-change">3.4 Page reset on query change</a></li>
+<li><a href="#35-es-modules-and-tree-shaking">3.5 ES modules and tree-shaking</a></li>
+</ul>
+</li>
+<li><a href="#4-checklist">4. Checklist</a>
+<ul>
+<li><a href="#41-from-010">4.1 From 0.1.0</a></li>
+<li><a href="#42-from-bl-core-data">4.2 From bl-core <code>data</code></a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="1-breaking-changes-for-010-consumers" class="tsd-anchor-link">1. Breaking changes for 0.1.0 consumers<a href="#1-breaking-changes-for-010-consumers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="11-browsing-and-querying-removed" class="tsd-anchor-link">1.1 browsing and querying removed<a href="#11-browsing-and-querying-removed" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The <code>browsing</code> module (plugin-based <code>DataSource</code>, <code>BrowseItemsPayload</code>) and
+the <code>querying</code> module (the fluent <code>Queryable</code> DSL, <code>QueryableDataSource</code>) no
+longer exist. 1.0.0 exports two modules:</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query-items</code></td>
+<td>the query model: <code>QueryItemsPayload</code>, <code>Filter</code>, <code>FiltersExpression</code>, <code>Sort</code>, <code>Paging</code>, <code>Projection</code>, <code>FilterRange</code>, …</td>
+</tr>
+<tr>
+<td><code>data-source</code></td>
+<td><code>DataSource</code>, its hooks, and the extensions: filtering, pagination, projection, sorting</td>
+</tr>
+</tbody>
+</table>
+<p>The fluent DSL (<code>where(&quot;age&quot;).isGreaterThan(18).and(...).read()</code>) is planned
+for 1.1.0 on top of the new <code>DataSource</code>. Until then, use the extensions
+directly (<a href="#14-the-extensions-plugin-by-plugin">1.4</a>).</p>
+<h3 id="12-query-model" class="tsd-anchor-link">1.2 Query model<a href="#12-query-model" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The payload given to the reader and every type inside it change name and shape.</p>
+<table>
+<thead>
+<tr>
+<th>0.1.0</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BrowseItemsPayload&lt;TItem&gt;</code></td>
+<td><code>QueryItemsPayload&lt;TItem&gt;</code></td>
+</tr>
+<tr>
+<td><code>payload.skip</code> / <code>payload.top</code></td>
+<td><code>payload.paging: Paging</code> (<code>page</code>, <code>itemsPerPage</code>, <code>totalItemsCount</code>)</td>
+</tr>
+<tr>
+<td><code>payload.selects: List&lt;Select&gt;</code></td>
+<td><code>payload.projections: List&lt;Projection&gt;</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>payload.distinct?: boolean</code></td>
+</tr>
+<tr>
+<td><code>Filter = { field, operation: FilterOperations, value }</code></td>
+<td><code>Filter = { field, operator: FilterOperators, value }</code></td>
+</tr>
+<tr>
+<td><code>FilterOperations</code> (string enum of comparisons)</td>
+<td><code>FilterOperators</code> (string enum of comparisons, new values)</td>
+</tr>
+<tr>
+<td><code>FilterOperators { and, or }</code> (numeric enum)</td>
+<td><code>FilterLogics { and = &quot;and&quot;, or = &quot;or&quot; }</code></td>
+</tr>
+<tr>
+<td><code>FiltersExpression = { operator, filters, childExpressions }</code></td>
+<td><code>FiltersExpression = FiltersList | FiltersGroup</code></td>
+</tr>
+<tr>
+<td><code>Sort = { by, asc }</code></td>
+<td><code>Sort = { field, asc }</code></td>
+</tr>
+<tr>
+<td><code>Select = { alias, key?, defaultValue? }</code></td>
+<td><code>Projection = { field }</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Watch the name <code>FilterOperators</code></strong>: in 0.1.0 it was the numeric <code>and</code>/<code>or</code>
+enum, in 1.0.0 it is the enum of comparisons (the old <code>FilterOperations</code>).
+Code written against the old meaning fails to type-check, which is the
+intended way to catch it: every <code>FilterOperators.and</code> becomes
+<code>FilterLogics.and</code>, every <code>FilterOperations.x</code> becomes <code>FilterOperators.x</code>.</p>
+<p>The comparison values follow OData 4 where it defines them, otherwise the
+most common naming (Strapi, Prisma, PrimeVue). Readers that serialise the
+operator must be updated:</p>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>0.1.0 (<code>FilterOperations</code>)</th>
+<th>1.0.0 (<code>FilterOperators</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>equal</code></td>
+<td><code>&quot;eq&quot;</code></td>
+<td><code>&quot;eq&quot;</code></td>
+</tr>
+<tr>
+<td><code>notEqual</code></td>
+<td><code>&quot;neq&quot;</code></td>
+<td><code>&quot;ne&quot;</code></td>
+</tr>
+<tr>
+<td><code>greaterThan</code></td>
+<td><code>&quot;gt&quot;</code></td>
+<td><code>&quot;gt&quot;</code></td>
+</tr>
+<tr>
+<td><code>greaterThanOrEqual</code></td>
+<td><code>&quot;gte&quot;</code></td>
+<td><code>&quot;ge&quot;</code></td>
+</tr>
+<tr>
+<td><code>lessThan</code></td>
+<td><code>&quot;lt&quot;</code></td>
+<td><code>&quot;lt&quot;</code></td>
+</tr>
+<tr>
+<td><code>lessThanOrEqual</code></td>
+<td><code>&quot;lte&quot;</code></td>
+<td><code>&quot;le&quot;</code></td>
+</tr>
+<tr>
+<td><code>contains</code></td>
+<td><code>&quot;contains&quot;</code></td>
+<td><code>&quot;contains&quot;</code></td>
+</tr>
+<tr>
+<td><code>notContains</code></td>
+<td><code>&quot;notcontains&quot;</code></td>
+<td><code>&quot;notContains&quot;</code></td>
+</tr>
+<tr>
+<td><code>in</code></td>
+<td><code>&quot;in&quot;</code></td>
+<td><code>&quot;in&quot;</code></td>
+</tr>
+<tr>
+<td><code>notIn</code></td>
+<td><code>&quot;nin&quot;</code></td>
+<td><code>&quot;notIn&quot;</code></td>
+</tr>
+<tr>
+<td><code>startsWith</code></td>
+<td>—</td>
+<td><code>&quot;startsWith&quot;</code></td>
+</tr>
+<tr>
+<td><code>endsWith</code></td>
+<td>—</td>
+<td><code>&quot;endsWith&quot;</code></td>
+</tr>
+<tr>
+<td><code>equalInsensitive</code></td>
+<td>—</td>
+<td><code>&quot;eqi&quot;</code></td>
+</tr>
+<tr>
+<td><code>range</code></td>
+<td>—</td>
+<td><code>&quot;between&quot;</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>Filter</code> is now a union discriminated by <code>operator</code>: <code>value</code> is a list for
+<code>in</code>/<code>notIn</code> (<code>ListFilter</code>), a <code>Range</code> for <code>range</code> (<code>RangeFilter</code>), a single
+nullable value otherwise (<code>ValueFilter</code>). In 0.1.0 <code>value</code> was <code>Any</code>.</p>
+<p>A filters expression is a tree whose node is <strong>either</strong> a flat list of filters
+<strong>or</strong> a group of expressions, never both; <code>isFiltersList</code> / <code>isFiltersGroup</code>
+tell them apart:</p>
+<pre><code class="ts"><span class="hl-7">// 0.1.0</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">expression</span><span class="hl-1">: </span><span class="hl-6">FiltersExpression</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; = {</span><br/><span class="hl-1">  </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">or</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">filters:</span><span class="hl-1"> [</span><br/><span class="hl-1">    { </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;role&quot;</span><span class="hl-1">, </span><span class="hl-4">operation:</span><span class="hl-1"> </span><span class="hl-4">FilterOperations</span><span class="hl-1">.</span><span class="hl-4">equal</span><span class="hl-1">, </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-2">&quot;admin&quot;</span><span class="hl-1"> },</span><br/><span class="hl-1">  ],</span><br/><span class="hl-1">  </span><span class="hl-4">childExpressions:</span><span class="hl-1"> [</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">and</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-4">filters:</span><span class="hl-1"> [</span><br/><span class="hl-1">        {</span><br/><span class="hl-1">          </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;age&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-4">operation:</span><span class="hl-1"> </span><span class="hl-4">FilterOperations</span><span class="hl-1">.</span><span class="hl-4">greaterThanOrEqual</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">18</span><span class="hl-1">,</span><br/><span class="hl-1">        },</span><br/><span class="hl-1">        { </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;active&quot;</span><span class="hl-1">, </span><span class="hl-4">operation:</span><span class="hl-1"> </span><span class="hl-4">FilterOperations</span><span class="hl-1">.</span><span class="hl-4">equal</span><span class="hl-1">, </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-5">true</span><span class="hl-1"> },</span><br/><span class="hl-1">      ],</span><br/><span class="hl-1">      </span><span class="hl-4">childExpressions:</span><span class="hl-1"> [],</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">  ],</span><br/><span class="hl-1">};</span><br/><br/><span class="hl-7">// 1.0.0 — the same condition: role = admin or (age &gt;= 18 and active)</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">expression</span><span class="hl-1">: </span><span class="hl-6">FiltersExpression</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; = {</span><br/><span class="hl-1">  </span><span class="hl-4">logic:</span><span class="hl-1"> </span><span class="hl-4">FilterLogics</span><span class="hl-1">.</span><span class="hl-4">or</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">groups:</span><span class="hl-1"> [</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-4">logic:</span><span class="hl-1"> </span><span class="hl-4">FilterLogics</span><span class="hl-1">.</span><span class="hl-4">and</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-4">filters:</span><span class="hl-1"> [</span><br/><span class="hl-1">        { </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;role&quot;</span><span class="hl-1">, </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">equal</span><span class="hl-1">, </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-2">&quot;admin&quot;</span><span class="hl-1"> },</span><br/><span class="hl-1">      ],</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-4">logic:</span><span class="hl-1"> </span><span class="hl-4">FilterLogics</span><span class="hl-1">.</span><span class="hl-4">and</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-4">filters:</span><span class="hl-1"> [</span><br/><span class="hl-1">        {</span><br/><span class="hl-1">          </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;age&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">greaterThanOrEqual</span><span class="hl-1">,</span><br/><span class="hl-1">          </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-9">18</span><span class="hl-1">,</span><br/><span class="hl-1">        },</span><br/><span class="hl-1">        { </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;active&quot;</span><span class="hl-1">, </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">equal</span><span class="hl-1">, </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-5">true</span><span class="hl-1"> },</span><br/><span class="hl-1">      ],</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">  ],</span><br/><span class="hl-1">};</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Pagination is expressed as a 1-based page instead of <code>skip</code>/<code>top</code>. A reader
+that needs the offsets computes them:</p>
+<pre><code class="ts"><span class="hl-5">const</span><span class="hl-1"> { </span><span class="hl-8">page</span><span class="hl-1">, </span><span class="hl-8">itemsPerPage</span><span class="hl-1"> } = </span><span class="hl-4">payload</span><span class="hl-1">.</span><span class="hl-4">paging</span><span class="hl-1"> ?? { </span><span class="hl-4">page:</span><span class="hl-1"> </span><span class="hl-9">1</span><span class="hl-1">, </span><span class="hl-4">itemsPerPage:</span><span class="hl-1"> </span><span class="hl-9">0</span><span class="hl-1"> };</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">skip</span><span class="hl-1"> = (</span><span class="hl-4">page</span><span class="hl-1"> - </span><span class="hl-9">1</span><span class="hl-1">) * </span><span class="hl-4">itemsPerPage</span><span class="hl-1">;</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">top</span><span class="hl-1"> = </span><span class="hl-4">itemsPerPage</span><span class="hl-1">; </span><span class="hl-7">// 0 when there is no paging: take everything</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>Select</code> with alias and custom values (<code>selectCustom</code>) has no equivalent:
+<code>Projection</code> only names the field to return.</p>
+<h3 id="13-datasource-plugins-become-extensions" class="tsd-anchor-link">1.3 DataSource: plugins become extensions<a href="#13-datasource-plugins-become-extensions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>0.1.0</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>new DataSource(readDelegate, plugins)</code></td>
+<td><code>new DataSource(reader, extensions)</code></td>
+</tr>
+<tr>
+<td><code>DataSourceReadDelegate&lt;TItem&gt;</code></td>
+<td><code>DataSourceReader&lt;TItem, TResult = List&lt;TItem&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>read(): Promise&lt;List&lt;TItem&gt;&gt;</code></td>
+<td><code>read(): Promise&lt;void&gt;</code>; the items are in <code>items</code> and in the <code>items</code> event</td>
+</tr>
+<tr>
+<td><code>getPlugin(constructor)</code></td>
+<td><code>getExtension(constructor)</code></td>
+</tr>
+<tr>
+<td><code>isPristine</code></td>
+<td><strong>removed</strong></td>
+</tr>
+<tr>
+<td><code>IDataSourcePlugin.beforeRead(payload)</code></td>
+<td><code>IDataSourceExtension.getItemsBefore(payload)</code></td>
+</tr>
+<tr>
+<td><code>IDataSourcePlugin.afterRead(items)</code> (never invoked)</td>
+<td><code>IDataSourceExtension.getItemsAfter(items, payload)</code> (invoked)</td>
+</tr>
+<tr>
+<td><code>DataSourcePlugin</code> with <code>enable()</code> / <code>disable()</code></td>
+<td><strong>removed</strong>: an extension is active while it is in the array</td>
+</tr>
+<tr>
+<td>plugins run in parallel (<code>Promise.all</code>)</td>
+<td>extensions run <strong>in array order</strong>, each receiving the payload of the previous</td>
+</tr>
+<tr>
+<td>no events</td>
+<td><code>DataSource</code> and every extension are <code>Subscribable</code>s of ts-core</td>
+</tr>
+</tbody>
+</table>
+<p>The order of the array is now meaningful and up to you: <code>FilterExtension</code>
+must precede <code>PaginationExtension</code>, so the count reader receives the filters.
+In 0.1.0 the same dependency existed but was hidden by the parallel execution,
+and <code>[pagination, filter]</code> silently counted without filters.</p>
+<pre><code class="ts"><span class="hl-7">// 0.1.0</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">filterPlugin</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DataSourceFilterPlugin</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">paginationPlugin</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DataSourcePaginationPlugin</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-4">countUsers</span><span class="hl-1">);</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">dataSource</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DataSource</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">readUsers</span><span class="hl-1">, [</span><br/><span class="hl-1">  </span><span class="hl-4">filterPlugin</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">paginationPlugin</span><span class="hl-1">,</span><br/><span class="hl-1">]);</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">();</span><br/><br/><span class="hl-7">// 1.0.0</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">filtering</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">paginating</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">);</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">dataSource</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DataSource</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">readUsers</span><span class="hl-1">, [</span><span class="hl-4">filtering</span><span class="hl-1">, </span><span class="hl-4">paginating</span><span class="hl-1">]);</span><br/><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;items&quot;</span><span class="hl-1">, (</span><span class="hl-4">users</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">render</span><span class="hl-1">(</span><span class="hl-4">users</span><span class="hl-1">));</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">(); </span><span class="hl-7">// or: await dataSource.read(); render(dataSource.items);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>A read that fails (reader or hook) raises the <code>error</code> event and rejects, and
+<code>isReading</code> always goes back to <code>false</code>. In 0.1.0 a rejecting <code>beforeRead</code>
+left <code>isReading</code> stuck at <code>true</code>.</p>
+<p>Write the item type on every extension (<code>new FilterExtension&lt;User&gt;()</code>):
+TypeScript cannot infer it from the data source the extension is later passed
+to, and the generic defaults to <code>Any</code>, so a missing type argument compiles but
+loses the field checks.</p>
+<h3 id="14-the-extensions-plugin-by-plugin" class="tsd-anchor-link">1.4 The extensions, plugin by plugin<a href="#14-the-extensions-plugin-by-plugin" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><strong><code>DataSourceFilterPlugin</code> → <code>FilterExtension</code>.</strong> The plugin kept a whole
+<code>FiltersExpression</code> and exposed <code>addFilter(filter, expression?)</code> to add to any
+node; the extension keeps a flat list combined with one logic (<code>and</code> by
+default) and sends it as a <code>FiltersList</code>. Several filters on the same field
+are allowed (in 0.1.0 <code>addFilter</code> replaced the existing one, making an
+interval impossible).</p>
+<table>
+<thead>
+<tr>
+<th>0.1.0</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>filtersExpression</code></td>
+<td><code>filters</code>, <code>logic</code></td>
+</tr>
+<tr>
+<td><code>addFilter(filter, expr?)</code></td>
+<td><code>addFilter(filter)</code></td>
+</tr>
+<tr>
+<td><code>addFilters(filters, expr?)</code></td>
+<td><code>setFilters(filters)</code> (replaces) or several <code>addFilter</code></td>
+</tr>
+<tr>
+<td><code>removeFilter(filter, expr?)</code></td>
+<td><code>removeFilter(filter)</code> (by reference)</td>
+</tr>
+<tr>
+<td><code>clearFilters(expr?)</code></td>
+<td><code>clearFilters()</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>removeFiltersOf(field)</code>, <code>replaceFiltersOf(field, ...filters)</code>, <code>setLogic(logic)</code>, <code>hasFilters</code></td>
+</tr>
+</tbody>
+</table>
+<p>For a tree with nested groups use <code>FilterExtensionWithFixedFilters</code>, whose
+fixed part is any <code>FiltersExpression</code>, or write your own extension (a dozen
+lines, see <a href="#32-extension-hooks">3.2</a>).</p>
+<p><strong><code>DataSourcePaginationPlugin</code> → <code>PaginationExtension</code>.</strong> The constructor
+arguments are swapped and the page is clamped.</p>
+<table>
+<thead>
+<tr>
+<th>0.1.0</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>new DataSourcePaginationPlugin(itemsPerPage, countDelegate)</code></td>
+<td><code>new PaginationExtension(countReader, itemsPerPage, itemsPerPageOptions?, options?)</code></td>
+</tr>
+<tr>
+<td><code>currentPage</code></td>
+<td><code>page</code></td>
+</tr>
+<tr>
+<td><code>goFirstPage()</code>, <code>goLastPage()</code>, <code>goNextPage()</code>, <code>goPrevPage()</code> returning <code>boolean</code></td>
+<td><code>goToFirstPage()</code>, <code>goToLastPage()</code>, <code>goToNextPage()</code>, <code>goToPreviousPage()</code> returning <code>void</code>; listen to the <code>page</code> event</td>
+</tr>
+<tr>
+<td><code>goToPage(page)</code> unbounded</td>
+<td><code>goToPage(page)</code> clamped to <code>[1, lastPage]</code></td>
+</tr>
+<tr>
+<td><code>canGoPrevPage</code></td>
+<td><code>canGoPreviousPage</code></td>
+</tr>
+<tr>
+<td><code>nextPage</code>, <code>prevPage</code></td>
+<td><strong>removed</strong> (<code>page + 1</code> / <code>page - 1</code> when <code>canGo…</code>)</td>
+</tr>
+<tr>
+<td><code>pagesCount</code> (always <code>0</code>)</td>
+<td><strong>removed</strong>, use <code>lastPage</code></td>
+</tr>
+<tr>
+<td><code>setItemsPerPage(n)</code> unchecked</td>
+<td><code>setItemsPerPage(n)</code> throws if <code>n</code> is not a positive integer or not among <code>itemsPerPageOptions</code>; re-clamps the page</td>
+</tr>
+<tr>
+<td><code>payload.skip</code> / <code>payload.top</code></td>
+<td><code>payload.paging</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>DataSourceSortPlugin</code> → <code>SortExtension</code>.</strong> The toggle semantics of
+<code>sortBy(by)</code> (asc, then desc, then removed) are gone: <code>addSort</code> takes an
+explicit <code>Sort</code>.</p>
+<table>
+<thead>
+<tr>
+<th>0.1.0</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>new DataSourceSortPlugin(sortsNumberLimit = null)</code></td>
+<td><code>new SortExtension(sortsLimit = 0, options?)</code>, <code>0</code> = unlimited</td>
+</tr>
+<tr>
+<td><code>sorts: Nullable&lt;List&lt;Sort&gt;&gt;</code> (<code>null</code> initially)</td>
+<td><code>sorts: List&lt;Sort&gt;</code> (<code>[]</code> initially), <code>hasSorts</code></td>
+</tr>
+<tr>
+<td><code>sortBy(by, asc?): Nullable&lt;Sort&gt;</code></td>
+<td><code>addSort({ field, asc }): void</code>; replaces the sort on the same field</td>
+</tr>
+<tr>
+<td><code>removeSort(by)</code></td>
+<td><code>removeSort(field)</code></td>
+</tr>
+<tr>
+<td><code>clearSorts()</code></td>
+<td><code>clearSorts()</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>setSorts(sorts)</code>; <code>SingleSortExtension</code> for one sort at most</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>DataSourceSelectPlugin</code> → <code>ProjectionExtension</code>.</strong> <code>select(key, alias?)</code>
+becomes <code>addProjection({ field })</code>; <code>selectCustom</code> has no equivalent.
+<code>clearSelects()</code> → <code>clearProjections()</code>; also <code>removeProjection(field)</code>,
+<code>setProjections(projections)</code>, <code>hasProjections</code>.</p>
+<p><strong><code>DataSourceSkipTopPlugin</code>: removed.</strong> <code>Paging</code> is the only pagination the
+payload carries: use <code>PaginationExtension</code>. Raw offsets that are not a whole
+page (<code>skip</code> not multiple of <code>top</code>) are not representable; if you need them,
+a custom extension can pass them to your reader outside the payload (e.g.
+through a closure), see <a href="#32-extension-hooks">3.2</a> for the shape of an
+extension.</p>
+<p><strong><code>Queryable</code>, <code>QueryableDataSource</code>: removed</strong>, see <a href="#11-browsing-and-querying-removed">1.1</a>.</p>
+<h3 id="15-peer-dependency-and-entry-points" class="tsd-anchor-link">1.5 Peer dependency and entry points<a href="#15-peer-dependency-and-entry-points" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>0.1.0</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dependencies: { &quot;@mantlebee/ts-core&quot;: &quot;0.13.0&quot; }</code></td>
+<td><code>peerDependencies: { &quot;@mantlebee/ts-core&quot;: &quot;^1.2.1&quot; }</code></td>
+</tr>
+<tr>
+<td>CommonJS bundle only (<code>dist/index.js</code>)</td>
+<td><code>exports</code> map: <code>import</code> → ES modules, <code>require</code> → CommonJS, <code>types</code></td>
+</tr>
+<tr>
+<td>deep imports (<code>@mantlebee/ts-data/dist/...</code>)</td>
+<td>only the package root and <code>@mantlebee/ts-data/package.json</code> resolve</td>
+</tr>
+</tbody>
+</table>
+<p>Install the peer yourself: <code>npm install @mantlebee/ts-data @mantlebee/ts-core</code>.
+ts-core 1.x is itself a breaking upgrade from 0.13.0: see its
+<a href="https://github.com/mantlebee/ts-core/blob/main/docs/release-notes/1.0.0.md">1.0.0 release notes</a>.
+The minimum is 1.2.1 because the <code>DebouncedDelegate</code> of 1.2.0, used by every
+extension for its debounced <code>*Change</code> event, called <code>window.setTimeout</code> and
+failed outside a browser (Node, SSR, Jest without <code>jsdom</code>).</p>
+<hr>
+<h2 id="2-breaking-changes-for-bl-core-consumers" class="tsd-anchor-link">2. Breaking changes for bl-core <code>data</code> consumers<a href="#2-breaking-changes-for-bl-core-consumers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>client/lib/bl-core/src/data</code> is the ancestor of this package: the classes,
+the events and the payload are the same. What follows is the list of
+differences, in decreasing order of impact.</p>
+<h3 id="21-imports" class="tsd-anchor-link">2.1 Imports<a href="#21-imports" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>import { … } from &quot;@/data&quot;</code></td>
+<td><code>import { … } from &quot;@mantlebee/ts-data&quot;</code></td>
+</tr>
+<tr>
+<td><code>import { … } from &quot;@/events&quot;</code></td>
+<td><code>import { … } from &quot;@mantlebee/ts-core&quot;</code></td>
+</tr>
+<tr>
+<td><code>import { getHash } from &quot;@/data&quot;</code></td>
+<td><code>import { createHash } from &quot;@mantlebee/ts-core&quot;</code> (<a href="#212-gethash-replaced-by-createhash">2.12</a>)</td>
+</tr>
+</tbody>
+</table>
+<p>Every class of the package extends <code>Subscribable</code> of ts-core <code>^1.2.1</code>, so
+<code>EventsDefinition</code>, <code>EventSubscription</code>, <code>ISubscribable</code> and friends must come
+from ts-core too: a local copy of the <code>events</code> module produces incompatible
+types.</p>
+<h3 id="22-datasource-one-class-no-named-extensions" class="tsd-anchor-link">2.2 DataSource: one class, no named extensions<a href="#22-datasource-one-class-no-named-extensions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>DataSourceBase</code> is renamed <code>DataSource</code> (<code>IDataSourceBase</code> → <code>IDataSource</code>).
+The former <code>DataSource</code>, with the <code>filtering</code> / <code>paginating</code> / <code>projecting</code> /
+<code>sorting</code> properties resolved by <code>instanceof</code>, is gone: the data source knows
+nothing about the concrete extensions (open-closed). Keep your own references
+to the extensions, or ask for them with <code>getExtension</code>.</p>
+<pre><code class="ts"><span class="hl-7">// bl-core</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">dataSource</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DataSource</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">readUsers</span><span class="hl-1">, [</span><br/><span class="hl-1">  </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(),</span><br/><span class="hl-1">  </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">),</span><br/><span class="hl-1">]);</span><br/><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">?.</span><span class="hl-0">addFilter</span><span class="hl-1">(</span><span class="hl-4">filter</span><span class="hl-1">);</span><br/><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-4">paginating</span><span class="hl-1">?.</span><span class="hl-0">goToPage</span><span class="hl-1">(</span><span class="hl-9">2</span><span class="hl-1">);</span><br/><br/><span class="hl-7">// 1.0.0 — keep the instances…</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">filtering</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">paginating</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">);</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">dataSource</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">DataSource</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">readUsers</span><span class="hl-1">, [</span><span class="hl-4">filtering</span><span class="hl-1">, </span><span class="hl-4">paginating</span><span class="hl-1">]);</span><br/><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">addFilter</span><span class="hl-1">(</span><span class="hl-4">filter</span><span class="hl-1">);</span><br/><span class="hl-4">paginating</span><span class="hl-1">.</span><span class="hl-0">goToPage</span><span class="hl-1">(</span><span class="hl-9">2</span><span class="hl-1">);</span><br/><br/><span class="hl-7">// …or look them up</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">filtering</span><span class="hl-1"> =</span><br/><span class="hl-1">  </span><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">getExtension</span><span class="hl-1">&lt;</span><span class="hl-6">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;&gt;(</span><span class="hl-4">FilterExtension</span><span class="hl-1">);</span><br/><span class="hl-4">filtering</span><span class="hl-1">?.</span><span class="hl-0">addFilter</span><span class="hl-1">(</span><span class="hl-4">filter</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>getExtension</code> takes one type argument (<code>ConstructorOf&lt;TExtension&gt;</code>) instead
+of two. Without it the result is typed with the default item type
+(<code>FilterExtension&lt;Any&gt;</code>: methods available, fields unchecked). The
+<code>extensions</code> argument of the constructor defaults to <code>[]</code>.</p>
+<h3 id="23-read-raises-error-and-rethrows" class="tsd-anchor-link">2.3 read() raises error and rethrows<a href="#23-read-raises-error-and-rethrows" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>bl-core swallowed every error of a read (<code>catch {}</code>), so a failed read looked
+like an empty one. 1.0.0 raises the new <code>error</code> event and <strong>rejects</strong>;
+<code>isReading</code> goes back to <code>false</code> in both cases. Every <code>await dataSource.read()</code>
+that is not already inside a <code>try/catch</code> now needs one, or an <code>error</code> handler
+plus a <code>.catch</code>:</p>
+<pre><code class="ts"><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;error&quot;</span><span class="hl-1">, (</span><span class="hl-4">error</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-0">notify</span><span class="hl-1">(</span><span class="hl-4">error</span><span class="hl-1">));</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">().</span><span class="hl-0">catch</span><span class="hl-1">(() </span><span class="hl-5">=&gt;</span><span class="hl-1"> {}); </span><span class="hl-7">// the handler above already dealt with it</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="24-dispose-is-asynchronous" class="tsd-anchor-link">2.4 dispose() is asynchronous<a href="#24-dispose-is-asynchronous" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>dispose()</code> returns <code>Promise&lt;void&gt;</code> on <code>DataSource</code>, on every extension and
+on <code>FilterRange</code> / <code>FilterRangeLimit</code> (it is <code>Subscribable.dispose()</code> of
+ts-core 1.x). <code>DataSource.dispose()</code> also disposes its extensions, and an
+extension cancels its pending debounced <code>*Change</code> event.</p>
+<pre><code class="ts"><span class="hl-7">// bl-core</span><br/><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">dispose</span><span class="hl-1">();</span><br/><span class="hl-7">// 1.0.0</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">dataSource</span><span class="hl-1">.</span><span class="hl-0">dispose</span><span class="hl-1">();</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="25-getcountbefore-removed" class="tsd-anchor-link">2.5 getCountBefore removed<a href="#25-getcountbefore-removed" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>IDataSourceExtension.getCountBefore</code> was declared and implemented everywhere
+but never invoked by the data source. It is removed from the interface and
+from every extension: a custom extension that implemented it just drops the
+method. The count still happens inside <code>PaginationExtension.getItemsBefore</code>,
+on every read, with the payload built by the previous extensions.</p>
+<h3 id="26-filteroperators-values" class="tsd-anchor-link">2.6 FilterOperators values<a href="#26-filteroperators-values" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The members are the same (plus five new ones), so code using
+<code>FilterOperators.contains</code> keeps compiling, but two <strong>serialised values</strong>
+change. A backend, or a mapping to a UI library, that reads the value must
+follow:</p>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>contains</code></td>
+<td><code>&quot;in&quot;</code></td>
+<td><code>&quot;contains&quot;</code></td>
+</tr>
+<tr>
+<td><code>range</code></td>
+<td><code>&quot;range&quot;</code></td>
+<td><code>&quot;between&quot;</code></td>
+</tr>
+<tr>
+<td><code>in</code> <strong>new</strong></td>
+<td>—</td>
+<td><code>&quot;in&quot;</code></td>
+</tr>
+<tr>
+<td><code>notIn</code> <strong>new</strong></td>
+<td>—</td>
+<td><code>&quot;notIn&quot;</code></td>
+</tr>
+<tr>
+<td><code>notContains</code> <strong>new</strong></td>
+<td>—</td>
+<td><code>&quot;notContains&quot;</code></td>
+</tr>
+<tr>
+<td><code>startsWith</code> <strong>new</strong></td>
+<td>—</td>
+<td><code>&quot;startsWith&quot;</code></td>
+</tr>
+<tr>
+<td><code>endsWith</code> <strong>new</strong></td>
+<td>—</td>
+<td><code>&quot;endsWith&quot;</code></td>
+</tr>
+<tr>
+<td>every other member</td>
+<td>unchanged (<code>&quot;eq&quot;</code>, <code>&quot;ne&quot;</code>, <code>&quot;gt&quot;</code>, <code>&quot;ge&quot;</code>, <code>&quot;lt&quot;</code>, <code>&quot;le&quot;</code>, <code>&quot;eqi&quot;</code>)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Note the swap on <code>&quot;in&quot;</code>: in bl-core it meant <em>contains</em>, now it means <em>is one
+of the list</em>, as in OData.</p>
+<h3 id="27-filter-and-filtersexpression-types" class="tsd-anchor-link">2.7 Filter and FiltersExpression types<a href="#27-filter-and-filtersexpression-types" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>Filter</code> is a union discriminated by <code>operator</code>, so the type of <code>value</code>
+follows the operator:</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Type</th>
+<th><code>value</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>in</code>, <code>notIn</code></td>
+<td><code>ListFilter</code></td>
+<td><code>List&lt;FilterFieldValue&lt;TItem&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>range</code></td>
+<td><code>RangeFilter</code></td>
+<td><code>Range&lt;FilterFieldValue&lt;TItem&gt;&gt;</code></td>
+</tr>
+<tr>
+<td>every other</td>
+<td><code>ValueFilter</code></td>
+<td><code>Nullable&lt;FilterFieldValue&lt;TItem&gt;&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>A <code>range</code> filter was not expressible before (<code>value</code> did not admit a <code>Range</code>).
+Code that builds a filter with an operator <strong>not known at compile time</strong>
+(<code>operator: someVariable</code> typed <code>FilterOperators</code>) no longer type-checks,
+because TypeScript cannot pick the member of the union: narrow the operator
+first, or build the three shapes separately.</p>
+<p><code>FiltersExpression</code> is <code>FiltersList | FiltersGroup</code>. The former
+<code>filters: List&lt;Filter&gt; | FiltersExpression[]</code> (an array whose kind had to be
+guessed from its first element) is split into two properties:</p>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{ logic, filters: List&lt;Filter&gt; }</code></td>
+<td><code>FiltersList = { logic, filters: List&lt;Filter&gt; }</code></td>
+</tr>
+<tr>
+<td><code>{ logic, filters: FiltersExpression[] }</code></td>
+<td><code>FiltersGroup = { logic, groups: List&lt;FiltersExpression&gt; }</code></td>
+</tr>
+<tr>
+<td><code>Array.isArray(expression.filters[0]?.filters)</code> and the like</td>
+<td><code>isFiltersGroup(expression)</code> / <code>isFiltersList(expression)</code></td>
+</tr>
+</tbody>
+</table>
+<p>A reader that translates the expression into a request checks the node kind
+with the type guards:</p>
+<pre><code class="ts"><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">toQuery</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;(</span><span class="hl-4">expression</span><span class="hl-1">: </span><span class="hl-6">FiltersExpression</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;): </span><span class="hl-6">string</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-3">if</span><span class="hl-1"> (</span><span class="hl-0">isFiltersGroup</span><span class="hl-1">(</span><span class="hl-4">expression</span><span class="hl-1">))</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">expression</span><span class="hl-1">.</span><span class="hl-4">groups</span><span class="hl-1">.</span><span class="hl-0">map</span><span class="hl-1">(</span><span class="hl-4">toQuery</span><span class="hl-1">).</span><span class="hl-0">join</span><span class="hl-1">(</span><span class="hl-2">` </span><span class="hl-5">${</span><span class="hl-4">expression</span><span class="hl-10">.</span><span class="hl-4">logic</span><span class="hl-5">}</span><span class="hl-2"> `</span><span class="hl-1">);</span><br/><span class="hl-1">  </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">expression</span><span class="hl-1">.</span><span class="hl-4">filters</span><span class="hl-1">.</span><span class="hl-0">map</span><span class="hl-1">(</span><span class="hl-4">toCondition</span><span class="hl-1">).</span><span class="hl-0">join</span><span class="hl-1">(</span><span class="hl-2">` </span><span class="hl-5">${</span><span class="hl-4">expression</span><span class="hl-10">.</span><span class="hl-4">logic</span><span class="hl-5">}</span><span class="hl-2"> `</span><span class="hl-1">);</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="28-filterextension-and-fixed-filters" class="tsd-anchor-link">2.8 FilterExtension and fixed filters<a href="#28-filterextension-and-fixed-filters" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hasFilters</code> is <code>filters.length &gt; 1</code></td>
+<td><code>filters.length &gt; 0</code>; the payload carries <code>filters</code> iff <code>hasFilters</code></td>
+</tr>
+<tr>
+<td><code>filtersLogic</code> and <code>logic</code> getters</td>
+<td><code>logic</code> only</td>
+</tr>
+<tr>
+<td><code>replaceFiltersOf(field, ...filters: List&lt;Filter&gt;)</code></td>
+<td><code>replaceFiltersOf(field, ...filters: List&lt;Filter&lt;TItem&gt;&gt;)</code></td>
+</tr>
+<tr>
+<td><code>addFilter</code> pushes into the current array</td>
+<td>every mutation assigns a <strong>new</strong> array: do not keep a reference to <code>filters</code> across changes</td>
+</tr>
+<tr>
+<td><code>new FilterExtension()</code></td>
+<td><code>new FilterExtension(options?)</code>, <code>options.changeDelay</code> for the debounce</td>
+</tr>
+</tbody>
+</table>
+<p><code>FilterExtensionWithFixedFilters</code> changes behaviour: the fixed expression is
+<strong>always</strong> sent (bl-core dropped it when the user had no filters), the user
+filters are combined with <code>and</code> by default (was <code>or</code>), and the payload is a
+<code>FiltersGroup</code>:</p>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>new FilterExtensionWithFixedFilters(fixed)</code></td>
+<td><code>new FilterExtensionWithFixedFilters(fixed, { groupsLogic?, changeDelay? })</code></td>
+</tr>
+<tr>
+<td>no user filters → no <code>filters</code> in the payload</td>
+<td><code>payload.filters = fixed</code></td>
+</tr>
+<tr>
+<td>user filters → <code>{ filters: [fixed, user], logic: &quot;and&quot; }</code></td>
+<td><code>{ groups: [fixed, user], logic: groupsLogic }</code> (<code>&quot;and&quot;</code> by default)</td>
+</tr>
+<tr>
+<td>user logic <code>or</code> by default</td>
+<td><code>and</code> by default, change it with <code>setLogic</code></td>
+</tr>
+<tr>
+<td><code>fixedFilters</code> protected</td>
+<td><code>fixedFilters</code>, <code>groupsLogic</code> public getters</td>
+</tr>
+</tbody>
+</table>
+<h3 id="29-paginationextension-completed" class="tsd-anchor-link">2.9 PaginationExtension completed<a href="#29-paginationextension-completed" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>goToFirstPage</code>, <code>goToLastPage</code>, <code>goToNextPage</code>, <code>goToPreviousPage</code> throw <code>Method not implemented</code></td>
+<td>implemented</td>
+</tr>
+<tr>
+<td><code>goToPage(page)</code> accepts any number</td>
+<td>truncated to an integer and clamped to <code>[1, lastPage]</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>lastPage</code>, <code>canGoNextPage</code>, <code>canGoPreviousPage</code></td>
+</tr>
+<tr>
+<td><code>setItemsPerPage(n)</code> and the constructor accept any number</td>
+<td>throw an <code>Error</code> unless <code>n</code> is a positive integer and, when <code>itemsPerPageOptions</code> is set, one of them; the page is re-clamped</td>
+</tr>
+<tr>
+<td><code>page</code>, <code>itemsPerPage</code>, <code>totalItemsCount</code> events on every call</td>
+<td>raised <strong>only when the value changes</strong> (<code>goToPage(1)</code> on page 1 is a no-op)</td>
+</tr>
+<tr>
+<td>the page never changes by itself</td>
+<td>after the count, a page beyond <code>lastPage</code> is clamped (<code>page</code> event); when the query built by the previous extensions differs from the one of the previous read, the page goes back to 1 (<a href="#34-page-reset-on-query-change">3.4</a>)</td>
+</tr>
+<tr>
+<td><code>new PaginationExtension(countReader, itemsPerPage, options?)</code></td>
+<td>fourth argument <code>{ resetPageOnQueryChange?: boolean | List&lt;keyof DataSourcePayload&gt; }</code></td>
+</tr>
+</tbody>
+</table>
+<p>If your code resets the page by hand on <code>filtersChange</code>, it can go: the
+extension does it on the next read. Keeping it is harmless.</p>
+<h3 id="210-sortextension" class="tsd-anchor-link">2.10 SortExtension<a href="#210-sortextension" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>new SortExtension(sortsLimit?: number)</code></td>
+<td><code>new SortExtension(sortsLimit = 0, options?)</code></td>
+</tr>
+<tr>
+<td><code>sortsLimit: Nullable&lt;number&gt;</code>, <code>0</code> becomes <code>null</code></td>
+<td><code>sortsLimit: number</code>, <code>0</code> = unlimited</td>
+</tr>
+<tr>
+<td><code>MultiSortExtension</code></td>
+<td><strong>removed</strong>: <code>SortExtension</code> is already multi-sort</td>
+</tr>
+<tr>
+<td><code>new SingleSortExtension()</code></td>
+<td><code>new SingleSortExtension(options?)</code></td>
+</tr>
+<tr>
+<td><code>addSort(sort, existingSorts, sortsLimit?)</code> util</td>
+<td><code>addSort(sort, existingSorts, sortsLimit = 0)</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>SingleSortExtension.addSort</code> replaces the current sort, whatever its field,
+raising a single <code>addSort</code> event (no implicit <code>clearSorts</code> event).</p>
+<h3 id="211-filterrange-on-events" class="tsd-anchor-link">2.11 FilterRange on events<a href="#211-filterrange-on-events" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>FilterRange</code> and <code>FilterRangeLimit</code> still extended the single-channel
+<code>Subscribable&lt;TData&gt;</code> of ts-core 0.x (<code>subscribe</code> / <code>unsubscribe</code> /
+<code>notifyData</code>), removed in ts-core 1.0.0. They are now
+<code>Subscribable&lt;FilterRangeEvents&lt;TValue&gt;&gt;</code> and
+<code>Subscribable&lt;FilterRangeLimitEvents&lt;TValue&gt;&gt;</code>, with one <code>change</code> event.</p>
+<table>
+<thead>
+<tr>
+<th>bl-core</th>
+<th>1.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>range.subscribe((range) =&gt; …): number</code></td>
+<td><code>range.on(&quot;change&quot;, (range) =&gt; …): EventSubscription</code></td>
+</tr>
+<tr>
+<td><code>range.unsubscribe(id)</code></td>
+<td><code>await subscription.dispose()</code></td>
+</tr>
+<tr>
+<td><code>limit.subscribe((limit) =&gt; …)</code></td>
+<td><code>limit.on(&quot;change&quot;, (limit) =&gt; …)</code></td>
+</tr>
+<tr>
+<td><code>toRange(): Range</code> (<code>Range&lt;Any&gt;</code>)</td>
+<td><code>toRange(): Range&lt;TValue&gt;</code></td>
+</tr>
+<tr>
+<td><code>toRangeLimit(): Nullable&lt;RangeLimit&gt;</code></td>
+<td><code>toRangeLimit(): Nullable&lt;RangeLimit&lt;TValue&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>new FilterRange(min?, max?)</code></td>
+<td><code>new FilterRange(min?, max?, excludeMin?, excludeMax?)</code></td>
+</tr>
+<tr>
+<td><code>dispose(): void</code></td>
+<td><code>dispose(): Promise&lt;void&gt;</code>, disposes both limits too</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="ts"><span class="hl-7">// bl-core</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">price</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterRange</span><span class="hl-1">&lt;</span><span class="hl-6">number</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">id</span><span class="hl-1"> = </span><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-0">subscribe</span><span class="hl-1">((</span><span class="hl-4">range</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">replaceFiltersOf</span><span class="hl-1">(</span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">, </span><span class="hl-0">toFilter</span><span class="hl-1">(</span><span class="hl-4">range</span><span class="hl-1">)),</span><br/><span class="hl-1">);</span><br/><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-0">unsubscribe</span><span class="hl-1">(</span><span class="hl-4">id</span><span class="hl-1">);</span><br/><br/><span class="hl-7">// 1.0.0</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">price</span><span class="hl-1"> = </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterRange</span><span class="hl-1">&lt;</span><span class="hl-6">number</span><span class="hl-1">&gt;();</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">subscription</span><span class="hl-1"> = </span><span class="hl-4">price</span><span class="hl-1">.</span><span class="hl-0">on</span><span class="hl-1">(</span><span class="hl-2">&quot;change&quot;</span><span class="hl-1">, (</span><span class="hl-4">range</span><span class="hl-1">) </span><span class="hl-5">=&gt;</span><br/><span class="hl-1">  </span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">replaceFiltersOf</span><span class="hl-1">(</span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">, {</span><br/><span class="hl-1">    </span><span class="hl-4">field:</span><span class="hl-1"> </span><span class="hl-2">&quot;price&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-4">operator:</span><span class="hl-1"> </span><span class="hl-4">FilterOperators</span><span class="hl-1">.</span><span class="hl-4">range</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-4">value:</span><span class="hl-1"> </span><span class="hl-4">range</span><span class="hl-1">,</span><br/><span class="hl-1">  }),</span><br/><span class="hl-1">);</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">subscription</span><span class="hl-1">.</span><span class="hl-0">dispose</span><span class="hl-1">();</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>change</code> is raised only when a limit actually changes (same value and same
+exclusion → no event), as before.</p>
+<h3 id="212-gethash-replaced-by-createhash" class="tsd-anchor-link">2.12 getHash replaced by createHash<a href="#212-gethash-replaced-by-createhash" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The <code>hashing</code> module is not part of the package. ts-core <code>^1.1.0</code> exposes
+<code>createHash(data): string</code>, which also handles <code>undefined</code> (where <code>getHash</code>
+threw). The result is a <strong>string</strong> (8 hex characters) instead of a <code>number</code>:
+hashes persisted or compared as numbers must be recomputed.</p>
+<pre><code class="ts"><span class="hl-7">// bl-core</span><br/><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">getHash</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@/data&quot;</span><span class="hl-1">;</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">key</span><span class="hl-1">: </span><span class="hl-6">number</span><span class="hl-1"> = </span><span class="hl-0">getHash</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span><br/><span class="hl-7">// 1.0.0</span><br/><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">createHash</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-core&quot;</span><span class="hl-1">;</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-8">key</span><span class="hl-1">: </span><span class="hl-6">string</span><span class="hl-1"> = </span><span class="hl-0">createHash</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="213-checked-against-the-client" class="tsd-anchor-link">2.13 Checked against the client<a href="#213-checked-against-the-client" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The migration was rehearsed on a throwaway copy of the <code>client</code> monorepo:
+<code>bl-core/src/data</code> replaced by <code>export * from &quot;@mantlebee/ts-data&quot;</code>,
+<code>@mantlebee/ts-core</code> bumped from 0.31.0 to 1.2.0 in every workspace package,
+<code>pnpm install</code>, <code>vite build</code> of the four libraries and <code>tsc --noEmit</code> in each
+package. What it showed, beyond the sections above:</p>
+<ul>
+<li><strong>ts-core <code>^1.2.1</code> first.</strong> pnpm resolves the peer dependency to the version
+the workspace package already has, so with ts-core 0.31.0 the package would
+run against a <code>Subscribable</code> without <code>_eventBus</code>, a <code>DebouncedDelegate</code>
+without <code>abort</code> and no <code>createHash</code>. <code>bl-core</code> compiles unchanged against
+ts-core 1.2.0; its local <code>events</code> module can stay for its own classes, but
+the types it declares are not the ones the package uses (<a href="#21-imports">2.1</a>).</li>
+<li><code>vite build</code> succeeds for <code>bl-core</code>, <code>ui-core</code>, <code>ui-vue3</code> and <code>ui-primevue3</code>;
+<code>bl-core</code> and <code>ui-vue3</code> have no type error at all.</li>
+<li><strong>Named extensions</strong> (<a href="#22-datasource-one-class-no-named-extensions">2.2</a>):
+18 usages in <code>ui-primevue3/src/components/table-data-source</code> (<code>events/page.ts</code>,
+<code>events/sort.ts</code>, <code>component.vue</code> with <code>dataSource.sorting?.sorts</code>) and in
+<code>app/example/src/components/table/adapter</code> (<code>filtering/models.ts</code>,
+<code>pagination/models.ts</code>, <code>sorting/models.ts</code>, <code>utils.ts</code>). The props and
+the adapter options have to carry the extensions next to the <code>IDataSource</code>,
+or look them up with <code>getExtension</code>.</li>
+<li><strong><code>FiltersExpression.filters</code></strong> (<a href="#27-filter-and-filtersexpression-types">2.7</a>):
+<code>appendFiltering</code> in <code>app/example/src/components/table/__stories__/stories.ts</code>
+and <code>convertExpressionToRangeFilters</code> in
+<code>app/example/src/components/table/components/filters/utils.ts</code> must branch
+with <code>isFiltersList</code> / <code>isFiltersGroup</code>.</li>
+<li><strong><code>Range</code> is not <code>FilterRange</code></strong> (<a href="#27-filter-and-filtersexpression-types">2.7</a>,
+<a href="#211-filterrange-on-events">2.11</a>): the <code>value</code> of a <code>range</code> filter is a
+plain <code>Range</code>. In <code>components/filters/utils.ts</code>, <code>convertFilterToRangeFilter</code>
+must rebuild the instance from it
+(<code>new FilterRange(value.min?.value, value.max?.value, value.min?.exclude, value.max?.exclude)</code>)
+and <code>convertFilterRangeToFilter</code> must send <code>filterRange.toRange()</code>: a
+<code>FilterRange</code> is structurally accepted as a <code>Range</code> (its limits expose
+<code>value</code> and <code>exclude</code>), so it compiles, but it would serialise the instance
+with its private fields.</li>
+<li><strong><code>useDataSourceApi</code></strong> (<code>ui-vue3/src/apis/data-source/api.ts</code>) sets
+<code>isReading</code> by hand around <code>read().then(…)</code>: a rejected read now leaves it
+<code>true</code> and the rejection unhandled. Listen to the <code>isReading</code> and <code>items</code>
+events instead, or add a <code>.catch</code> (<a href="#23-read-raises-error-and-rethrows">2.3</a>).</li>
+<li><code>getDataTableAdapter</code> calls <code>dataSource.dispose()</code> without awaiting it:
+harmless (<a href="#24-dispose-is-asynchronous">2.4</a>).</li>
+</ul>
+<p>Not covered by the rehearsal: the <code>.vue</code> templates (plain <code>tsc</code>, not
+<code>vue-tsc</code>), the storybooks and the runtime behaviour.</p>
+<hr>
+<h2 id="3-whats-new" class="tsd-anchor-link">3. What's new<a href="#3-whats-new" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="31-modules-and-exports" class="tsd-anchor-link">3.1 Modules and exports<a href="#31-modules-and-exports" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Everything is re-exported flat from <code>@mantlebee/ts-data</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Exports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query-items</code></td>
+<td><code>QueryItemsPayload</code></td>
+</tr>
+<tr>
+<td><code>query-items/filtering</code></td>
+<td><code>Filter</code>, <code>ListFilter</code>, <code>RangeFilter</code>, <code>ValueFilter</code>, <code>FilterFieldValue</code>, <code>FilterOperators</code>, <code>FilterListOperators</code>, <code>FilterRangeOperators</code>, <code>FilterValueOperators</code>, <code>FilterLogics</code>, <code>FiltersExpression</code>, <code>FiltersList</code>, <code>FiltersGroup</code>, <code>isFiltersList</code>, <code>isFiltersGroup</code>, <code>Range</code>, <code>RangeLimit</code>, <code>FilterRange</code>, <code>FilterRangeLimit</code>, <code>FilterRangeEvents</code>, <code>FilterRangeLimitEvents</code></td>
+</tr>
+<tr>
+<td><code>query-items/pagination</code></td>
+<td><code>Paging</code></td>
+</tr>
+<tr>
+<td><code>query-items/projection</code></td>
+<td><code>Projection</code></td>
+</tr>
+<tr>
+<td><code>query-items/sorting</code></td>
+<td><code>Sort</code>, <code>addSort</code>, <code>removeSort</code></td>
+</tr>
+<tr>
+<td><code>data-source</code></td>
+<td><code>DataSource</code>, <code>IDataSource</code>, <code>IDataSourceExtension</code>, <code>DataSourceExtension</code>, <code>DataSourceEvents</code>, <code>DataSourceExtensionOptions</code>, <code>DataSourceExtensionChangeDelayDefault</code>, <code>DataSourcePayload</code>, <code>DataSourceReader</code></td>
+</tr>
+<tr>
+<td><code>data-source/filtering</code></td>
+<td><code>FilterExtension</code>, <code>FilterExtensionWithFixedFilters</code>, <code>IFilterExtension</code>, <code>FilterExtensionEvents</code>, <code>FilterExtensionWithFixedFiltersOptions</code></td>
+</tr>
+<tr>
+<td><code>data-source/pagination</code></td>
+<td><code>PaginationExtension</code>, <code>IPaginationExtension</code>, <code>PaginationExtensionEvents</code>, <code>PaginationExtensionOptions</code></td>
+</tr>
+<tr>
+<td><code>data-source/projection</code></td>
+<td><code>ProjectionExtension</code>, <code>IProjectionExtension</code>, <code>ProjectionExtensionEvents</code></td>
+</tr>
+<tr>
+<td><code>data-source/sorting</code></td>
+<td><code>SortExtension</code>, <code>SingleSortExtension</code>, <code>ISortExtension</code>, <code>SortExtensionEvents</code></td>
+</tr>
+</tbody>
+</table>
+<p>Every export has TSDoc; the generated API reference is published at
+<a href="https://mantlebee.github.io/ts-data/">mantlebee.github.io/ts-data</a>.</p>
+<h3 id="32-extension-hooks" class="tsd-anchor-link">3.2 Extension hooks<a href="#32-extension-hooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>IDataSourceExtension</code> has two optional hooks, invoked in array order:</p>
+<ol>
+<li><code>getItemsBefore(payload)</code>: adds the contribution of the extension to the
+payload and returns it for the next extension;</li>
+<li>the reader resolves the payload into the items;</li>
+<li><code>getItemsAfter(items, payload)</code> (<strong>new</strong>): transforms the items and
+returns them for the next extension.</li>
+</ol>
+<p>An error thrown anywhere in the cycle propagates as a read error
+(<a href="#23-read-raises-error-and-rethrows">2.3</a>). A custom extension is any
+<code>ISubscribable</code> with those hooks; <code>DataSourceExtension</code> is the optional base
+class used by the package, with a debounced <code>*Change</code> event
+(<code>options.changeDelay</code>, default <code>DataSourceExtensionChangeDelayDefault</code> = 100 ms):</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">EventsDefinition</span><span class="hl-1">, </span><span class="hl-4">Subscribable</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-core&quot;</span><span class="hl-1">;</span><br/><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">DataSourcePayload</span><span class="hl-1">, </span><span class="hl-4">IDataSourceExtension</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;@mantlebee/ts-data&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-7">/** Drops the duplicated items and asks the storage to do the same. */</span><br/><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">DistinctExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">Subscribable</span><span class="hl-1">&lt;</span><span class="hl-6">EventsDefinition</span><span class="hl-1">&gt;</span><br/><span class="hl-1">  </span><span class="hl-5">implements</span><span class="hl-1"> </span><span class="hl-6">IDataSourceExtension</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;</span><br/><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">getItemsBefore</span><span class="hl-1">(</span><span class="hl-4">payload</span><span class="hl-1">: </span><span class="hl-6">DataSourcePayload</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;) {</span><br/><span class="hl-1">    </span><span class="hl-4">payload</span><span class="hl-1">.</span><span class="hl-4">distinct</span><span class="hl-1"> = </span><span class="hl-5">true</span><span class="hl-1">;</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">payload</span><span class="hl-1">;</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">getItemsAfter</span><span class="hl-1">(</span><span class="hl-4">items</span><span class="hl-1">: </span><span class="hl-6">TItem</span><span class="hl-1">[]) {</span><br/><span class="hl-1">    </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-4">Array</span><span class="hl-1">.</span><span class="hl-0">from</span><span class="hl-1">(</span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">Set</span><span class="hl-1">(</span><span class="hl-4">items</span><span class="hl-1">));</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="33-events" class="tsd-anchor-link">3.3 Events<a href="#33-events" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Every class is a <code>Subscribable</code> of ts-core: <code>on(event, handler)</code> returns an
+<code>EventSubscription</code>, <code>dispose()</code> it to stop listening. Each mutation raises its
+own event synchronously; the <code>*Change</code> events are debounced, so one handler
+can react once to a burst of changes (e.g. read again).</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Events (arguments)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DataSource</code></td>
+<td><code>isReading (boolean)</code>, <code>items (List&lt;TItem&gt;)</code>, <code>error (unknown)</code> <strong>new</strong></td>
+</tr>
+<tr>
+<td><code>FilterExtension</code></td>
+<td><code>addFilter (filter, filters)</code>, <code>removeFilter (filter, filters)</code>, <code>removeFiltersOf (field, filters)</code>, <code>replaceFiltersOf (field, filters)</code>, <code>setFilters (filters)</code>, <code>clearFilters ()</code>, <code>setLogic (logic)</code>, <code>filtersChange (filters, hasFilters)</code> debounced</td>
+</tr>
+<tr>
+<td><code>PaginationExtension</code></td>
+<td><code>page (page)</code>, <code>itemsPerPage (itemsPerPage)</code>, <code>totalItemsCount (count)</code>, each only on an actual change</td>
+</tr>
+<tr>
+<td><code>ProjectionExtension</code></td>
+<td><code>addProjection (projection, projections)</code>, <code>removeProjection (field, projections)</code>, <code>setProjections (projections)</code>, <code>clearProjections ()</code>, <code>projectionsChange (projections, hasProjections)</code> debounced</td>
+</tr>
+<tr>
+<td><code>SortExtension</code></td>
+<td><code>addSort (sort, sorts)</code>, <code>removeSort (field, sorts)</code>, <code>setSorts (sorts)</code>, <code>clearSorts ()</code>, <code>sortsChange (sorts, hasSorts)</code> debounced</td>
+</tr>
+<tr>
+<td><code>FilterRange</code></td>
+<td><code>change (Range&lt;TValue&gt;)</code></td>
+</tr>
+<tr>
+<td><code>FilterRangeLimit</code></td>
+<td><code>change (Nullable&lt;RangeLimit&lt;TValue&gt;&gt;)</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="34-page-reset-on-query-change" class="tsd-anchor-link">3.4 Page reset on query change<a href="#34-page-reset-on-query-change" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>PaginationExtension</code> goes back to page 1 when the query built by the
+previous extensions (filters, sorts, projections, anything a custom extension
+adds) differs from the one of the previous read: a page chosen under other
+filters is never requested again. The comparison is by hash
+(<code>createHash</code> of ts-core), so a filter removed and added back is not a change,
+and the first read never resets. The option <code>resetPageOnQueryChange</code> tunes it:</p>
+<pre><code class="ts"><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">); </span><span class="hl-7">// default: every property but `paging`</span><br/><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-5">undefined</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">resetPageOnQueryChange:</span><span class="hl-1"> [</span><span class="hl-2">&quot;filters&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">}); </span><span class="hl-7">// filters only</span><br/><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-5">undefined</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">resetPageOnQueryChange:</span><span class="hl-1"> </span><span class="hl-5">false</span><span class="hl-1">,</span><br/><span class="hl-1">}); </span><span class="hl-7">// never</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The pagination stays decoupled from <code>FilterExtension</code>: it only looks at the
+payload it receives, so it works with any extension placed before it.</p>
+<h3 id="35-es-modules-and-tree-shaking" class="tsd-anchor-link">3.5 ES modules and tree-shaking<a href="#35-es-modules-and-tree-shaking" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The package ships a CommonJS bundle (<code>require</code>) and ES modules, one file per
+source module (<code>import</code>), with <code>sideEffects: false</code> and enums compiled as
+pure expressions. A bundler keeps only what you import: a project that uses
+<code>FilterRange</code> alone does not ship <code>DataSource</code> or the extensions. The only
+runtime dependency is the <code>@mantlebee/ts-core</code> peer.</p>
+<hr>
+<h2 id="4-checklist" class="tsd-anchor-link">4. Checklist<a href="#4-checklist" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="41-from-010" class="tsd-anchor-link">4.1 From 0.1.0<a href="#41-from-010" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ol>
+<li>Update the dependencies: <code>npm install @mantlebee/ts-data@^1.0.0 @mantlebee/ts-core@^1.2.1</code>
+and migrate to ts-core 1.x first (its own release notes).</li>
+<li>Rename the query types: <code>BrowseItemsPayload</code> → <code>QueryItemsPayload</code>,
+<code>Filter.operation</code> → <code>operator</code>, <code>FilterOperations</code> → <code>FilterOperators</code>,
+<code>FilterOperators.and/or</code> → <code>FilterLogics.and/or</code>, <code>Sort.by</code> → <code>field</code>,
+<code>Select</code> → <code>Projection</code> (<a href="#12-query-model">1.2</a>).</li>
+<li>Rebuild the filters expressions as <code>FiltersList</code> / <code>FiltersGroup</code> nodes
+and update the reader that serialises them, operator values included
+(<a href="#12-query-model">1.2</a>).</li>
+<li>Replace <code>skip</code> / <code>top</code> with <code>paging</code> in the reader (<a href="#12-query-model">1.2</a>).</li>
+<li>Replace the plugins with the extensions, choose the array order
+(filtering before pagination), take the items from the <code>items</code> event or
+property (<a href="#13-datasource-plugins-become-extensions">1.3</a>,
+<a href="#14-the-extensions-plugin-by-plugin">1.4</a>).</li>
+<li>Rewrite <code>Queryable</code> queries with the extensions until 1.1.0
+(<a href="#11-browsing-and-querying-removed">1.1</a>).</li>
+<li>Run <code>tsc --noEmit</code>: every removed or renamed name shows up here.</li>
+</ol>
+<h3 id="42-from-bl-core" class="tsd-anchor-link">4.2 From bl-core <code>data</code><a href="#42-from-bl-core" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ol>
+<li>Install <code>@mantlebee/ts-data@^1.0.0</code> with <code>@mantlebee/ts-core@^1.2.1</code>;
+point <code>@/data</code> imports to the package and <code>@/events</code> ones to ts-core
+(<a href="#21-imports">2.1</a>).</li>
+<li>Replace <code>dataSource.filtering</code> / <code>paginating</code> / <code>projecting</code> / <code>sorting</code>
+with your own references or <code>getExtension</code> (<a href="#22-datasource-one-class-no-named-extensions">2.2</a>).</li>
+<li>Wrap <code>read()</code> in a <code>try/catch</code>, or add an <code>error</code> handler and a <code>.catch</code>
+(<a href="#23-read-raises-error-and-rethrows">2.3</a>); <code>await</code> every <code>dispose()</code>
+(<a href="#24-dispose-is-asynchronous">2.4</a>).</li>
+<li>Drop <code>getCountBefore</code> from custom extensions (<a href="#25-getcountbefore-removed">2.5</a>).</li>
+<li>Update whatever reads the operator values: <code>&quot;in&quot;</code> now means <em>in list</em>,
+<code>contains</code> is <code>&quot;contains&quot;</code>, <code>range</code> is <code>&quot;between&quot;</code> (<a href="#26-filteroperators-values">2.6</a>).</li>
+<li>Update the readers that walk a <code>FiltersExpression</code>: <code>groups</code> and the type
+guards instead of the mixed <code>filters</code> array (<a href="#27-filter-and-filtersexpression-types">2.7</a>).</li>
+<li>Check the fixed filters: always sent, <code>and</code> by default, <code>FiltersGroup</code> shape
+(<a href="#28-filterextension-and-fixed-filters">2.8</a>).</li>
+<li>Remove workarounds for the unimplemented page navigation and, if you want,
+the manual page reset on filters change (<a href="#29-paginationextension-completed">2.9</a>).</li>
+<li><code>MultiSortExtension</code> → <code>SortExtension</code>; <code>sortsLimit</code> is a number
+(<a href="#210-sortextension">2.10</a>).</li>
+<li><code>FilterRange</code> / <code>FilterRangeLimit</code>: <code>subscribe</code> → <code>on(&quot;change&quot;)</code>,
+<code>unsubscribe(id)</code> → <code>subscription.dispose()</code> (<a href="#211-filterrange-on-events">2.11</a>).</li>
+<li><code>getHash</code> → <code>createHash</code> of ts-core, <code>number</code> → <code>string</code> (<a href="#212-gethash-replaced-by-createhash">2.12</a>).</li>
+<li>Run <code>tsc --noEmit</code>.</li>
+</ol>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#100-upgrading-from-010-and-from-bl-core"><span>1.0.0 — upgrading from 0.1.0 and from bl-<wbr/>core </span></a>
+<ul>
+<li><a href="#1-breaking-changes-for-010-consumers"><span>1. <wbr/>Breaking changes for 0.1.0 consumers</span></a></li>
+<li>
+<ul>
+<li><a href="#11-browsing-and-querying-removed"><span>1.1 browsing and querying removed</span></a></li>
+<li><a href="#12-query-model"><span>1.2 <wbr/>Query model</span></a></li>
+<li><a href="#13-datasource-plugins-become-extensions"><span>1.3 <wbr/>Data<wbr/>Source: plugins become extensions</span></a></li>
+<li><a href="#14-the-extensions-plugin-by-plugin"><span>1.4 <wbr/>The extensions, plugin by plugin</span></a></li>
+<li><a href="#15-peer-dependency-and-entry-points"><span>1.5 <wbr/>Peer dependency and entry points</span></a></li></ul></li>
+<li><a href="#2-breaking-changes-for-bl-core-consumers"><span>2. <wbr/>Breaking changes for bl-<wbr/>core  consumers</span></a></li>
+<li>
+<ul>
+<li><a href="#21-imports"><span>2.1 <wbr/>Imports</span></a></li>
+<li><a href="#22-datasource-one-class-no-named-extensions"><span>2.2 <wbr/>Data<wbr/>Source: one class, no named extensions</span></a></li>
+<li><a href="#23-read-raises-error-and-rethrows"><span>2.3 read() raises error and rethrows</span></a></li>
+<li><a href="#24-dispose-is-asynchronous"><span>2.4 dispose() is asynchronous</span></a></li>
+<li><a href="#25-getcountbefore-removed"><span>2.5 get<wbr/>Count<wbr/>Before removed</span></a></li>
+<li><a href="#26-filteroperators-values"><span>2.6 <wbr/>Filter<wbr/>Operators values</span></a></li>
+<li><a href="#27-filter-and-filtersexpression-types"><span>2.7 <wbr/>Filter and <wbr/>Filters<wbr/>Expression types</span></a></li>
+<li><a href="#28-filterextension-and-fixed-filters"><span>2.8 <wbr/>Filter<wbr/>Extension and fixed filters</span></a></li>
+<li><a href="#29-paginationextension-completed"><span>2.9 <wbr/>Pagination<wbr/>Extension completed</span></a></li>
+<li><a href="#210-sortextension"><span>2.10 <wbr/>Sort<wbr/>Extension</span></a></li>
+<li><a href="#211-filterrange-on-events"><span>2.11 <wbr/>Filter<wbr/>Range on events</span></a></li>
+<li><a href="#212-gethash-replaced-by-createhash"><span>2.12 get<wbr/>Hash replaced by create<wbr/>Hash</span></a></li>
+<li><a href="#213-checked-against-the-client"><span>2.13 <wbr/>Checked against the client</span></a></li></ul></li>
+<li><a href="#3-whats-new"><span>3. <wbr/>What&#39;s new</span></a></li>
+<li>
+<ul>
+<li><a href="#31-modules-and-exports"><span>3.1 <wbr/>Modules and exports</span></a></li>
+<li><a href="#32-extension-hooks"><span>3.2 <wbr/>Extension hooks</span></a></li>
+<li><a href="#33-events"><span>3.3 <wbr/>Events</span></a></li>
+<li><a href="#34-page-reset-on-query-change"><span>3.4 <wbr/>Page reset on query change</span></a></li>
+<li><a href="#35-es-modules-and-tree-shaking"><span>3.5 <wbr/>ES modules and tree-<wbr/>shaking</span></a></li></ul></li>
+<li><a href="#4-checklist"><span>4. <wbr/>Checklist</span></a></li>
+<li>
+<ul>
+<li><a href="#41-from-010"><span>4.1 <wbr/>From 0.1.0</span></a></li>
+<li><a href="#42-from-bl-core"><span>4.2 <wbr/>From bl-<wbr/>core </span></a></li></ul></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">@mantlebee/ts-data</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>IFilterExtension | @mantlebee/ts-data</title><meta name="description" content="Documentation for @mantlebee/ts-data"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">@mantlebee/ts-data</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/index.html">index</a></li>
+<li><a href="" aria-current="page">IFilterExtension</a></li></ul>
+<h1>Interface IFilterExtension&lt;TItem&gt;</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>Extension that adds a <a href="../types/index.FiltersExpression.html" class="tsd-kind-type-alias">FiltersExpression</a> to the payload. Every
+mutation raises its own event at once and schedules the debounced
+<code>filtersChange</code> event (see <a href="../types/index.FilterExtensionEvents.html" class="tsd-kind-type-alias">FilterExtensionEvents</a>).</p>
+</div></section>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">IFilterExtension</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-type">Any</span><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#filters">filters</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#hasfilters">hasFilters</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#logic">logic</a><span class="tsd-signature-symbol">:</span> <a href="../enums/index.FilterLogics.html" class="tsd-signature-type tsd-kind-enum">FilterLogics</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#addfilter-1">addFilter</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">filter</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#buildpayload-1">buildPayload</a><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#clearfilters-1">clearFilters</a><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#dispose-1">dispose</a><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#on-1">on</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">event</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="index.IDataSourceExtension.html#ontkey">TKey</a><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">handler</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">EventHandler</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.FilterExtensionEvents.html" class="tsd-signature-type tsd-kind-type-alias">FilterExtensionEvents</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="index.IDataSourceExtension.html#ontkey">TKey</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">IDisposable</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#readitems-1">readItems</a><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">next</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourceReadNext.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReadNext</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#removefilter-1">removeFilter</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">filter</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#removefiltersof-1">removeFiltersOf</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">field</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">KeyOf</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#replacefiltersof-1">replaceFiltersOf</a><span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">field</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">KeyOf</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-signature-symbol">...</span><span class="tsd-kind-parameter">filters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#setfilters-1">setFilters</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">filters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-call-signature" href="#setlogic-1">setLogic</a><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">logic</span><span class="tsd-signature-symbol">:</span> <a href="../enums/index.FilterLogics.html" class="tsd-signature-type tsd-kind-enum">FilterLogics</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="titem"><span class="tsd-kind-type-parameter">TItem</span> = <span class="tsd-signature-type">Any</span></span>
+<div class="tsd-comment tsd-typography"><p>Type of the items.</p>
+</div></li></ul></section>
+<section class="tsd-panel tsd-hierarchy" data-refl="71">
+<h4>Hierarchy (<a href="../hierarchy.html#index.IFilterExtension">View Summary</a>)</h4>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><a href="index.IDataSourceExtension.html" class="tsd-signature-type tsd-kind-interface">IDataSourceExtension</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">,</span> <a href="../types/index.FilterExtensionEvents.html" class="tsd-signature-type tsd-kind-type-alias">FilterExtensionEvents</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">IFilterExtension</span></li></ul></li></ul></section>
+<section class="tsd-panel">
+<h4>Implemented by</h4>
+<ul class="tsd-hierarchy">
+<li><a href="../classes/index.FilterExtension.html" class="tsd-signature-type tsd-kind-class">FilterExtension</a></li>
+<li><a href="../classes/index.FilterExtensionWithFixedFilters.html" class="tsd-signature-type tsd-kind-class">FilterExtensionWithFixedFilters</a></li></ul></section><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L14">src/data-source/filtering/interfaces.ts:14</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#filters" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>filters</span></a>
+<a href="#hasfilters" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>has<wbr/>Filters</span></a>
+<a href="#logic" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>logic</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#addfilter" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Filter</span></a>
+<a href="#buildpayload" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Payload?</span></a>
+<a href="#clearfilters" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>clear<wbr/>Filters</span></a>
+<a href="#dispose" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>dispose</span></a>
+<a href="#on" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>on</span></a>
+<a href="#readitems" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>read<wbr/>Items?</span></a>
+<a href="#removefilter" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Filter</span></a>
+<a href="#removefiltersof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Filters<wbr/>Of</span></a>
+<a href="#replacefiltersof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>replace<wbr/>Filters<wbr/>Of</span></a>
+<a href="#setfilters" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Filters</span></a>
+<a href="#setlogic" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Logic</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="filters"><code class="tsd-tag">Readonly</code><span>filters</span><a href="#filters" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">filters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
+<div class="tsd-comment tsd-typography"><p>Current filters, in insertion order.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L19">src/data-source/filtering/interfaces.ts:19</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="hasfilters"><code class="tsd-tag">Readonly</code><span>has<wbr/>Filters</span><a href="#hasfilters" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">hasFilters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p><code>true</code> when at least one filter is set.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L21">src/data-source/filtering/interfaces.ts:21</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="logic"><code class="tsd-tag">Readonly</code><span>logic</span><a href="#logic" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">logic</span><span class="tsd-signature-symbol">:</span> <a href="../enums/index.FilterLogics.html" class="tsd-signature-type tsd-kind-enum">FilterLogics</a></div>
+<div class="tsd-comment tsd-typography"><p>Logic combining the filters.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L23">src/data-source/filtering/interfaces.ts:23</a></li></ul></aside></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="addfilter"><span>add<wbr/>Filter</span><a href="#addfilter" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="addfilter-1"><span class="tsd-kind-call-signature">addFilter</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">filter</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#addfilter-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Appends a filter. Several filters on the same field are allowed (e.g. an
+interval as two filters).</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">filter</span>: <a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Filter to add.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L29">src/data-source/filtering/interfaces.ts:29</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="buildpayload"><code class="tsd-tag">Optional</code><span>build<wbr/>Payload</span><a href="#buildpayload" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="buildpayload-1"><span class="tsd-kind-call-signature">buildPayload</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><a href="#buildpayload-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Adds the contribution of the extension to the payload. Build phase, run
+in the order of the keys and completed before any item is read.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">payload</span>: <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Payload built by the previous extensions.</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">signal</span>: <span class="tsd-signature-type">AbortSignal</span></span>
+<div class="tsd-comment tsd-typography"><p>Signal of the read, aborted when the read is superseded.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4><p>the payload for the next extension.</p>
+<aside class="tsd-sources">
+<p>Inherited from <a href="index.IDataSourceExtension.html">IDataSourceExtension</a>.<a href="index.IDataSourceExtension.html#buildpayload">buildPayload</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/extensions/interfaces.ts#L83">src/data-source/extensions/interfaces.ts:83</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="clearfilters"><span>clear<wbr/>Filters</span><a href="#clearfilters" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="clearfilters-1"><span class="tsd-kind-call-signature">clearFilters</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#clearfilters-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Removes every filter.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L33">src/data-source/filtering/interfaces.ts:33</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited tsd-is-external">
+<h3 class="tsd-anchor-link" id="dispose"><span>dispose</span><a href="#dispose" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited tsd-is-external">
+<li class="tsd-is-inherited tsd-is-external">
+<div class="tsd-signature tsd-anchor-link" id="dispose-1"><span class="tsd-kind-call-signature">dispose</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#dispose-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Releases the held resource. Implementations should be safe to call more than
+once.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><p>a promise that settles once the resource has been released.</p>
+<aside class="tsd-sources">
+<p>Inherited from <a href="index.IDataSourceExtension.html">IDataSourceExtension</a>.<a href="index.IDataSourceExtension.html#dispose">dispose</a></p>
+<ul>
+<li>Defined in node_modules/@mantlebee/ts-core/dist/src/common/classes/disposable/interfaces.d.ts:11</li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited tsd-is-external">
+<h3 class="tsd-anchor-link" id="on"><span>on</span><a href="#on" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited tsd-is-external">
+<li class="tsd-is-inherited tsd-is-external">
+<div class="tsd-signature tsd-anchor-link" id="on-1"><span class="tsd-kind-call-signature">on</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#ontkey">TKey</a> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">event</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="index.IDataSourceExtension.html#ontkey">TKey</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">handler</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">EventHandler</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.FilterExtensionEvents.html" class="tsd-signature-type tsd-kind-type-alias">FilterExtensionEvents</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="index.IDataSourceExtension.html#ontkey">TKey</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">IDisposable</span><a href="#on-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Registers a handler for an event.</p>
+</div>
+<section class="tsd-panel">
+<h4>Type Parameters</h4>
+<ul class="tsd-type-parameter-list">
+<li><span id="ontkey"><span class="tsd-kind-type-parameter">TKey</span> <span class="tsd-signature-keyword">extends</span> <span class="tsd-signature-type">string</span></span>
+<div class="tsd-comment tsd-typography"><p>Name of the event to listen to.</p>
+</div></li></ul></section>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">event</span>: <a class="tsd-signature-type tsd-kind-type-parameter" href="index.IDataSourceExtension.html#ontkey">TKey</a></span>
+<div class="tsd-comment tsd-typography"><p>Event to subscribe to.</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">handler</span>: <span class="tsd-signature-type">EventHandler</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.FilterExtensionEvents.html" class="tsd-signature-type tsd-kind-type-alias">FilterExtensionEvents</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="index.IDataSourceExtension.html#ontkey">TKey</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Callback invoked on every <a href="https://mantlebee.github.io/ts-core/interfaces/index.IEventBus.html#trigger">trigger</a> of <code>event</code>.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">IDisposable</span></h4><p>a subscription; dispose it to remove this single handler.</p>
+<aside class="tsd-sources">
+<p>Inherited from <a href="index.IDataSourceExtension.html">IDataSourceExtension</a>.<a href="index.IDataSourceExtension.html#on">on</a></p>
+<ul>
+<li>Defined in node_modules/@mantlebee/ts-core/dist/src/subscriptions/event-bus/interfaces.d.ts:18</li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-inherited">
+<h3 class="tsd-anchor-link" id="readitems"><code class="tsd-tag">Optional</code><span>read<wbr/>Items</span><a href="#readitems" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-inherited">
+<li class="tsd-is-inherited">
+<div class="tsd-signature tsd-anchor-link" id="readitems-1"><span class="tsd-kind-call-signature">readItems</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">payload</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">next</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourceReadNext.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReadNext</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">signal</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">AbortSignal</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><a href="#readitems-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Wraps the reading of the items. Read phase: the extension is a layer of
+the onion around the reader, <code>next</code> the layers inside it (the inner
+extensions, then the reader of the data source). The payload is the
+whole query, whatever the position of the extension.</p>
+<p><code>next</code> may be called zero times (e.g. a cache hit: the reader is never
+invoked), once, with this or another payload, or several times (e.g. a
+payload split into several reads whose results are merged); every call
+runs the inner layers and the reader again, so the hooks and the events
+of the inner extensions may fire as many times. The result may be
+transformed before being returned, and flows outward: the outermost
+extension transforms last.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">payload</span>: <a href="../types/index.DataSourcePayload.html" class="tsd-signature-type tsd-kind-type-alias">DataSourcePayload</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The whole query, built by the build phase.</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">next</span>: <a href="../types/index.DataSourceReadNext.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReadNext</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Reads the items through the inner layers and the reader; the
+signal of the read is bound already.</p>
+</div></li>
+<li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">signal</span>: <span class="tsd-signature-type">AbortSignal</span></span>
+<div class="tsd-comment tsd-typography"><p>Signal of the read, aborted when the read is superseded,
+for the reads of the extension itself.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4><p>the items for the outer extension, or the data source.</p>
+<aside class="tsd-sources">
+<p>Inherited from <a href="index.IDataSourceExtension.html">IDataSourceExtension</a>.<a href="index.IDataSourceExtension.html#readitems">readItems</a></p>
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/extensions/interfaces.ts#L107">src/data-source/extensions/interfaces.ts:107</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="removefilter"><span>remove<wbr/>Filter</span><a href="#removefilter" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="removefilter-1"><span class="tsd-kind-call-signature">removeFilter</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">filter</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#removefilter-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Removes a filter, compared by reference.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">filter</span>: <a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>The very object given to <a href="#addfilter" class="tsd-kind-method">addFilter</a> or <a href="#setfilters" class="tsd-kind-method">setFilters</a>.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L38">src/data-source/filtering/interfaces.ts:38</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="removefiltersof"><span>remove<wbr/>Filters<wbr/>Of</span><a href="#removefiltersof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="removefiltersof-1"><span class="tsd-kind-call-signature">removeFiltersOf</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">field</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">KeyOf</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#removefiltersof-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Removes every filter on a field.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">field</span>: <span class="tsd-signature-type">KeyOf</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Field whose filters are removed.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L43">src/data-source/filtering/interfaces.ts:43</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="replacefiltersof"><span>replace<wbr/>Filters<wbr/>Of</span><a href="#replacefiltersof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="replacefiltersof-1"><span class="tsd-kind-call-signature">replaceFiltersOf</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">field</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">KeyOf</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-symbol">...</span><span class="tsd-kind-parameter">filters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#replacefiltersof-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Removes every filter on a field and appends the given ones.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">field</span>: <span class="tsd-signature-type">KeyOf</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>Field whose filters are replaced.</p>
+</div></li>
+<li><span><span class="tsd-signature-symbol">...</span><span class="tsd-kind-parameter">filters</span>: <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>New filters, appended as they are (their <code>field</code> is not
+checked); none to just remove.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L50">src/data-source/filtering/interfaces.ts:50</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="setfilters"><span>set<wbr/>Filters</span><a href="#setfilters" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="setfilters-1"><span class="tsd-kind-call-signature">setFilters</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">filters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#setfilters-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Replaces every filter.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">filters</span>: <span class="tsd-signature-type">List</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/index.Filter.html" class="tsd-signature-type tsd-kind-type-alias">Filter</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#titem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></span>
+<div class="tsd-comment tsd-typography"><p>New filters.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L55">src/data-source/filtering/interfaces.ts:55</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="setlogic"><span>set<wbr/>Logic</span><a href="#setlogic" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="setlogic-1"><span class="tsd-kind-call-signature">setLogic</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">logic</span><span class="tsd-signature-symbol">:</span> <a href="../enums/index.FilterLogics.html" class="tsd-signature-type tsd-kind-enum">FilterLogics</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#setlogic-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Changes the logic combining the filters. Raises <code>setLogic</code> only: it does
+not schedule <code>filtersChange</code>.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">logic</span>: <a href="../enums/index.FilterLogics.html" class="tsd-signature-type tsd-kind-enum">FilterLogics</a></span>
+<div class="tsd-comment tsd-typography"><p>New logic.</p>
+</div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/bb469c92db32fde5501d79cc15594d28f3ccff8d/src/data-source/filtering/interfaces.ts#L61">src/data-source/filtering/interfaces.ts:61</a></li></ul></aside></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#filters"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>filters</span></a><a href="#hasfilters"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>has<wbr/>Filters</span></a><a href="#logic"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>logic</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
+<div><a href="#addfilter"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Filter</span></a><a href="#buildpayload" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Payload</span></a><a href="#clearfilters"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>clear<wbr/>Filters</span></a><a href="#dispose" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>dispose</span></a><a href="#on" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>on</span></a><a href="#readitems" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>read<wbr/>Items</span></a><a href="#removefilter"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Filter</span></a><a href="#removefiltersof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Filters<wbr/>Of</span></a><a href="#replacefiltersof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>replace<wbr/>Filters<wbr/>Of</span></a><a href="#setfilters"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Filters</span></a><a href="#setlogic"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Logic</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">@mantlebee/ts-data</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>
