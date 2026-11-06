@@ -18,11 +18,13 @@ filters).
   `undefined` as required readonly properties, the others as optional ones,
   nothing else (`TExt` defaults to an empty record, nothing guaranteed).
 - **`models.ts`** — `DataSource<TItem>`, the class behind `createDataSource`,
-  not exported: takes the extensions by key
+  exported to be extended: takes the extensions by key
   (`DataSourceExtensionsDefinition`), runs them in the order of the keys and
   exposes every extension as an own readonly property, set only when given
   (`"sorting" in source` tells; a key that is a member of the source is
-  refused); as a class it types no key, hence the factory. Runs the cycle in one
+  refused); as a class it types no key, hence the factory, and a subclass
+  types its own with `declare readonly` (a plain field would be redefined to
+  `undefined` under `useDefineForClassFields`). Runs the cycle in one
   `AbortableDelegate` of ts-core so that **the latest read wins**: a `read()`
   requested while another is running supersedes it (the superseded `read()`
   rejects with `AbortedException` at once, its signal is aborted, its cycle
@@ -30,7 +32,7 @@ filters).
   `isReading` on the transitions of the burst, `items` and `error` (then
   rethrows) for the latest read only; `dispose()` aborts the running read and
   disposes every extension.
-- **`utils.ts`** — `createDataSource(reader, extensions)`: the only way to build a
+- **`utils.ts`** — `createDataSource(reader, extensions)`: the way to build a
   source, returning the `IDataSource` typed with the record given, custom
   keys included.
 - **`types.ts`** — `DataSourceEvents`, `DataSourcePayload`

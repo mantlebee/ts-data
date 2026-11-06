@@ -37,6 +37,17 @@ import { DataSourceEvents, DataSourcePayload, DataSourceReader } from "./types";
  * keyed property in its type. Build a source with {@link createDataSource},
  * which returns the {@link IDataSource} typed with every key of the record.
  *
+ * **Inheritance.** The class is exported to be extended, not to be built
+ * with `new`: a subclass knows its extensions, so it types the keys itself,
+ * one `declare readonly` per key given to `super`. `declare` matters: it
+ * emits nothing, where a plain field declaration would, under
+ * `useDefineForClassFields` (the default from the `ES2022` target on),
+ * redefine the property to `undefined` after `super` has set it. The
+ * compiler does not check the declarations against the record, the
+ * subclass keeps them in line. A subclass reaches the pipeline
+ * (`_extensions`), the reader (`_reader`) and the `_eventBus`; a method or
+ * an accessor it adds is refused as a key like the members of the class.
+ *
  * **The latest read wins.** The read cycle runs in one `AbortableDelegate` of
  * ts-core: a `read()` requested while another is running aborts it, so the
  * superseded `read()` rejects with `AbortedException` at once, its signal is
@@ -68,6 +79,28 @@ import { DataSourceEvents, DataSourcePayload, DataSourceReader } from "./types";
  *   if (!isAbortedException(error)) throw error;
  * });
  * await dataSource.read();
+ * ```
+ * @example
+ * ```ts
+ * // A subclass: the keys are declared, the record is given to `super`.
+ * class UsersDataSource extends DataSource<User> {
+ *   declare public readonly filtering: FilterExtension<User>;
+ *   declare public readonly pagination: PaginationExtension<User>;
+ *
+ *   public constructor() {
+ *     super((payload, signal) => api.getUsers(payload, { signal }), {
+ *       filtering: new FilterExtension<User>(),
+ *       pagination: new PaginationExtension<User>(countUsers, 20),
+ *     });
+ *   }
+ *
+ *   public async readAdults(): Promise<void> {
+ *     this.filtering.setFilters([adult]);
+ *     await this.read();
+ *   }
+ * }
+ * const users: IDataSourceWith<User, "filtering" | "pagination"> =
+ *   new UsersDataSource();
  * ```
  * @typeParam TItem Type of the items.
  */

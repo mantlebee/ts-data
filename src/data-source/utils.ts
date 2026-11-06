@@ -5,9 +5,11 @@ import { DataSourceReader } from "./types";
 
 /**
  * Builds a data source whose type carries its extensions: the record given
- * here, key by key ({@link IDataSource}). It is the only way to build a
- * source: the class behind it is not exported, since a class cannot type its
- * members from a generic record.
+ * here, key by key ({@link IDataSource}). It is the way to build a source:
+ * the {@link DataSource} class behind it cannot type its members from a
+ * generic record, so `new DataSource(reader, { filtering })` exposes no key
+ * in its type. The class is exported to be extended, by a subclass that
+ * declares its keys.
  *
  * The extensions run in the order of the keys of the record, the order you
  * write them in: `filtering` before `pagination`, so the count reader

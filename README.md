@@ -21,6 +21,7 @@ each change without polling.
   - [The payload](#the-payload)
   - [The data source and its extensions](#the-data-source-and-its-extensions)
   - [Capabilities](#capabilities)
+  - [Extending the class](#extending-the-class)
   - [Events](#events)
   - [Filters, sorts, pagination and projections](#filters-sorts-pagination-and-projections)
   - [Range filters from the UI](#range-filters-from-the-ui)
@@ -80,8 +81,10 @@ inspected and extended:
 { filtering, pagination })`) instead of as an ordered list, still in the
   order you write them, and read from the keyed properties
   (`source.filtering`, `source.pagination`, …); `getExtension(Class)` is gone;
-- the `DataSource` class is no longer exported: `createDataSource` is the only
-  way to build a source, and a source of your own implements `IDataSource`;
+- a source is built with `createDataSource`, not with `new DataSource(...)`,
+  and a source of your own implements `IDataSource` (the class, not exported
+  by 2.0 and 2.1, is exported again from 2.2.0, to be extended: see
+  [Extending the class](#extending-the-class));
 - the hooks of an extension are `buildPayload(payload, signal?)` (was
   `getItemsBefore`) and `readItems(payload, next, signal?)`, which wraps the
   reading and replaces `getItemsAfter`: transform the result of
@@ -324,9 +327,71 @@ A key set to `undefined` or not given is absent at runtime too: `"sorting" in
 source` is `false`, and `source.sorting` is `undefined`. The extensions run in
 the **order of the keys of the record**, custom or not (`{ distinct,
 filtering, audit }` runs `distinct`, then `filtering`, then `audit`); a key
-that is already a member of the source (`items`, `read`, …) is refused. The
-class behind the sources is not exported: a class cannot type its members
-from a generic record, so `createDataSource` is the only way to build one.
+that is already a member of the source (`items`, `read`, …) is refused.
+
+### Extending the class
+
+`createDataSource` is the way to build a source: the `DataSource` class
+behind it cannot type its members from a generic record, so
+`new DataSource(reader, { filtering })` exposes no key in its type. The class
+is exported **to be extended**, by a source with members of its own. A
+subclass knows its extensions, so it types the keys itself, one
+`declare readonly` per key it gives to `super`:
+
+```typescript
+class UsersDataSource extends DataSource<User> {
+  declare public readonly filtering: FilterExtension<User>;
+  declare public readonly pagination: PaginationExtension<User>;
+
+  public constructor() {
+    super(readUsers, {
+      filtering: new FilterExtension<User>(),
+      pagination: new PaginationExtension<User>(countUsers, 20),
+    });
+  }
+
+  public async readAdults(): Promise<void> {
+    this.filtering.setFilters([adult]);
+    await this.read();
+  }
+}
+
+useTable(new UsersDataSource()); // fits IDataSourceWith<User, "filtering" | "pagination">
+```
+
+- **`declare` is required**: it emits nothing, where a plain field
+  (`public readonly filtering!: FilterExtension<User>`) is redefined to
+  `undefined` after `super` has set it, under `useDefineForClassFields` (the
+  default from the `ES2022` target on);
+- the compiler does not check the declarations against the record given to
+  `super`: keep the two in line;
+- a subclass reaches the pipeline (`_extensions`), the reader (`_reader`) and
+  the `_eventBus`, and overrides `read()` or `dispose()` around `super`; a
+  method or an accessor it adds is a member of the source, refused as a key.
+
+A generic subclass, adding behaviour to any source, knows no key: give it a
+factory of its own, typed like `createDataSource`.
+
+```typescript
+class CountingDataSource<TItem> extends DataSource<TItem> {
+  public readsCount = 0;
+
+  public override async read(): Promise<void> {
+    this.readsCount++;
+    await super.read();
+  }
+}
+
+function createCountingDataSource<
+  TItem,
+  TExt extends DataSourceExtensionsDefinition<TItem>,
+>(reader: DataSourceReader<TItem>, extensions: TExt) {
+  return new CountingDataSource<TItem>(
+    reader,
+    extensions,
+  ) as CountingDataSource<TItem> & DataSourceExtensionProperties<TExt>;
+}
+```
 
 ### Events
 
