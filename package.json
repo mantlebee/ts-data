@@ -55,7 +55,7 @@
   },
   "homepage": "https://github.com/mantlebee/ts-data#readme",
   "peerDependencies": {
-    "@mantlebee/ts-core": "^1.4.0"
+    "@mantlebee/ts-core": "^1.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
