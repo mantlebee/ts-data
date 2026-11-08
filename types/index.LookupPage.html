@@ -14,10 +14,24 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>Page asked to <a href="../interfaces/index.ILookupSource.html#search" class="tsd-kind-method">ILookupSource.search</a>, by offset: a panel knows how
 many items it shows and how many it already has.</p>
-</div></section>
+<p>The sources over a reader (<a href="../functions/index.createLookupSource.html" class="tsd-kind-function">createLookupSource</a>,
+<a href="../functions/index.createInMemoryLookupSource.html" class="tsd-kind-function">createInMemoryLookupSource</a>) translate it into the 1-based,
+page-based <code>Pagination</code> of the payload, so <code>offset</code> must be a multiple of
+<code>limit</code>: page by the same <code>limit</code> from <code>0</code> (<code>0</code>, <code>limit</code>, <code>2 * limit</code>,
+...). Their <code>search</code> rejects with a <code>RangeError</code>, without calling the
+reader, when <code>limit</code> is not a positive integer or <code>offset</code> is not a
+non-negative multiple of it. A hand-written <a href="../interfaces/index.ILookupSource.html" class="tsd-kind-interface">ILookupSource</a> may
+accept any offset.</p>
+</div>
+<div class="tsd-comment tsd-typography">
+<div class="tsd-tag-example">
+<h4 class="tsd-anchor-link" id="example">Example<a href="#example" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="ts"><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">source</span><span class="hl-1">.</span><span class="hl-0">search</span><span class="hl-1">(</span><span class="hl-2">&quot;ro&quot;</span><span class="hl-1">, { </span><span class="hl-4">limit:</span><span class="hl-1"> </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-4">offset:</span><span class="hl-1"> </span><span class="hl-9">40</span><span class="hl-1"> }); </span><span class="hl-7">// the third page</span><br/><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">source</span><span class="hl-1">.</span><span class="hl-0">search</span><span class="hl-1">(</span><span class="hl-2">&quot;ro&quot;</span><span class="hl-1">, { </span><span class="hl-4">limit:</span><span class="hl-1"> </span><span class="hl-9">20</span><span class="hl-1">, </span><span class="hl-4">offset:</span><span class="hl-1"> </span><span class="hl-9">30</span><span class="hl-1"> }); </span><span class="hl-7">// rejects: RangeError</span>
+</code><button type="button">Copy</button></pre>
+
+</div></div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">type</span> <span class="tsd-kind-type-alias">LookupPage</span> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#limit">limit</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#offset">offset</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/d53521f4fb778b70641ccdf22ebc04c923eb810e/src/lookup/types.ts#L15">src/lookup/types.ts:15</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/6f0323f11eb34956d02d4f64556f568d87575a51/src/lookup/types.ts#L29">src/lookup/types.ts:29</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -37,14 +51,15 @@ many items it shows and how many it already has.</p>
 <div class="tsd-comment tsd-typography"><p>Number of items of the page, a positive integer.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/d53521f4fb778b70641ccdf22ebc04c923eb810e/src/lookup/types.ts#L17">src/lookup/types.ts:17</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/6f0323f11eb34956d02d4f64556f568d87575a51/src/lookup/types.ts#L31">src/lookup/types.ts:31</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="offset"><span>offset</span><a href="#offset" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">offset</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-<div class="tsd-comment tsd-typography"><p>Index of the first item, a multiple of <code>limit</code> (<code>0</code> for the first page).</p>
+<div class="tsd-comment tsd-typography"><p>Index of the first item, a multiple of <code>limit</code> (<code>0</code> for the first page)
+for the sources over a reader.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/d53521f4fb778b70641ccdf22ebc04c923eb810e/src/lookup/types.ts#L19">src/lookup/types.ts:19</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/6f0323f11eb34956d02d4f64556f568d87575a51/src/lookup/types.ts#L36">src/lookup/types.ts:36</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

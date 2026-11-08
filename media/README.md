@@ -19,7 +19,8 @@ signal?)` pages the items whose text contains `query` and tells whether
   `AbortedException` of ts-core, like a superseded read of a data source.
 - **`types.ts`** — `LookupValue` (`number | string`, the default key type:
   keys are compared with `===`, keep them primitive), `LookupPage`
-  (`{ limit, offset }`, `offset` a multiple of `limit`),
+  (`{ limit, offset }`, `offset` a multiple of `limit` for the sources over
+  a reader),
   `LookupSearchResult<TItem>` (`{ hasMore, items }`),
   `LookupReaderOptions<TItem, TValueField>` (`textField`, `valueField`).
 - **`utils.ts`** — `createLookupSource(reader, options)`: a source over the
@@ -29,7 +30,9 @@ signal?)` pages the items whose text contains `query` and tells whether
   pagination and never calls the reader for an empty list, `valueOf` reads
   `valueField`, whose type becomes the key type of the source. `hasMore` is
   `items.length >= limit`: no count reader, at the cost of one empty page
-  when the total is a multiple of `limit`. The signal goes to the reader as
+  when the total is a multiple of `limit`. A `limit` that is not a positive
+  integer, or an `offset` that is not a non-negative multiple of it, rejects
+  with a `RangeError` without calling the reader. The signal goes to the reader as
   it is, and the call rejects with `AbortedException` as soon as it is
   aborted, whatever the reader does with it.
   `createInMemoryLookupSource(items | getItems, options)`: the same over a

@@ -31,6 +31,8 @@ and the `in-memory` folder composes them into the one reader of the package.
     matching an expression (every operator, trees at any depth, an empty node
     matches every item); `itemMatchesFilterExpression(item, expression, options?)` and
     `itemMatchesFilter(item, filter, options?)` for a single item.
+    `options.nullSemantics` (`"javascript"` by default, or `"sql"`) decides
+    whether an unset field matches `notEqual`, `notIn` and `notContains`.
   - **`range/`** — `Range<TValue>` / `RangeLimit<TValue>` (the value of a
     `range` filter: `min`/`max`, each with `value` and `exclude`), and the
     editable `FilterRange` / `FilterRangeLimit`, `Subscribable`s meant for UI
@@ -50,7 +52,8 @@ and the `in-memory` folder composes them into the one reader of the package.
   objects by `valueOf()`), overridable per field with `options.toComparable`,
   and `createInMemoryQueryItemsComparer(options?)` resolving the options into the
   `InMemoryQueryItemsComparer`. Types: `InMemoryQueryItemsComparer`,
-  `InMemoryQueryItemsReaderOptions`, `InMemoryQueryItemsReader`.
+  `InMemoryQueryItemsReaderOptions`, `InMemoryNullSemantics`,
+  `InMemoryQueryItemsReader`.
 - **`pagination/`** — `Pagination`: `page` (1-based), `itemsPerPage`,
   `totalItemsCount`.
   - **`in-memory/`** — `pageItems(items, pagination?)`: the items of the page,

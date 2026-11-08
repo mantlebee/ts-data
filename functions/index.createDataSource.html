@@ -17,9 +17,11 @@
 <div class="tsd-signature tsd-anchor-link" id="createdatasource"><span class="tsd-kind-call-signature">createDataSource</span><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetitem">TItem</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetext">TExt</a> <span class="tsd-signature-keyword">extends</span> <a href="../types/index.DataSourceExtensionsDefinition.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceExtensionsDefinition</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetitem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">reader</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.DataSourceReader.html" class="tsd-signature-type tsd-kind-type-alias">DataSourceReader</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetitem">TItem</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">extensions</span><span class="tsd-signature-symbol">:</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetext">TExt</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/index.IDataSource.html" class="tsd-signature-type tsd-kind-type-alias">IDataSource</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetitem">TItem</a><span class="tsd-signature-symbol">,</span> <a class="tsd-signature-type tsd-kind-type-parameter" href="#createdatasourcetext">TExt</a><span class="tsd-signature-symbol">&gt;</span><a href="#createdatasource" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Builds a data source whose type carries its extensions: the record given
-here, key by key (<a href="../types/index.IDataSource.html" class="tsd-kind-type-alias">IDataSource</a>). It is the only way to build a
-source: the class behind it is not exported, since a class cannot type its
-members from a generic record.</p>
+here, key by key (<a href="../types/index.IDataSource.html" class="tsd-kind-type-alias">IDataSource</a>). It is the way to build a source:
+the <a href="../classes/index.DataSource.html" class="tsd-kind-class">DataSource</a> class behind it cannot type its members from a
+generic record, so <code>new DataSource(reader, { filtering })</code> exposes no key
+in its type. The class is exported to be extended, by a subclass that
+declares its keys.</p>
 <p>The extensions run in the order of the keys of the record, the order you
 write them in: <code>filtering</code> before <code>pagination</code>, so the count reader
 receives the filters.</p>
@@ -52,7 +54,7 @@ the read as second argument.</p>
 
 </div></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/d53521f4fb778b70641ccdf22ebc04c923eb810e/src/data-source/utils.ts#L35">src/data-source/utils.ts:35</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/6f0323f11eb34956d02d4f64556f568d87575a51/src/data-source/utils.ts#L37">src/data-source/utils.ts:37</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

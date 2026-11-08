@@ -31,6 +31,7 @@ each change without polling.</p>
 <li><a href="#the-payload">The payload</a></li>
 <li><a href="#the-data-source-and-its-extensions">The data source and its extensions</a></li>
 <li><a href="#capabilities">Capabilities</a></li>
+<li><a href="#extending-the-class">Extending the class</a></li>
 <li><a href="#events">Events</a></li>
 <li><a href="#filters-sorts-pagination-and-projections">Filters, sorts, pagination and projections</a></li>
 <li><a href="#range-filters-from-the-ui">Range filters from the UI</a></li>
@@ -55,14 +56,14 @@ each change without polling.</p>
 <li>🎚️ <strong>Range helpers</strong>: <code>FilterRange</code> / <code>FilterRangeLimit</code> to bind an interval UI control to a filter</li>
 <li>🧠 <strong>In-memory reader</strong>: <code>createInMemoryQueryItemsReader</code> resolves filters, sorts and pagination over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories</li>
 <li>🔎 <strong>Lookup sources</strong>: <code>ILookupSource</code>, a stateless request/response contract for the widgets that ask about reference items (a combobox, a lookup column), built over the same reader with <code>createLookupSource</code>, decorated with <code>withBatching</code> and <code>withCache</code></li>
-<li>🌳 <strong>Tree-shakable</strong>: ES modules next to the CommonJS bundle, no side effects, no runtime dependency besides the peer</li>
+<li>🌳 <strong>Tree-shakable</strong>: ES modules next to the CommonJS bundle, each with its own type declarations (<code>.d.mts</code> / <code>.d.ts</code>), no side effects, no runtime dependency besides the peer</li>
 </ul>
 <h2 id="installation" class="tsd-anchor-link">Installation<a href="#installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">@mantlebee/ts-data</span><span class="hl-1"> </span><span class="hl-2">@mantlebee/ts-core</span>
 </code><button type="button">Copy</button></pre>
 
-<p><code>@mantlebee/ts-core</code> (<code>^1.4.0</code>) is a <strong>peer dependency</strong>: install it alongside this package. It works in the browser and in Node alike. TypeScript projects need <code>strict</code> or at least
-<code>strictNullChecks</code> for the discriminated <code>Filter</code> type to work as intended.</p>
+<p><code>@mantlebee/ts-core</code> (<code>^1.4.0</code>) is a <strong>peer dependency</strong>: install it alongside this package. It works in the browser and in Node alike: the code is compiled to ES2020 (browsers since 2020, Node.js 14 or later). TypeScript projects need <code>strict</code> or at least
+<code>strictNullChecks</code> for the discriminated <code>Filter</code> type to work as intended. The <code>import</code> and <code>require</code> conditions of the package have their own declarations, so <code>moduleResolution</code> <code>node16</code> / <code>nodenext</code> and <code>bundler</code> resolve the right ones.</p>
 <h2 id="upgrading-to-10" class="tsd-anchor-link">Upgrading to 1.0<a href="#upgrading-to-10" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Version 1.0.0 replaces the whole 0.1.0 API (<code>browsing</code>, <code>querying</code>) and
 supersedes the copy of this code living in <code>bl-core</code>. See the
@@ -83,8 +84,10 @@ inspected and extended:</p>
 <li>the extensions are given <strong>by key</strong> (<code>createDataSource(reader, { filtering, pagination })</code>) instead of as an ordered list, still in the
 order you write them, and read from the keyed properties
 (<code>source.filtering</code>, <code>source.pagination</code>, …); <code>getExtension(Class)</code> is gone;</li>
-<li>the <code>DataSource</code> class is no longer exported: <code>createDataSource</code> is the only
-way to build a source, and a source of your own implements <code>IDataSource</code>;</li>
+<li>a source is built with <code>createDataSource</code>, not with <code>new DataSource(...)</code>,
+and a source of your own implements <code>IDataSource</code> (the class, not exported
+by 2.0 and 2.1, is exported again from 2.2.0, to be extended: see
+<a href="#extending-the-class">Extending the class</a>);</li>
 <li>the hooks of an extension are <code>buildPayload(payload, signal?)</code> (was
 <code>getItemsBefore</code>) and <code>readItems(payload, next, signal?)</code>, which wraps the
 reading and replaces <code>getItemsAfter</code>: transform the result of
@@ -232,9 +235,33 @@ literal, as above: an interface has no implicit index signature and does not
 satisfy the constraint.</p>
 <p>A key set to <code>undefined</code> or not given is absent at runtime too: <code>&quot;sorting&quot; in source</code> is <code>false</code>, and <code>source.sorting</code> is <code>undefined</code>. The extensions run in
 the <strong>order of the keys of the record</strong>, custom or not (<code>{ distinct, filtering, audit }</code> runs <code>distinct</code>, then <code>filtering</code>, then <code>audit</code>); a key
-that is already a member of the source (<code>items</code>, <code>read</code>, …) is refused. The
-class behind the sources is not exported: a class cannot type its members
-from a generic record, so <code>createDataSource</code> is the only way to build one.</p>
+that is already a member of the source (<code>items</code>, <code>read</code>, …) is refused.</p>
+<h3 id="extending-the-class" class="tsd-anchor-link">Extending the class<a href="#extending-the-class" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>createDataSource</code> is the way to build a source: the <code>DataSource</code> class
+behind it cannot type its members from a generic record, so
+<code>new DataSource(reader, { filtering })</code> exposes no key in its type. The class
+is exported <strong>to be extended</strong>, by a source with members of its own. A
+subclass knows its extensions, so it types the keys itself, one
+<code>declare readonly</code> per key it gives to <code>super</code>:</p>
+<pre><code class="typescript"><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">UsersDataSource</span><span class="hl-1"> </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">DataSource</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt; {</span><br/><span class="hl-1">  </span><span class="hl-5">declare</span><span class="hl-1"> </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">readonly</span><span class="hl-1"> </span><span class="hl-4">filtering</span><span class="hl-1">: </span><span class="hl-6">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;;</span><br/><span class="hl-1">  </span><span class="hl-5">declare</span><span class="hl-1"> </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">readonly</span><span class="hl-1"> </span><span class="hl-4">pagination</span><span class="hl-1">: </span><span class="hl-6">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;;</span><br/><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">constructor</span><span class="hl-1">() {</span><br/><span class="hl-1">    </span><span class="hl-5">super</span><span class="hl-1">(</span><span class="hl-4">readUsers</span><span class="hl-1">, {</span><br/><span class="hl-1">      </span><span class="hl-4">filtering:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">FilterExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(),</span><br/><span class="hl-1">      </span><span class="hl-4">pagination:</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">PaginationExtension</span><span class="hl-1">&lt;</span><span class="hl-6">User</span><span class="hl-1">&gt;(</span><span class="hl-4">countUsers</span><span class="hl-1">, </span><span class="hl-9">20</span><span class="hl-1">),</span><br/><span class="hl-1">    });</span><br/><span class="hl-1">  }</span><br/><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">readAdults</span><span class="hl-1">(): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">void</span><span class="hl-1">&gt; {</span><br/><span class="hl-1">    </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-4">filtering</span><span class="hl-1">.</span><span class="hl-0">setFilters</span><span class="hl-1">([</span><span class="hl-4">adult</span><span class="hl-1">]);</span><br/><span class="hl-1">    </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">();</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-0">useTable</span><span class="hl-1">(</span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">UsersDataSource</span><span class="hl-1">()); </span><span class="hl-7">// fits IDataSourceWith&lt;User, &quot;filtering&quot; | &quot;pagination&quot;&gt;</span>
+</code><button type="button">Copy</button></pre>
+
+<ul>
+<li><strong><code>declare</code> is required</strong>: it emits nothing, where a plain field
+(<code>public readonly filtering!: FilterExtension&lt;User&gt;</code>) is redefined to
+<code>undefined</code> after <code>super</code> has set it, under <code>useDefineForClassFields</code> (the
+default from the <code>ES2022</code> target on);</li>
+<li>the compiler does not check the declarations against the record given to
+<code>super</code>: keep the two in line;</li>
+<li>a subclass reaches the pipeline (<code>_extensions</code>), the reader (<code>_reader</code>) and
+the <code>_eventBus</code>, and overrides <code>read()</code> or <code>dispose()</code> around <code>super</code>; a
+method or an accessor it adds is a member of the source, refused as a key.</li>
+</ul>
+<p>A generic subclass, adding behaviour to any source, knows no key: give it a
+factory of its own, typed like <code>createDataSource</code>.</p>
+<pre><code class="typescript"><span class="hl-5">class</span><span class="hl-1"> </span><span class="hl-6">CountingDataSource</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt; </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">DataSource</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt; {</span><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-4">readsCount</span><span class="hl-1"> = </span><span class="hl-9">0</span><span class="hl-1">;</span><br/><br/><span class="hl-1">  </span><span class="hl-5">public</span><span class="hl-1"> </span><span class="hl-5">override</span><span class="hl-1"> </span><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-0">read</span><span class="hl-1">(): </span><span class="hl-6">Promise</span><span class="hl-1">&lt;</span><span class="hl-6">void</span><span class="hl-1">&gt; {</span><br/><span class="hl-1">    </span><span class="hl-5">this</span><span class="hl-1">.</span><span class="hl-4">readsCount</span><span class="hl-1">++;</span><br/><span class="hl-1">    </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-5">super</span><span class="hl-1">.</span><span class="hl-0">read</span><span class="hl-1">();</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">createCountingDataSource</span><span class="hl-1">&lt;</span><br/><span class="hl-1">  </span><span class="hl-6">TItem</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-6">TExt</span><span class="hl-1"> </span><span class="hl-5">extends</span><span class="hl-1"> </span><span class="hl-6">DataSourceExtensionsDefinition</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;,</span><br/><span class="hl-1">&gt;(</span><span class="hl-4">reader</span><span class="hl-1">: </span><span class="hl-6">DataSourceReader</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;, </span><span class="hl-4">extensions</span><span class="hl-1">: </span><span class="hl-6">TExt</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-3">return</span><span class="hl-1"> </span><span class="hl-5">new</span><span class="hl-1"> </span><span class="hl-0">CountingDataSource</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt;(</span><br/><span class="hl-1">    </span><span class="hl-4">reader</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-4">extensions</span><span class="hl-1">,</span><br/><span class="hl-1">  ) </span><span class="hl-3">as</span><span class="hl-1"> </span><span class="hl-6">CountingDataSource</span><span class="hl-1">&lt;</span><span class="hl-6">TItem</span><span class="hl-1">&gt; &amp; </span><span class="hl-6">DataSourceExtensionProperties</span><span class="hl-1">&lt;</span><span class="hl-6">TExt</span><span class="hl-1">&gt;;</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
 <h3 id="events" class="tsd-anchor-link">Events<a href="#events" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>Every class extends <code>Subscribable</code> of ts-core: <code>on(event, handler)</code> returns an
 <code>EventSubscription</code>, <code>dispose()</code> it to stop listening, and <code>dispose()</code> the
@@ -307,11 +334,107 @@ are, strings lower-cased (<code>options.caseSensitive: true</code> to keep the c
 object by its <code>valueOf()</code> when that returns a primitive (so your value objects
 plug in), by reference otherwise. <code>null</code> and <code>undefined</code> are the same &quot;unset&quot;
 value: it matches <code>equal null</code> / <code>in [null]</code>, never an ordered or string
-operator, and sorts first ascending. Override the rule per field with
+operator, and sorts first ascending (see the null semantics below for the
+negated operators). Override the rule per field with
 <code>options.toComparable(value, field)</code>, which receives both sides of every
 comparison. <code>contains</code> / <code>notContains</code> work on strings (substring) and on
 lists (membership); every <code>FiltersExpression</code> tree is honoured at any depth;
 a page beyond the last one is empty.</p>
+<p><strong>Null semantics.</strong> By default an unset field is a value like any other, so
+it differs from every set value: <code>status notEqual &quot;archived&quot;</code> keeps the items
+whose <code>status</code> is <code>null</code>. A SQL backend (Postgres, PostgREST) drops them,
+since <code>NULL &lt;&gt; 'archived'</code> is unknown. Pass <code>nullSemantics: &quot;sql&quot;</code> to make an
+in-memory fake agree with it; <code>&quot;javascript&quot;</code> is the default and keeps the
+behaviour of 2.2:</p>
+<pre><code class="typescript"><span class="hl-5">const</span><span class="hl-1"> { </span><span class="hl-8">countReader</span><span class="hl-1">, </span><span class="hl-8">reader</span><span class="hl-1"> } = </span><span class="hl-0">createInMemoryQueryItemsReader</span><span class="hl-1">(() </span><span class="hl-5">=&gt;</span><span class="hl-1"> </span><span class="hl-4">users</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">nullSemantics:</span><span class="hl-1"> </span><span class="hl-2">&quot;sql&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>How each filter matches an <strong>unset field</strong> (<code>null</code>, <code>undefined</code> or missing,
+or whatever <code>toComparable</code> turns into <code>null</code>); a set field matches the same
+way with both:</p>
+<table>
+<thead>
+<tr>
+<th>Filter</th>
+<th><code>&quot;javascript&quot;</code></th>
+<th><code>&quot;sql&quot;</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>equal null</code>, <code>equalInsensitive null</code></td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>equal x</code>, <code>equalInsensitive x</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>notEqual x</code></td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>notEqual null</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>in [x, null]</code></td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>in [x]</code>, <code>in []</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>notIn [x]</code>, <code>notIn []</code></td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>notIn [x, null]</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>contains x</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>notContains x</code></td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>startsWith x</code>, <code>endsWith x</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>greaterThan</code>, <code>greaterThanOrEqual</code>, <code>lessThan</code>, <code>lessThanOrEqual</code></td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><code>range</code> (closed, half-open or open)</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<p>The ordered and string operators never matched an unset field, so only
+<code>notEqual</code>, <code>notIn</code> and <code>notContains</code> change. A <code>null</code> among the values of
+<code>notIn</code> still means &quot;not unset&quot; with both semantics (strict SQL would make
+<code>x NOT IN (a, NULL)</code> never true), and the sorts are not affected (unset
+values first ascending, last descending, like MySQL and SQLite; Postgres
+puts them last ascending). To keep the unset items under <code>&quot;sql&quot;</code>, say so:
+<code>status notEqual &quot;archived&quot; or status equal null</code>.</p>
 <h3 id="writing-an-extension" class="tsd-anchor-link">Writing an extension<a href="#writing-an-extension" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>An extension is any <code>ISubscribable</code> implementing the optional hooks of
 <code>IDataSourceExtension</code>: <code>buildPayload(payload, signal?)</code> adds to the query,
@@ -365,8 +488,7 @@ between calls, so one instance serves any number of consumers at once.</p>
 <code>resolve(values, signal?)</code> returns the items of the keys given, without the
 missing ones, in no particular order (index them with <code>valueOf</code>). Over a
 reader, <code>search</code> sends <code>textField contains query</code> with the 1-based
-<code>pagination</code> of the page (<code>offset</code> must be a multiple of <code>limit</code>; <code>hasMore</code> is
-<code>items.length &gt;= limit</code>, no count reader) and <code>resolve</code> sends
+<code>pagination</code> of the page and <code>resolve</code> sends
 <code>valueField in values</code>; <code>createInMemoryLookupSource(items, options)</code> does
 the same over a list, so fixtures and stories behave like a server, and a
 service with its own endpoints is an object literal satisfying the interface.
@@ -377,6 +499,14 @@ value, missing ones included, for the life of the source and adds
 of ts-core, like a superseded read; the decorators do not forward the signal
 to the inner source, so one caller's abort does not starve the others. See
 <a href="media/README.md"><code>src/lookup</code></a>.</p>
+<p><strong>Paging over a reader.</strong> <code>Pagination</code> is 1-based and page-based, so a
+reader-based source turns <code>{ limit, offset }</code> into
+<code>{ itemsPerPage: limit, page: offset / limit + 1 }</code>: <code>offset</code> must be a
+multiple of <code>limit</code>, as it is when a panel pages by its own <code>limit</code> from <code>0</code>.
+Otherwise <code>search</code> rejects with a <code>RangeError</code>, without calling the reader
+(<code>The offset of a lookup page must be a non-negative multiple of its limit (20), got 30</code>); a <code>limit</code> that is not a positive integer is rejected the same
+way. <code>hasMore</code> is <code>items.length &gt;= limit</code>, with no count reader: one empty
+page more when the total is a multiple of <code>limit</code>.</p>
 <h2 id="api-reference" class="tsd-anchor-link">API Reference<a href="#api-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>The generated API documentation, release notes included, is published at
 <a href="https://mantlebee.github.io/ts-data/">https://mantlebee.github.io/ts-data/</a>.</p>
@@ -386,9 +516,10 @@ to the inner source, so one caller's abort does not starve the others. See
 <li><a href="media/README-2.md"><code>src/data-source</code></a>: <code>DataSource</code> and <code>createDataSource</code>; <code>extensions/</code> holds the extension contract, the base class and the typing of the extensions by key (<code>IDataSourceWith</code>), next to the extensions shipped with the package.</li>
 <li><a href="media/README.md"><code>src/lookup</code></a>: <code>ILookupSource</code> and its factories over a reader or a list, <code>withBatching</code> and <code>withCache</code>.</li>
 <li><code>docs/release-notes</code>: one file per release with the migration guide; <code>docs/api</code> is generated by <code>npm run doc</code>.</li>
+<li><code>scripts/emit-esm-types.mjs</code>: copies the declarations of <code>dist/src</code> to <code>dist/esm</code> as <code>.d.mts</code>, run by <code>npm run build</code>.</li>
 <li><code>test/fixtures</code>: deterministic items and readers used by the tests.</li>
 </ul>
-<p>Scripts: <code>npm run build</code> (CommonJS + ES modules into <code>dist</code>), <code>npm test</code>,
+<p>Scripts: <code>npm run build</code> (CommonJS + ES modules into <code>dist</code>, each with its declarations), <code>npm test</code>,
 <code>npm run coverage</code> (95 % threshold), <code>npm run lint</code> (ESLint, Prettier and the
 type-check; <code>npm run lint:fix</code> and <code>npm run format</code> fix what they can),
 <code>npm run doc</code>, <code>npm run doc:publish</code>.</p>
@@ -429,6 +560,7 @@ export has TSDoc and tests: keep both up to date, and run <code>npm run lint</co
 <li><a href="#the-payload"><span>The payload</span></a></li>
 <li><a href="#the-data-source-and-its-extensions"><span>The data source and its extensions</span></a></li>
 <li><a href="#capabilities"><span>Capabilities</span></a></li>
+<li><a href="#extending-the-class"><span>Extending the class</span></a></li>
 <li><a href="#events"><span>Events</span></a></li>
 <li><a href="#filters-sorts-pagination-and-projections"><span>Filters, sorts, pagination and projections</span></a></li>
 <li><a href="#range-filters-from-the-ui"><span>Range filters from the <wbr/>UI</span></a></li>

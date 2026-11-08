@@ -20,8 +20,9 @@
 every <a href="../enums/index.FilterOperators.html" class="tsd-kind-enum">FilterOperators</a> member, <code>FiltersExpression</code> trees at any
 depth; an empty list or group matches every item; a <code>null</code> value matches
 an unset field with <code>equal</code> / <code>in</code>, never with the ordered operators
-(<code>gt</code>, <code>range</code>, ...) nor with the string ones. See <a href="index.itemMatchesFilter.html" class="tsd-kind-function">itemMatchesFilter</a>
-for the operators.
+(<code>gt</code>, <code>range</code>, ...) nor with the string ones; whether an unset field
+matches the negated operators (<code>notEqual</code>, <code>notIn</code>, <code>notContains</code>) depends
+on <code>options.nullSemantics</code>. See <a href="index.itemMatchesFilter.html" class="tsd-kind-function">itemMatchesFilter</a> for the operators.
 The list and its items are never mutated; the result is always a new array.</p>
 </div>
 <section class="tsd-panel">
@@ -50,7 +51,7 @@ an expression.</p>
 
 </div></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/d53521f4fb778b70641ccdf22ebc04c923eb810e/src/query-items/filtering/in-memory/utils.ts#L33">src/query-items/filtering/in-memory/utils.ts:33</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/6f0323f11eb34956d02d4f64556f568d87575a51/src/query-items/filtering/in-memory/utils.ts#L34">src/query-items/filtering/in-memory/utils.ts:34</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

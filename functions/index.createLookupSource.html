@@ -24,8 +24,9 @@ for an empty list), <code>valueOf</code> reads <code>valueField</code>. The key 
 source is the type of <code>valueField</code>.</p>
 <p><strong>Paging.</strong> <code>Pagination</code> is 1-based and page-based, so a page is
 <code>{ page: offset / limit + 1, itemsPerPage: limit, totalItemsCount: 0 }</code>
-(the count is unknown): <code>offset</code> must be a multiple of <code>limit</code>, a panel
-always pages by its own <code>limit</code>, and <code>search</code> rejects otherwise. <code>hasMore</code>
+(the count is unknown): <code>offset</code> must be a multiple of <code>limit</code>, as it is
+when a panel always pages by its own <code>limit</code>; otherwise <code>search</code> rejects
+with a <code>RangeError</code>, without calling the reader. <code>hasMore</code>
 is <code>items.length &gt;= limit</code>: no count reader, at the cost of one empty page
 when the total is a multiple of <code>limit</code>. Asking for one item more than
 <code>limit</code> would shift the next page, so it is not done.</p>
@@ -61,7 +62,7 @@ signal, like the in-memory one, still behaves.</p>
 
 </div></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/d53521f4fb778b70641ccdf22ebc04c923eb810e/src/lookup/utils.ts#L50">src/lookup/utils.ts:50</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/mantlebee/ts-data/blob/6f0323f11eb34956d02d4f64556f568d87575a51/src/lookup/utils.ts#L51">src/lookup/utils.ts:51</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
