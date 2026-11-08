@@ -24,8 +24,9 @@ import type { LookupPage, LookupReaderOptions } from "./types";
  *
  * **Paging.** `Pagination` is 1-based and page-based, so a page is
  * `{ page: offset / limit + 1, itemsPerPage: limit, totalItemsCount: 0 }`
- * (the count is unknown): `offset` must be a multiple of `limit`, a panel
- * always pages by its own `limit`, and `search` rejects otherwise. `hasMore`
+ * (the count is unknown): `offset` must be a multiple of `limit`, as it is
+ * when a panel always pages by its own `limit`; otherwise `search` rejects
+ * with a `RangeError`, without calling the reader. `hasMore`
  * is `items.length >= limit`: no count reader, at the cost of one empty page
  * when the total is a multiple of `limit`. Asking for one item more than
  * `limit` would shift the next page, so it is not done.
@@ -116,17 +117,17 @@ function filterOn<TItem>(
 
 /**
  * The 1-based page of a payload from an offset-based page.
- * @throws when `limit` is not a positive integer or `offset` is not a
- * non-negative multiple of it.
+ * @throws a `RangeError` when `limit` is not a positive integer or `offset`
+ * is not a non-negative multiple of it.
  */
 function toPagination(page: LookupPage): Pagination {
   const { limit, offset } = page;
   if (!Number.isInteger(limit) || limit < 1)
-    throw new Error(
+    throw new RangeError(
       `The limit of a lookup page must be a positive integer, got ${limit}`,
     );
   if (!Number.isInteger(offset) || offset < 0 || offset % limit !== 0)
-    throw new Error(
+    throw new RangeError(
       `The offset of a lookup page must be a non-negative multiple of its limit (${limit}), got ${offset}`,
     );
   return { itemsPerPage: limit, page: offset / limit + 1, totalItemsCount: 0 };

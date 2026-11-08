@@ -15,6 +15,22 @@ export type InMemoryQueryItemsComparer<TItem = Any> = (
 ) => Any;
 
 /**
+ * How the in-memory filters treat an unset field (`null` or `undefined`, or
+ * whatever the comparer turns into `null`):
+ * - `"javascript"`: an unset value is a value like any other, so it differs
+ *   from every set value: `notEqual`, `notIn` and `notContains` with a set
+ *   value match it;
+ * - `"sql"`: an unset value is unknown, as in SQL (Postgres, PostgREST): it
+ *   matches only `equal` / `equalInsensitive` with `null` and `in` with a
+ *   list holding `null`, never `notEqual`, `notIn` nor `notContains`.
+ *
+ * Both agree on every other operator: the ordered ones (`greaterThan`,
+ * `range`, ...) and the string ones (`contains`, `startsWith`, ...) never
+ * match an unset value. Sorting is not affected.
+ */
+export type InMemoryNullSemantics = "javascript" | "sql";
+
+/**
  * Options of the in-memory delegates ({@link filterItems},
  * {@link sortItems}) and of {@link queryItems} / {@link countItems}: how
  * the values of the items and of the filters are compared.
@@ -28,6 +44,23 @@ export type InMemoryQueryItemsReaderOptions<TItem = Any> = {
    * ignores the case whatever this option.
    */
   caseSensitive?: boolean;
+  /**
+   * How the filters match an unset field, see {@link InMemoryNullSemantics}.
+   * `"javascript"` by default; `"sql"` makes an in-memory fake agree with a
+   * SQL backend, where `status <> 'archived'` drops the rows whose `status`
+   * is `NULL`.
+   * @example
+   * ```ts
+   * const items = [{ status: "active" }, { status: null }];
+   * const notArchived: FiltersExpression<Item> = {
+   *   filters: [{ field: "status", operator: FilterOperators.notEqual, value: "archived" }],
+   *   logic: FilterLogics.and,
+   * };
+   * filterItems(items, notArchived); // both items
+   * filterItems(items, notArchived, { nullSemantics: "sql" }); // [{ status: "active" }]
+   * ```
+   */
+  nullSemantics?: InMemoryNullSemantics;
   /**
    * Replaces the default conversion ({@link toComparableValue}) of a value
    * into the primitive actually compared. It receives both sides of every

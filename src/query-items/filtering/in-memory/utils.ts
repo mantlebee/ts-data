@@ -14,8 +14,9 @@ import { isFiltersGroup } from "../utils";
  * every {@link FilterOperators} member, `FiltersExpression` trees at any
  * depth; an empty list or group matches every item; a `null` value matches
  * an unset field with `equal` / `in`, never with the ordered operators
- * (`gt`, `range`, ...) nor with the string ones. See {@link itemMatchesFilter}
- * for the operators.
+ * (`gt`, `range`, ...) nor with the string ones; whether an unset field
+ * matches the negated operators (`notEqual`, `notIn`, `notContains`) depends
+ * on `options.nullSemantics`. See {@link itemMatchesFilter} for the operators.
  * The list and its items are never mutated; the result is always a new array.
  * @param items Items to filter.
  * @param filters Expression to match; none for every item.
@@ -36,8 +37,8 @@ export function filterItems<TItem = Any>(
   options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): List<TItem> {
   if (!filters) return items.slice();
-  const compare = createInMemoryQueryItemsComparer(options);
-  return items.filter((item) => matches(item, filters, compare));
+  const matcher = createMatcher(options);
+  return items.filter((item) => matches(item, filters, matcher));
 }
 
 /**
@@ -53,7 +54,7 @@ export function itemMatchesFilterExpression<TItem = Any>(
   expression: FiltersExpression<TItem>,
   options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): boolean {
-  return matches(item, expression, createInMemoryQueryItemsComparer(options));
+  return matches(item, expression, createMatcher(options));
 }
 
 /**
@@ -68,6 +69,9 @@ export function itemMatchesFilterExpression<TItem = Any>(
  *   `true`, open when `null`; never matching an unset value;
  * - `contains`, `notContains`: substring of a string, membership of a list;
  * - `startsWith`, `endsWith`: on the text of the values.
+ *
+ * With `options.nullSemantics` `"sql"`, an unset field never matches
+ * `notEqual`, `notIn` nor `notContains`; see {@link InMemoryNullSemantics}.
  * @param item Item to check.
  * @param filter Filter to match.
  * @param options Comparison options, see {@link InMemoryQueryItemsReaderOptions}.
@@ -79,10 +83,26 @@ export function itemMatchesFilter<TItem = Any>(
   filter: Filter<TItem>,
   options?: InMemoryQueryItemsReaderOptions<TItem>,
 ): boolean {
-  return matchesOne(item, filter, createInMemoryQueryItemsComparer(options));
+  return matchesOne(item, filter, createMatcher(options));
 }
 
 //#region Internals
+/** What a match needs from the options, resolved once per call. */
+type Matcher<TItem> = {
+  compare: InMemoryQueryItemsComparer<TItem>;
+  /** `true` when an unset field never matches the negated operators. */
+  sqlNulls: boolean;
+};
+
+function createMatcher<TItem>(
+  options?: InMemoryQueryItemsReaderOptions<TItem>,
+): Matcher<TItem> {
+  return {
+    compare: createInMemoryQueryItemsComparer(options),
+    sqlNulls: options?.nullSemantics === "sql",
+  };
+}
+
 /** Lower-cases a comparable when it is a string, for `equalInsensitive`. */
 function toInsensitive(value: Any): Any {
   return typeof value === "string" ? value.toLowerCase() : value;
@@ -109,15 +129,20 @@ function getFieldValue<TItem>(item: TItem, field: KeyOf<TItem>): unknown {
 function matchesOne<TItem>(
   item: TItem,
   filter: Filter<TItem>,
-  compare: InMemoryQueryItemsComparer<TItem>,
+  { compare, sqlNulls }: Matcher<TItem>,
 ): boolean {
   const field = filter.field;
   const actual = compare(getFieldValue(item, field), field);
+  // An unset field is unknown in SQL: the negated operators drop it.
+  const unknown = sqlNulls && actual === null;
   switch (filter.operator) {
     case FilterOperators.in:
       return filter.value.some((value) => compare(value, field) === actual);
     case FilterOperators.notIn:
-      return !filter.value.some((value) => compare(value, field) === actual);
+      return (
+        !unknown &&
+        !filter.value.some((value) => compare(value, field) === actual)
+      );
     case FilterOperators.range: {
       if (actual === null) return false;
       const { max, min } = filter.value;
@@ -139,7 +164,7 @@ function matchesOne<TItem>(
     case FilterOperators.equal:
       return actual === expected;
     case FilterOperators.notEqual:
-      return actual !== expected;
+      return !unknown && actual !== expected;
     case FilterOperators.equalInsensitive:
       return toInsensitive(actual) === toInsensitive(expected);
     case FilterOperators.greaterThan:
@@ -153,7 +178,7 @@ function matchesOne<TItem>(
     case FilterOperators.contains:
       return contains(actual, expected, field, compare);
     case FilterOperators.notContains:
-      return !contains(actual, expected, field, compare);
+      return !unknown && !contains(actual, expected, field, compare);
     case FilterOperators.startsWith:
       return (
         actual !== null &&
@@ -167,8 +192,8 @@ function matchesOne<TItem>(
         String(actual).endsWith(String(expected))
       );
   }
-  const unknown: Filter<TItem> = filter;
-  throw new Error(`Unknown filter operator: ${String(unknown.operator)}`);
+  const unhandled: Filter<TItem> = filter;
+  throw new Error(`Unknown filter operator: ${String(unhandled.operator)}`);
 }
 
 /**
@@ -189,14 +214,14 @@ function combine<TNode>(
 function matches<TItem>(
   item: TItem,
   expression: FiltersExpression<TItem>,
-  compare: InMemoryQueryItemsComparer<TItem>,
+  matcher: Matcher<TItem>,
 ): boolean {
   if (isFiltersGroup(expression))
     return combine(expression.groups, expression.logic, (group) =>
-      matches(item, group, compare),
+      matches(item, group, matcher),
     );
   return combine(expression.filters, expression.logic, (filter) =>
-    matchesOne(item, filter, compare),
+    matchesOne(item, filter, matcher),
   );
 }
 //#endregion

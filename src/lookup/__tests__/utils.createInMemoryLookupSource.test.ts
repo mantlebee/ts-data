@@ -52,9 +52,9 @@ describe("createInMemoryLookupSource", () => {
     });
     test("Rejects an offset that is not a multiple of the limit", async () => {
       const source = createInMemoryLookupSource(GenericItems, options);
-      await expect(source.search("", { limit: 10, offset: 5 })).rejects.toThrow(
-        /multiple/,
-      );
+      const searching = source.search("", { limit: 10, offset: 5 });
+      await expect(searching).rejects.toBeInstanceOf(RangeError);
+      await expect(searching).rejects.toThrow(/multiple/);
     });
   });
 

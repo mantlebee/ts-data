@@ -75,10 +75,31 @@ describe("createLookupSource", () => {
       ["a fractional offset", { limit: 2, offset: 0.5 }],
     ])("Rejects %s without calling the reader", async (_, invalid) => {
       const reader = createReader();
-      await expect(
-        createLookupSource(reader, options).search("", invalid),
-      ).rejects.toThrow(/lookup page/);
+      const searching = createLookupSource(reader, options).search("", invalid);
+      await expect(searching).rejects.toBeInstanceOf(RangeError);
+      await expect(searching).rejects.toThrow(/lookup page/);
       expect(reader).not.toHaveBeenCalled();
+    });
+    test("Names the limit in the message of a misaligned offset", async () => {
+      await expect(
+        createLookupSource(createReader(), options).search("", {
+          limit: 20,
+          offset: 30,
+        }),
+      ).rejects.toThrow(
+        new RangeError(
+          "The offset of a lookup page must be a non-negative multiple of its limit (20), got 30",
+        ),
+      );
+    });
+    test("Accepts every multiple of the limit", async () => {
+      const reader = createReader();
+      const source = createLookupSource(reader, options);
+      for (const offset of [0, 2, 4])
+        await source.search("", { limit: 2, offset });
+      expect(
+        reader.mock.calls.map(([payload]) => payload.pagination?.page),
+      ).toEqual([1, 2, 3]);
     });
     test("Rejects with AbortedException once the signal is aborted, even when the reader ignores the signal", async () => {
       const reader: QueryItemsReader<Department> = () =>

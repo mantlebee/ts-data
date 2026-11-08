@@ -3,8 +3,9 @@ import typescript from "@rollup/plugin-typescript";
 const outDir = "dist";
 
 /**
- * Only the peer dependency is left to the consumer; the tslib helpers are
- * inlined (see the `vendor` folder of the ESM output).
+ * Only the peer dependency is left to the consumer. The ES2020 target needs
+ * no tslib helpers today; if one is ever emitted, it is inlined (see the
+ * `vendor` folder of the ESM output).
  */
 const external = ["@mantlebee/ts-core"];
 
@@ -33,7 +34,8 @@ const pureEnums = () => ({
 
 export default [
   // CommonJS single-file bundle, kept for `require` consumers.
-  // Also emits the declarations into `dist/src`.
+  // Also emits the declarations into `dist/src`, which
+  // `scripts/emit-esm-types.mjs` copies to `dist/esm` as `.d.mts`.
   {
     input: "src/index.ts",
     external,

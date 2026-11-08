@@ -44,7 +44,7 @@ each change without polling.
 - 🎚️ **Range helpers**: `FilterRange` / `FilterRangeLimit` to bind an interval UI control to a filter
 - 🧠 **In-memory reader**: `createInMemoryQueryItemsReader` resolves filters, sorts and pagination over a plain array exactly as a server would, so the same grid runs on local data, fixtures and stories
 - 🔎 **Lookup sources**: `ILookupSource`, a stateless request/response contract for the widgets that ask about reference items (a combobox, a lookup column), built over the same reader with `createLookupSource`, decorated with `withBatching` and `withCache`
-- 🌳 **Tree-shakable**: ES modules next to the CommonJS bundle, no side effects, no runtime dependency besides the peer
+- 🌳 **Tree-shakable**: ES modules next to the CommonJS bundle, each with its own type declarations (`.d.mts` / `.d.ts`), no side effects, no runtime dependency besides the peer
 
 ## Installation
 
@@ -52,8 +52,8 @@ each change without polling.
 npm install @mantlebee/ts-data @mantlebee/ts-core
 ```
 
-`@mantlebee/ts-core` (`^1.4.0`) is a **peer dependency**: install it alongside this package. It works in the browser and in Node alike. TypeScript projects need `strict` or at least
-`strictNullChecks` for the discriminated `Filter` type to work as intended.
+`@mantlebee/ts-core` (`^1.4.0`) is a **peer dependency**: install it alongside this package. It works in the browser and in Node alike: the code is compiled to ES2020 (browsers since 2020, Node.js 14 or later). TypeScript projects need `strict` or at least
+`strictNullChecks` for the discriminated `Filter` type to work as intended. The `import` and `require` conditions of the package have their own declarations, so `moduleResolution` `node16` / `nodenext` and `bundler` resolve the right ones.
 
 ## Upgrading to 1.0
 
@@ -557,11 +557,53 @@ are, strings lower-cased (`options.caseSensitive: true` to keep the case;
 object by its `valueOf()` when that returns a primitive (so your value objects
 plug in), by reference otherwise. `null` and `undefined` are the same "unset"
 value: it matches `equal null` / `in [null]`, never an ordered or string
-operator, and sorts first ascending. Override the rule per field with
+operator, and sorts first ascending (see the null semantics below for the
+negated operators). Override the rule per field with
 `options.toComparable(value, field)`, which receives both sides of every
 comparison. `contains` / `notContains` work on strings (substring) and on
 lists (membership); every `FiltersExpression` tree is honoured at any depth;
 a page beyond the last one is empty.
+
+**Null semantics.** By default an unset field is a value like any other, so
+it differs from every set value: `status notEqual "archived"` keeps the items
+whose `status` is `null`. A SQL backend (Postgres, PostgREST) drops them,
+since `NULL <> 'archived'` is unknown. Pass `nullSemantics: "sql"` to make an
+in-memory fake agree with it; `"javascript"` is the default and keeps the
+behaviour of 2.2:
+
+```typescript
+const { countReader, reader } = createInMemoryQueryItemsReader(() => users, {
+  nullSemantics: "sql",
+});
+```
+
+How each filter matches an **unset field** (`null`, `undefined` or missing,
+or whatever `toComparable` turns into `null`); a set field matches the same
+way with both:
+
+| Filter                                                             | `"javascript"` | `"sql"` |
+| ------------------------------------------------------------------ | -------------- | ------- |
+| `equal null`, `equalInsensitive null`                              | ✅             | ✅      |
+| `equal x`, `equalInsensitive x`                                    | ❌             | ❌      |
+| `notEqual x`                                                       | ✅             | ❌      |
+| `notEqual null`                                                    | ❌             | ❌      |
+| `in [x, null]`                                                     | ✅             | ✅      |
+| `in [x]`, `in []`                                                  | ❌             | ❌      |
+| `notIn [x]`, `notIn []`                                            | ✅             | ❌      |
+| `notIn [x, null]`                                                  | ❌             | ❌      |
+| `contains x`                                                       | ❌             | ❌      |
+| `notContains x`                                                    | ✅             | ❌      |
+| `startsWith x`, `endsWith x`                                       | ❌             | ❌      |
+| `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual` | ❌             | ❌      |
+| `range` (closed, half-open or open)                                | ❌             | ❌      |
+
+The ordered and string operators never matched an unset field, so only
+`notEqual`, `notIn` and `notContains` change. A `null` among the values of
+`notIn` still means "not unset" with both semantics (strict SQL would make
+`x NOT IN (a, NULL)` never true), and the sorts are not affected (unset
+values first ascending, last descending, like MySQL and SQLite; Postgres
+puts them last ascending). To keep the unset items under `"sql"`, say so:
+`status notEqual "archived" or status equal null`.
 
 ### Writing an extension
 
@@ -694,8 +736,7 @@ departments.valueOf(sales); // 7, what a widget emits as its value
 `resolve(values, signal?)` returns the items of the keys given, without the
 missing ones, in no particular order (index them with `valueOf`). Over a
 reader, `search` sends `textField contains query` with the 1-based
-`pagination` of the page (`offset` must be a multiple of `limit`; `hasMore` is
-`items.length >= limit`, no count reader) and `resolve` sends
+`pagination` of the page and `resolve` sends
 `valueField in values`; `createInMemoryLookupSource(items, options)` does
 the same over a list, so fixtures and stories behave like a server, and a
 service with its own endpoints is an object literal satisfying the interface.
@@ -706,6 +747,16 @@ value, missing ones included, for the life of the source and adds
 of ts-core, like a superseded read; the decorators do not forward the signal
 to the inner source, so one caller's abort does not starve the others. See
 [`src/lookup`](src/lookup/README.md).
+
+**Paging over a reader.** `Pagination` is 1-based and page-based, so a
+reader-based source turns `{ limit, offset }` into
+`{ itemsPerPage: limit, page: offset / limit + 1 }`: `offset` must be a
+multiple of `limit`, as it is when a panel pages by its own `limit` from `0`.
+Otherwise `search` rejects with a `RangeError`, without calling the reader
+(`The offset of a lookup page must be a non-negative multiple of its limit
+(20), got 30`); a `limit` that is not a positive integer is rejected the same
+way. `hasMore` is `items.length >= limit`, with no count reader: one empty
+page more when the total is a multiple of `limit`.
 
 ## API Reference
 
@@ -718,9 +769,10 @@ The generated API documentation, release notes included, is published at
 - [`src/data-source`](src/data-source/README.md): `DataSource` and `createDataSource`; `extensions/` holds the extension contract, the base class and the typing of the extensions by key (`IDataSourceWith`), next to the extensions shipped with the package.
 - [`src/lookup`](src/lookup/README.md): `ILookupSource` and its factories over a reader or a list, `withBatching` and `withCache`.
 - `docs/release-notes`: one file per release with the migration guide; `docs/api` is generated by `npm run doc`.
+- `scripts/emit-esm-types.mjs`: copies the declarations of `dist/src` to `dist/esm` as `.d.mts`, run by `npm run build`.
 - `test/fixtures`: deterministic items and readers used by the tests.
 
-Scripts: `npm run build` (CommonJS + ES modules into `dist`), `npm test`,
+Scripts: `npm run build` (CommonJS + ES modules into `dist`, each with its declarations), `npm test`,
 `npm run coverage` (95 % threshold), `npm run lint` (ESLint, Prettier and the
 type-check; `npm run lint:fix` and `npm run format` fix what they can),
 `npm run doc`, `npm run doc:publish`.
